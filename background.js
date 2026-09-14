@@ -4,6 +4,8 @@
   canvas.id='auraBackground';
   canvas.setAttribute('aria-hidden','true');
   Object.assign(canvas.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',display:'block',zIndex:'0',pointerEvents:'none',opacity:'.92'});
+  const app=document.querySelector('.app');
+  if(app)Object.assign(app.style,{position:'relative',zIndex:'1'});
   document.body.prepend(canvas);
   const ctx=canvas.getContext('2d');
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
