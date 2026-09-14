@@ -14,8 +14,6 @@
   }
   const sync=()=>{const a=document.getElementById('deepSentiment'),b=document.getElementById('deepRisk'),c=document.getElementById('deepOpp');const x=document.getElementById('sfSent'),y=document.getElementById('sfRisk'),z=document.getElementById('sfIntent');if(x&&a)x.textContent=a.textContent;if(y&&b)y.textContent=b.textContent;if(z&&c)z.textContent=c.textContent};
   sync(); new MutationObserver(sync).observe(document.getElementById('meetingIntelligence')||document.body,{subtree:true,childList:true,characterData:true});
-
-  /* Copilot semantic router — entende diferentes formas naturais de perguntar. */
   const normalize=q=>(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
   const answers={
     focus:'O foco imediato deve ser o Cliente #040. Ele concentra o sinal mais crítico: insatisfação com custos e possibilidade de cancelamento. A recomendação é agir nas próximas 24 horas. Depois, acompanhe o Cliente #042, que apresenta potencial de expansão.',
@@ -32,7 +30,6 @@
   function route(q){
     q=normalize(q);
     if(!q)return 'Pode perguntar sobre prioridades, clientes, oportunidades, riscos, sentimento, métricas, modelos ou próximos movimentos.';
-    /* Resumo vem antes de métricas porque perguntas como “resumo da operação” também contêm “operação”. */
     if(/resum|panorama|visao geral|como esta a operacao|como vai a operacao|situacao da operacao|estado da operacao|me da.*resumo|me de.*resumo|faca.*resumo|faz.*resumo|resuma/.test(q))return answers.summary;
     if(/onde.*foc|foc.*onde|em que.*foc|o que.*foc|qual.*foc|devo.*foc|concentrar.*atenc|atencao.*primeiro|o que.*olhar|por onde.*comec|onde.*concentr/.test(q))return answers.focus;
     if(/prior|urgent|importante|ordem|primeiro|primeira|ranking/.test(q))return answers.priority;
@@ -62,4 +59,7 @@
   }
   enhance(document.getElementById('copilotInput'),document.getElementById('copilotAnswer'));
   enhance(document.getElementById('overviewCopilotInput'),document.getElementById('overviewCopilotAnswer'));
+  if(!document.getElementById('auraBackgroundScript')){
+    const s=document.createElement('script');s.id='auraBackgroundScript';s.src='background.js';document.body.appendChild(s);
+  }
 })();
