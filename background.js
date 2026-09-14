@@ -13,4 +13,5 @@
   window.addEventListener('resize',resize,{passive:true});window.addEventListener('pointermove',e=>{mx=e.clientX/w;my=e.clientY/h},{passive:true});resize();draw();
   const product=document.createElement('script');product.src='product-layer.js';product.async=false;document.body.appendChild(product);
   const intro=document.createElement('script');intro.src='intro.js';intro.async=false;window.setTimeout(()=>document.body.appendChild(intro),80);
+  const logo=document.createElement('script');logo.src='logo-enhancement.js';logo.async=false;window.setTimeout(()=>document.body.appendChild(logo),120);
 })();
