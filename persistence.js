@@ -1,7 +1,8 @@
 /* AURA AI — persistent meeting history */
 (()=>{
   'use strict';
-  const API='/api/meetings';
+  const API_BASE=window.AURA_API_BASE||((location.hostname==='localhost'||location.hostname==='127.0.0.1')?'':'http://127.0.0.1:8000');
+  const API=API_BASE+'/api/meetings';
   const KEY='aura-meeting-history-v1';
   const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}};
   const write=v=>{try{localStorage.setItem(KEY,JSON.stringify(v.slice(0,50)))}catch{}};
