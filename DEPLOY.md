@@ -1,6 +1,6 @@
 # Deploy
 
-O AURA AI agora pode rodar o frontend e a API Python no mesmo projeto Vercel. A plataforma suporta Functions em Python, incluindo FastAPI. citeturn0search7turn0search10
+O AURA AI agora pode rodar o frontend e a API Python no mesmo projeto Vercel. A plataforma suporta Functions em Python, incluindo FastAPI.
 
 ## Vercel
 
@@ -42,4 +42,4 @@ Inteligência comercial
 Resultado no AURA
 ```
 
-O modelo de transcrição é um modelo especializado de speech-to-text; a documentação atual da OpenAI lista `GPT-4o Transcribe` entre os modelos de transcrição. citeturn1search0
+O modelo de transcrição é um modelo especializado de speech-to-text; a documentação atual da OpenAI lista `GPT-4o Transcribe` entre os modelos de transcrição.
