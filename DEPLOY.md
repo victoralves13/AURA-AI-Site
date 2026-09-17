@@ -1,45 +1,72 @@
-# Deploy
+# Rodar e apresentar o AURA AI sem API paga
 
-O AURA AI agora pode rodar o frontend e a API Python no mesmo projeto Vercel. A plataforma suporta Functions em Python, incluindo FastAPI.
+A versão atual usa o backend Python local para a transcrição e análise de áudio. O frontend pode continuar publicado na Vercel, mas o áudio é enviado para o **AURA Engine local** em `127.0.0.1:8000`.
 
-## Vercel
+## 1. Instalação local
 
-1. Importe `victoralves13/AURA-AI-Site`.
-2. Framework Preset: `Other`.
-3. Build Command: vazio.
-4. Install Command: vazio.
-5. Output Directory: `.`.
-6. Em **Environment Variables**, crie:
-   - `OPENAI_API_KEY` = sua chave da API
-   - `AURA_TRANSCRIPTION_MODEL` = `gpt-4o-transcribe`
-   - `AURA_ANALYSIS_MODEL` = `gpt-5.6-luna`
-7. Faça o deploy.
-
-A rota `/api/health` confirma se a Function está online. A interface usa `/api/analyze-audio` para enviar o áudio sem expor a chave no navegador.
-
-## Local
+No Windows:
 
 ```bash
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-vercel dev
 ```
 
-Com `vercel dev`, frontend e API podem ser testados no mesmo endereço local.
+## 2. Iniciar o AURA Engine
 
-## Fluxo real
+```bash
+python -m uvicorn api.index:app --host 127.0.0.1 --port 8000
+```
+
+Abra `http://127.0.0.1:8000`.
+
+O próprio FastAPI serve a interface e a API no mesmo endereço, então você não precisa iniciar dois servidores.
+
+## 3. Fluxo real
 
 ```text
 ÁUDIO
   ↓
-Vercel Function /api/analyze-audio
+faster-whisper LOCAL
   ↓
-Transcrição
+Transcrição em português
   ↓
 Random Forest treinado com DADOS.csv
   ↓
-Inteligência comercial
+Regras comerciais locais
   ↓
-Resultado no AURA
+Sentimento · Oportunidade · Risco · Intenção · Evidências
+  ↓
+Next Move
+  ↓
+Supabase opcional
 ```
 
-O modelo de transcrição é um modelo especializado de speech-to-text; a documentação atual da OpenAI lista `GPT-4o Transcribe` entre os modelos de transcrição.
+## 4. Supabase é opcional
+
+Sem variáveis do Supabase, o AURA continua funcionando e mostra o resultado na interface. Para persistir reuniões entre sessões/dispositivos, configure:
+
+```text
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+A chave de serviço deve ficar apenas no backend.
+
+## 5. Modelo de transcrição
+
+Por padrão:
+
+```text
+AURA_WHISPER_MODEL=small
+AURA_WHISPER_DEVICE=cpu
+AURA_WHISPER_COMPUTE_TYPE=int8
+```
+
+O `faster-whisper` suporta execução em CPU e GPU NVIDIA. Em uma máquina com GPU compatível, é possível usar `AURA_WHISPER_DEVICE=cuda` e ajustar o tipo de computação.
+
+## Vercel
+
+A Vercel continua útil para hospedar a interface visual do AURA, mas **não é o caminho usado para o processamento local de áudio**. O botão de análise, quando a interface está aberta pela Vercel, procura o AURA Engine em `http://127.0.0.1:8000`.
+
+Isso mantém o processamento de áudio no computador do usuário e elimina a dependência de uma API paga de IA.
