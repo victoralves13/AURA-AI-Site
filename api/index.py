@@ -21,7 +21,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 WHISPER_MODEL = os.getenv("AURA_WHISPER_MODEL", "small")
 WHISPER_DEVICE = os.getenv("AURA_WHISPER_DEVICE", "cpu")
 WHISPER_COMPUTE = os.getenv("AURA_WHISPER_COMPUTE_TYPE", "int8")
-MAX_AUDIO_BYTES = 25 * 1024 * 1024
+MAX_AUDIO_BYTES = 100 * 1024 * 1024
 _classifier = None
 _vectorizer = None
 _whisper = None
@@ -348,7 +348,7 @@ async def analyze_audio(file: UploadFile = File(...)):
     if not data:
         raise HTTPException(status_code=400, detail="Arquivo de áudio vazio.")
     if len(data) > MAX_AUDIO_BYTES:
-        raise HTTPException(status_code=413, detail="Áudio acima de 25 MB.")
+        raise HTTPException(status_code=413, detail="Áudio acima de 100 MB.")
 
     suffix = Path(filename).suffix or ".bin"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
