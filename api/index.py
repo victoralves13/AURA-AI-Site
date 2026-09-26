@@ -310,6 +310,33 @@ def create_meeting(payload: dict):
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
+@app.post("/api/analyze-transcript")
+def analyze_transcript(payload: dict):
+    transcript = _clean_text(payload.get("transcript", ""))
+    if len(transcript) < 4:
+        raise HTTPException(status_code=400, detail="transcript é obrigatório")
+
+    client_name = _clean_text(payload.get("client_name", "")) or "Cliente não identificado"
+    sentiment, confidence = _predict_sentiment(transcript)
+    intelligence = _local_commercial_analysis(transcript, sentiment, confidence)
+    result = {
+        "ok": True,
+        "source": "transcript",
+        "client_name": client_name,
+        "transcript": transcript,
+        "sentiment": sentiment,
+        "sentiment_confidence": confidence,
+        "model": "Random Forest",
+        "analysis_model": "AURA Local Intelligence",
+        **intelligence,
+    }
+    try:
+        result.update(_save_meeting({**result, "source_type": "transcript"}))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return result
+
+
 @app.post("/api/analyze-audio")
 async def analyze_audio(file: UploadFile = File(...)):
     allowed = {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/webm", "audio/ogg"}
