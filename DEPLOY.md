@@ -1,6 +1,6 @@
 # Rodar e apresentar o AURA AI sem API paga
 
-A versão atual usa o backend Python local para a transcrição e análise de áudio. O frontend pode continuar publicado na Vercel, mas o áudio é enviado para o **AURA Engine local** em `127.0.0.1:8000`.
+A versão atual usa o backend Python local para a transcrição de áudio e a análise de reuniões. O frontend pode continuar publicado na Vercel, mas o áudio é enviado para o **AURA Engine local** em `127.0.0.1:8000`.
 
 ## 1. Instalação local
 
@@ -67,12 +67,12 @@ O `faster-whisper` suporta execução em CPU e GPU NVIDIA. Em uma máquina com G
 
 ## Vercel
 
-A Vercel continua útil para hospedar a interface visual do AURA, mas **não é o caminho usado para o processamento local de áudio**. O botão de análise, quando a interface está aberta pela Vercel, procura o AURA Engine em `http://127.0.0.1:8000`.
+A Vercel continua útil para hospedar a interface visual do AURA, mas **não é o caminho usado para o processamento local de áudio**. Os fluxos de análise de áudio e de transcrição procuram o AURA Engine em `http://127.0.0.1:8000` quando a interface está aberta pela Vercel.
 
 Isso mantém o processamento de áudio no computador do usuário e elimina a dependência de uma API paga de IA.
 
 ## Estado do deploy web
 
-A Vercel hospeda a interface estática e não executa o pipeline local de áudio. O processamento com faster-whisper continua no AURA Engine local. A interface agora verifica a saúde do engine e mostra claramente quando ele está online ou offline.
+A Vercel hospeda a interface estática e não executa o pipeline local de áudio. O processamento com faster-whisper e a análise comercial de transcrições continuam no AURA Engine local. A interface agora verifica a saúde do engine e mostra claramente quando ele está online ou offline.
 
 Para uma versão pública full-stack no futuro, o FastAPI deverá ser hospedado em um serviço compatível com Python e o frontend poderá apontar para ele via `AURA_API_BASE`. Isso é uma evolução de infraestrutura, não um requisito para a demonstração local.
