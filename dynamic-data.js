@@ -29,12 +29,20 @@ function renderActionCenter(items){
  if(!items.length){box.innerHTML='<div class="client-empty"><strong>Ações aparecerão aqui</strong><span>Após análises persistidas, o AURA organizará prioridade, responsável e prazo.</span></div>';return}
  const rank={Crítica:0,Alta:1,Média:2,Baixa:3};
  const rows=items.filter(x=>x.next_move).slice().sort((a,b)=>(rank[a.priority]??4)-(rank[b.priority]??4)||new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,8);
+ const done=JSON.parse(localStorage.getItem('aura-actions-done-v1')||'[]');
  box.innerHTML=rows.map((x,i)=>{
    const priority=x.priority||((String(x.risk||'').toLowerCase().includes('alto'))?'Alta':String(x.opportunity||'').toLowerCase().includes('detect')?'Média':'Baixa');
    const cls=priority.toLowerCase();
    const client=x.client_name||x.file_name||'Cliente não identificado';
-   return '<div class="action-row"><div class="action-priority '+cls+'"><span>'+esc(priority)+'</span></div><div class="action-main"><strong>'+esc(x.next_move)+'</strong><span>'+esc(client)+' · '+esc(x.impact||'Qualificação')+'</span></div><div class="action-owner"><span>RESPONSÁVEL</span><b>'+esc(x.owner||'Comercial')+'</b></div><div class="action-deadline"><span>PRAZO</span><b>'+esc(x.deadline||'A definir')+'</b></div></div>';
+   const id=String(x.id||x.created_at||i),isDone=done.includes(id);
+   return '<div class="action-row '+(isDone?'action-done':'')+'" data-action-id="'+esc(id)+'"><div class="action-priority '+cls+'"><span>'+esc(priority)+'</span></div><div class="action-main"><strong>'+esc(x.next_move)+'</strong><span>'+esc(client)+' · '+esc(x.impact||'Qualificação')+'</span></div><div class="action-owner"><span>RESPONSÁVEL</span><b>'+esc(x.owner||'Comercial')+'</b></div><div class="action-deadline"><span>PRAZO</span><b>'+esc(x.deadline||'A definir')+'</b></div><button class="action-done-btn" type="button">'+(isDone?'CONCLUÍDA':'MARCAR COMO CONCLUÍDA')+'</button></div>';
  }).join('');
+ box.querySelectorAll('.action-done-btn').forEach(btn=>btn.addEventListener('click',()=>{
+   const row=btn.closest('.action-row'),id=row?.dataset.actionId;if(!id)return;
+   const list=JSON.parse(localStorage.getItem('aura-actions-done-v1')||'[]');
+   const next=list.includes(id)?list.filter(v=>v!==id):[...list,id];
+   localStorage.setItem('aura-actions-done-v1',JSON.stringify(next));load();
+ }));
 }
 function renderConsolidated(items){
  const total=items.length,opp=items.filter(x=>String(x.opportunity||'').toLowerCase().includes('detect')).length,risk=items.filter(x=>String(x.risk||'').toLowerCase().includes('alto')).length,actions=items.filter(x=>x.next_move).length;
