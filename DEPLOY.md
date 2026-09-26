@@ -70,3 +70,9 @@ O `faster-whisper` suporta execução em CPU e GPU NVIDIA. Em uma máquina com G
 A Vercel continua útil para hospedar a interface visual do AURA, mas **não é o caminho usado para o processamento local de áudio**. O botão de análise, quando a interface está aberta pela Vercel, procura o AURA Engine em `http://127.0.0.1:8000`.
 
 Isso mantém o processamento de áudio no computador do usuário e elimina a dependência de uma API paga de IA.
+
+## Estado do deploy web
+
+A Vercel hospeda a interface estática e não executa o pipeline local de áudio. O processamento com faster-whisper continua no AURA Engine local. A interface agora verifica a saúde do engine e mostra claramente quando ele está online ou offline.
+
+Para uma versão pública full-stack no futuro, o FastAPI deverá ser hospedado em um serviço compatível com Python e o frontend poderá apontar para ele via `AURA_API_BASE`. Isso é uma evolução de infraestrutura, não um requisito para a demonstração local.
