@@ -269,7 +269,8 @@ def _supabase_request(method: str, path: str, payload=None):
 def _save_meeting(data: dict):
     fields = [
         "source_type", "file_name", "transcript", "summary", "sentiment", "sentiment_confidence",
-        "opportunity", "risk", "intent", "objections", "products", "evidence", "next_move",
+        "opportunity", "risk", "risk_score", "opportunity_score", "opportunity_signals", "risk_signals",
+        "priority", "impact", "why_it_matters", "intent", "objections", "products", "evidence", "next_move",
         "owner", "deadline", "model",
     ]
     payload = {key: data.get(key) for key in fields}
