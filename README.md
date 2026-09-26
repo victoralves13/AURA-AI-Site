@@ -1,8 +1,8 @@
 # AURA AI — Intelligent Meeting Insights
 
-Protótipo web interativo do AURA AI para apresentação do Sprint 3 e evolução para um MVP funcional.
+Plataforma web do AURA AI para transformar reuniões comerciais em inteligência acionável, prioridades e próximos movimentos.
 
-O AURA transforma uma reunião em áudio em transcrição, sinais comerciais e próximo movimento. A versão atual foi estruturada para funcionar **sem API paga de IA**: a transcrição roda localmente com `faster-whisper`, a classificação de sentimento usa o **Random Forest validado no Sprint 3** e a leitura comercial usa um motor local de regras + evidências da transcrição.
+O AURA transforma uma reunião em áudio em transcrição, sinais comerciais e próximo movimento. A versão atual foi estruturada para funcionar **sem API paga de IA**: a transcrição roda localmente com `faster-whisper`, a classificação de sentimento usa um **Random Forest treinado sobre a base comercial do projeto** e a leitura comercial usa um motor local de regras + evidências da transcrição.
 
 ## Fluxo atual
 
@@ -13,7 +13,7 @@ faster-whisper LOCAL
   ↓
 TRANSCRIÇÃO
   ↓
-Random Forest · Sprint 3
+Random Forest · motor de sentimento
   ↓
 Regras comerciais + evidências
   ↓
@@ -23,10 +23,6 @@ Next Move
   ↓
 Histórico AURA / Supabase opcional
 ```
-
-### O que é validado no Sprint 3
-
-Os indicadores da área de Machine Learning correspondem aos resultados reais do Sprint 3. A análise de áudio agora é executável localmente e não depende de `OPENAI_API_KEY`.
 
 ### Tecnologias
 
