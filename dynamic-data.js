@@ -47,16 +47,31 @@ function renderAccumulatedIntelligence(items){
 }
 function renderActionCenter(items){
  const box=document.getElementById('actionList');if(!box)return;
- if(!items.length){box.innerHTML='<div class="client-empty"><strong>Ações aparecerão aqui</strong><span>Após análises persistidas, o AURA organizará prioridade, responsável e prazo.</span></div>';return}
  const rank={Crítica:0,Alta:1,Média:2,Baixa:3};
  const rows=items.filter(x=>x.next_move).slice().sort((a,b)=>(rank[a.priority]??4)-(rank[b.priority]??4)||new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,8);
  const done=JSON.parse(localStorage.getItem('aura-actions-done-v1')||'[]');
+ const critical=rows.filter(x=>(x.priority||'').toLowerCase().includes('crít')).length;
+ const high=rows.filter(x=>['alta','crítica'].includes(String(x.priority||'').toLowerCase())).length;
+ const retention=rows.filter(x=>String(x.impact||'').toLowerCase().includes('reten')).length;
+ const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+ set('decisionCritical',critical);set('decisionHigh',high);set('decisionRetention',retention);set('decisionDone',done.length);
+ const focus=document.getElementById('decisionFocusTitle'),focusText=document.getElementById('decisionFocusText');
+ if(rows.length){
+   const top=rows[0], client=top.client_name||top.file_name||'cliente não identificado';
+   if(focus)focus.textContent=(top.priority||'PRIORIDADE')+' · '+client;
+   if(focusText)focusText.textContent=(top.next_move||'Definir próximo movimento')+' '+(top.why_it_matters||'O sinal foi priorizado a partir dos dados registrados na reunião.');
+ }else{
+   if(focus)focus.textContent='Aguardando sinais comerciais';
+   if(focusText)focusText.textContent=items.length?'As reuniões estão registradas, mas ainda não há próximo movimento persistido para colocar na fila de decisão.':'Analise uma reunião real para que o AURA possa construir a fila de decisão.';
+ }
+ if(!rows.length){box.innerHTML='<div class="client-empty"><strong>Ações aparecerão aqui</strong><span>Após análises persistidas, o AURA organizará prioridade, responsável e prazo.</span></div>';return}
  box.innerHTML=rows.map((x,i)=>{
    const priority=x.priority||((String(x.risk||'').toLowerCase().includes('alto'))?'Alta':String(x.opportunity||'').toLowerCase().includes('detect')?'Média':'Baixa');
    const cls=priority.toLowerCase();
    const client=x.client_name||x.file_name||'Cliente não identificado';
    const id=String(x.id||x.created_at||i),isDone=done.includes(id);
-   return '<div class="action-row '+(isDone?'action-done':'')+'" data-action-id="'+esc(id)+'"><div class="action-priority '+cls+'"><span>'+esc(priority)+'</span></div><div class="action-main"><strong>'+esc(x.next_move)+'</strong><span>'+esc(client)+' · '+esc(x.impact||'Qualificação')+'</span></div><div class="action-owner"><span>RESPONSÁVEL</span><b>'+esc(x.owner||'Comercial')+'</b></div><div class="action-deadline"><span>PRAZO</span><b>'+esc(x.deadline||'A definir')+'</b></div><button class="action-done-btn" type="button">'+(isDone?'CONCLUÍDA':'MARCAR COMO CONCLUÍDA')+'</button></div>';
+   const impact=x.impact||'Qualificação';
+   return '<div class="action-row '+(isDone?'action-done':'')+'" data-action-id="'+esc(id)+'"><div class="action-priority '+cls+'"><span>'+esc(priority)+'</span></div><div class="action-main"><strong>'+esc(x.next_move)+'</strong><span>'+esc(client)+' · '+esc(impact)+'</span></div><div class="action-owner"><span>RESPONSÁVEL</span><b>'+esc(x.owner||'Comercial')+'</b></div><div class="action-deadline"><span>PRAZO</span><b>'+esc(x.deadline||'A definir')+'</b></div><button class="action-done-btn" type="button">'+(isDone?'CONCLUÍDA':'MARCAR COMO CONCLUÍDA')+'</button></div>';
  }).join('');
  box.querySelectorAll('.action-done-btn').forEach(btn=>btn.addEventListener('click',()=>{
    const row=btn.closest('.action-row'),id=row?.dataset.actionId;if(!id)return;
