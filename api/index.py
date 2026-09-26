@@ -15,7 +15,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 
 ROOT = Path(__file__).resolve().parents[1]
-app = FastAPI(title="AURA AI API", version="0.4.0-local")
+app = FastAPI(title="AURA AI API", version="0.5.0-local")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 WHISPER_MODEL = os.getenv("AURA_WHISPER_MODEL", "small")
@@ -286,7 +286,7 @@ def health():
     return {
         "ok": True,
         "service": "aura-ai",
-        "version": "0.4.0-local",
+        "version": "0.5.0-local",
         "transcription": "faster-whisper",
         "whisper_model": WHISPER_MODEL,
         "database": bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
