@@ -15,7 +15,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 
 ROOT = Path(__file__).resolve().parents[1]
-app = FastAPI(title="AURA AI API", version="0.3.0-local")
+app = FastAPI(title="AURA AI API", version="0.4.0-local")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 WHISPER_MODEL = os.getenv("AURA_WHISPER_MODEL", "small")
@@ -103,19 +103,33 @@ def _contains(text: str, terms: list[str]) -> bool:
     return any(term in low for term in terms)
 
 
+def _score_signals(text: str, groups: dict[str, list[str]]) -> tuple[int, list[str]]:
+    low = text.lower()
+    hits = []
+    score = 0
+    for label, terms in groups.items():
+        matched = [term for term in terms if term in low]
+        if matched:
+            hits.append(f"{label}: {', '.join(matched[:3])}")
+            score += min(2, len(matched)) * 18
+    return min(100, score), hits
+
+
 def _local_commercial_analysis(transcript: str, sentiment: str, confidence: int) -> dict:
     text = _clean_text(transcript)
     low = text.lower()
-    opportunity_terms = [
-        "interesse", "interessado", "interessada", "proposta", "contratação", "contratar",
-        "contrato", "avançar", "avançar na", "crescimento", "expandir", "expansão",
-        "comprar", "compra", "orçamento", "budget", "solução", "oportunidade",
-    ]
-    risk_terms = [
-        "cancelamento", "cancelar", "churn", "insatisfação", "insatisfeito", "insatisfeita",
-        "problema", "problemas", "reclamação", "reclamações", "caro", "custos", "custo",
-        "perder", "saída", "sair", "não está satisfeito", "não estou satisfeito",
-    ]
+    opportunity_groups = {
+        "interesse": ["interesse", "interessado", "interessada", "faz sentido"],
+        "avanço": ["avançar", "próximos passos", "contratação", "contratar", "contrato", "proposta"],
+        "crescimento": ["crescimento", "expandir", "expansão", "nova operação"],
+        "compra": ["comprar", "compra", "orçamento", "budget"],
+    }
+    risk_groups = {
+        "retenção": ["cancelamento", "cancelar", "churn", "sair", "saída"],
+        "insatisfação": ["insatisfação", "insatisfeito", "insatisfeita", "reclamação", "reclamações"],
+        "custo": ["caro", "custos", "custo", "preço", "valor"],
+        "problema": ["problema", "problemas", "não funciona", "falha"],
+    }
     objection_map = {
         "Custo / preço": ["custo", "custos", "caro", "preço", "valor"],
         "Prazo / timing": ["prazo", "tempo", "agora", "urgente", "timing"],
@@ -124,16 +138,35 @@ def _local_commercial_analysis(transcript: str, sentiment: str, confidence: int)
     }
     product_terms = ["protheus", "rm", "fluig", "totvs", "crm", "datasul", "mes"]
 
-    opportunity = "Detectada" if _contains(low, opportunity_terms) else "Em avaliação"
-    risk = "Alto" if _contains(low, risk_terms) and (sentiment == "Negativo" or _contains(low, ["cancelamento", "churn"])) else "Médio" if _contains(low, risk_terms) else "Baixo"
+    opp_score, opp_signals = _score_signals(text, opportunity_groups)
+    risk_score, risk_signals = _score_signals(text, risk_groups)
 
-    if _contains(low, ["cancelamento", "cancelar", "churn"]):
-        intent = "Avaliar retenção / evitar cancelamento"
-    elif _contains(low, ["contratação", "contratar", "contrato", "comprar", "proposta"]):
+    if "cancelamento" in low or "cancelar" in low or "churn" in low:
+        risk_score = max(risk_score, 85)
+    if sentiment == "Negativo":
+        risk_score = min(100, risk_score + 18)
+    if sentiment == "Positivo":
+        opp_score = min(100, opp_score + 10)
+
+    opportunity = "Detectada" if opp_score >= 35 else "Em avaliação"
+    risk = "Alto" if risk_score >= 55 else "Médio" if risk_score >= 25 else "Baixo"
+
+    if risk_score >= 55:
+        priority = "Crítica"
+    elif opp_score >= 55:
+        priority = "Alta"
+    elif risk_score >= 25 or opp_score >= 35:
+        priority = "Média"
+    else:
+        priority = "Baixa"
+
+    if any(x in low for x in ["cancelamento", "cancelar", "churn"]):
+        intent = "Retenção / evitar cancelamento"
+    elif any(x in low for x in ["contratação", "contratar", "contrato", "comprar", "proposta"]):
         intent = "Avançar para contratação / proposta"
-    elif _contains(low, ["expandir", "expansão", "crescimento"]):
+    elif any(x in low for x in ["expandir", "expansão", "crescimento"]):
         intent = "Explorar expansão"
-    elif _contains(low, ["avaliando", "avaliar", "mais informações"]):
+    elif any(x in low for x in ["avaliando", "avaliar", "mais informações"]):
         intent = "Avaliar alternativas"
     else:
         intent = "Não identificado"
@@ -141,7 +174,7 @@ def _local_commercial_analysis(transcript: str, sentiment: str, confidence: int)
     objections = [label for label, terms in objection_map.items() if _contains(low, terms)]
     products = [name.upper() for name in product_terms if re.search(rf"\b{re.escape(name)}\b", low)]
 
-    evidence_terms = opportunity_terms + risk_terms + ["avaliando", "avançar", "proposta", "cancelamento"]
+    evidence_terms = list(sum(opportunity_groups.values(), [])) + list(sum(risk_groups.values(), []))
     evidence = []
     for sentence in _sentences(text):
         if _contains(sentence.lower(), evidence_terms):
@@ -152,40 +185,49 @@ def _local_commercial_analysis(transcript: str, sentiment: str, confidence: int)
         evidence = _sentences(text)[:2]
 
     if risk == "Alto":
-        next_move = "Fazer contato prioritário, entender a causa do risco e construir um plano de recuperação."
-        owner = "Executivo de conta"
-        deadline = "24h"
+        impact = "Retenção"
+        next_move = "Fazer contato prioritário, confirmar a causa do risco e construir um plano de recuperação."
+        owner, deadline = "Executivo de conta", "24h"
+        why = "Sinais de risco combinados com o contexto da conversa indicam necessidade de intervenção rápida."
     elif opportunity == "Detectada":
+        impact = "Conversão"
         next_move = "Transformar o sinal de interesse em uma próxima etapa comercial concreta, como reunião, proposta ou demonstração."
-        owner = "Executivo de conta"
-        deadline = "48h"
+        owner, deadline = "Executivo de conta", "48h"
+        why = "A conversa contém sinais explícitos de interesse ou avanço que podem ser convertidos em uma ação comercial."
     else:
-        next_move = "Qualificar o cenário, esclarecer as dúvidas e definir o próximo contato com o cliente."
-        owner = "Comercial"
-        deadline = "72h"
+        impact = "Qualificação"
+        next_move = "Qualificar o cenário, esclarecer as dúvidas e registrar o próximo contato com o cliente."
+        owner, deadline = "Comercial", "72h"
+        why = "A conversa ainda não apresenta sinal comercial forte o suficiente para uma decisão de maior impacto."
 
     if risk == "Alto":
-        summary = f"A reunião apresenta sentimento {sentiment.lower()} e sinais de atenção comercial. O principal foco é entender a causa do risco e agir rapidamente."
+        summary = f"Sentimento {sentiment.lower()} com risco comercial {risk.lower()}. A prioridade é entender a causa e agir antes que o sinal evolua para perda."
     elif opportunity == "Detectada":
-        summary = f"A reunião apresenta sentimento {sentiment.lower()} e sinais de oportunidade. Há elementos suficientes para avançar a conversa comercial."
+        summary = f"Sentimento {sentiment.lower()} com oportunidade comercial detectada. O próximo passo é transformar o interesse identificado em avanço mensurável."
     else:
-        summary = f"A reunião apresenta sentimento {sentiment.lower()}, mas ainda exige qualificação antes de definir uma ação comercial mais assertiva."
+        summary = f"Sentimento {sentiment.lower()} com sinais ainda inconclusivos. A próxima ação deve reduzir a incerteza antes de avançar."
 
     return {
         "summary": summary,
         "opportunity": opportunity,
+        "opportunity_score": opp_score,
+        "opportunity_signals": opp_signals[:4],
         "risk": risk,
+        "risk_score": risk_score,
+        "risk_signals": risk_signals[:4],
+        "priority": priority,
         "intent": intent,
+        "impact": impact,
+        "why_it_matters": why,
         "objections": objections,
         "products": products,
         "evidence": evidence[:3],
         "next_move": next_move,
         "owner": owner,
         "deadline": deadline,
-        "analysis_engine": "Regras comerciais locais + Random Forest",
-        "sentiment_source": "Random Forest · Sprint 3",
+        "analysis_engine": "AURA Local Intelligence",
+        "sentiment_source": "Random Forest",
     }
-
 
 def _get_whisper() -> WhisperModel:
     global _whisper
@@ -243,7 +285,7 @@ def health():
     return {
         "ok": True,
         "service": "aura-ai",
-        "version": "0.3.0-local",
+        "version": "0.4.0-local",
         "transcription": "faster-whisper",
         "whisper_model": WHISPER_MODEL,
         "database": bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
@@ -302,7 +344,7 @@ async def analyze_audio(file: UploadFile = File(...)):
             "transcription_model": f"faster-whisper:{WHISPER_MODEL}",
             "transcription_language": language,
             "transcription_language_probability": language_probability,
-            "analysis_model": "local-rules",
+            "analysis_model": "AURA Local Intelligence",
             "transcript": transcript,
             "sentiment": sentiment,
             "sentiment_confidence": confidence,
