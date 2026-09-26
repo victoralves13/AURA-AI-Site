@@ -24,6 +24,28 @@ function compareClientHistory(rows){
  if(latest.opportunity!==prev.opportunity)return {label:'MUDANÇA COMERCIAL',text:'Oportunidade mudou de '+(prev.opportunity||'—')+' para '+(latest.opportunity||'—')+'.'};
  return {label:'CENÁRIO ESTÁVEL',text:'Não houve mudança de risco, sentimento ou oportunidade entre as duas últimas reuniões.'};
 }
+function renderConsolidated(items){
+ const total=items.length,opp=items.filter(x=>String(x.opportunity||'').toLowerCase().includes('detect')).length,risk=items.filter(x=>String(x.risk||'').toLowerCase().includes('alto')).length,actions=items.filter(x=>x.next_move).length;
+ const vals={Positivo:0,Neutro:0,Negativo:0};items.forEach(x=>{vals[x.sentiment]=(vals[x.sentiment]||0)+1});
+ const pct=k=>total?Math.round(vals[k]/total*100):0;
+ const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+ set('consolidatedPositive',pct('Positivo'));set('consolidatedPositiveLabel',pct('Positivo')+'%');set('consolidatedNeutralLabel',pct('Neutro')+'%');set('consolidatedNegativeLabel',pct('Negativo')+'%');
+ set('consolidatedOpp',opp);set('consolidatedRisk',risk);set('consolidatedActions',actions);set('consolidatedTotal',total);
+ const bars=document.getElementById('consolidatedBars');if(bars){const recent=items.slice(0,7).reverse();bars.innerHTML=recent.map(x=>{const n=Math.max(18,Math.min(100,Number(x.risk_score||x.opportunity_score||x.sentiment_confidence||40)));return '<i style="height:'+n+'%"></i>'}).join('')}
+ const candidates=[...new Map(items.map(x=>{const name=(x.client_name&&x.client_name!=='Cliente não identificado')?x.client_name:(x.file_name||'Cliente não identificado');return [name,(window.AURA_CLIENT_MEMORY?.get(name)||[])]})).entries()].filter(([,rows])=>rows.length>1).sort((a,b)=>new Date(b[1][0].created_at||0)-new Date(a[1][0].created_at||0));
+ const summary=document.getElementById('changeSummary');
+ if(!candidates.length){set('changeClient','—');set('changeRisk','—');set('changeSentiment','—');set('changeOpportunity','—');if(summary)summary.textContent=total?'Ainda não existe uma segunda reunião do mesmo cliente para comparar. O AURA já iniciou a memória comercial.':'Analise uma reunião real para iniciar a memória comercial.';return}
+ const [name,rows]=candidates[0],latest=rows[0],prev=rows[1];
+ set('changeClient',name);set('changeRisk',latest.risk||'—');set('changeSentiment',latest.sentiment||'—');set('changeOpportunity',latest.opportunity||'—');
+ const changes=[];
+ if(latest.risk!==prev.risk)changes.push('risco: '+(prev.risk||'—')+' → '+(latest.risk||'—'));
+ if(latest.sentiment!==prev.sentiment)changes.push('sentimento: '+(prev.sentiment||'—')+' → '+(latest.sentiment||'—'));
+ if(latest.opportunity!==prev.opportunity)changes.push('oportunidade: '+(prev.opportunity||'—')+' → '+(latest.opportunity||'—'));
+ if(summary)summary.textContent=changes.length?'Desde a reunião anterior, '+changes.join(' · ')+'.':'Desde a reunião anterior, não houve mudança nos sinais principais.';
+ const recTitle=document.getElementById('recommendationTitle'),recText=document.getElementById('recommendationText');
+ if(recTitle)recTitle.textContent=risk?'Trate primeiro os sinais de risco alto.':opp?'Acelere as oportunidades detectadas.':'Continue qualificando os cenários em acompanhamento.';
+ if(recText)recText.textContent=risk?'Use as evidências registradas para definir follow-up, responsável e prazo.':opp?'Transforme a intenção comercial em uma próxima ação concreta.':'Mantenha o histórico atualizado até surgir um sinal comercial mais claro.';
+}
 function renderClients(items){
  const grid=document.querySelector('#history .client-grid');if(!grid)return;
  if(!items.length){grid.innerHTML='<div class="client-empty"><strong>Clientes aparecerão aqui</strong><span>O AURA organizará a evolução de cada cliente conforme novas reuniões forem persistidas.</span></div>';return;}
@@ -46,7 +68,7 @@ function renderHistory(items){
  const head=table.querySelector('.th');table.innerHTML=(head?head.outerHTML:'')+rows;
  table.querySelectorAll('.live-history-row').forEach(r=>r.addEventListener('click',()=>{const x=items[Number(r.dataset.liveIndex)];window.AURA_DYNAMIC_MEETING=x;window.dispatchEvent(new CustomEvent('aura:load-meeting',{detail:x}));document.querySelector('[data-view="insights"]')?.click()}));
 }
-async function load(){try{const res=await fetch('/api/meetings?limit=50',{headers:{Accept:'application/json'}});if(!res.ok)return;const data=await res.json();const items=Array.isArray(data)?data:(data.meetings||[]);window.AURA_SERVER_MEETINGS=items;window.AURA_CLIENT_MEMORY=new Map();items.forEach(x=>{const name=(x.client_name&&x.client_name!=='Cliente não identificado')?x.client_name:(x.file_name||'Cliente não identificado');if(!window.AURA_CLIENT_MEMORY.has(name))window.AURA_CLIENT_MEMORY.set(name,[]);window.AURA_CLIENT_MEMORY.get(name).push(x)});applyMetrics(items);if(items.length){renderHistory(items);renderClients(items)}else{renderClients([])}}catch(e){console.info('AURA dynamic data unavailable:',e)}}
+async function load(){try{const res=await fetch('/api/meetings?limit=50',{headers:{Accept:'application/json'}});if(!res.ok)return;const data=await res.json();const items=Array.isArray(data)?data:(data.meetings||[]);window.AURA_SERVER_MEETINGS=items;window.AURA_CLIENT_MEMORY=new Map();items.forEach(x=>{const name=(x.client_name&&x.client_name!=='Cliente não identificado')?x.client_name:(x.file_name||'Cliente não identificado');if(!window.AURA_CLIENT_MEMORY.has(name))window.AURA_CLIENT_MEMORY.set(name,[]);window.AURA_CLIENT_MEMORY.get(name).push(x)});applyMetrics(items);renderConsolidated(items);if(items.length){renderHistory(items);renderClients(items)}else{renderClients([])}}catch(e){console.info('AURA dynamic data unavailable:',e)}}
 window.addEventListener('aura:meeting-saved',()=>setTimeout(load,250));
 window.addEventListener('aura:load-meeting',e=>{const x=e.detail;if(!x)return;const ta=document.getElementById('transcript');if(ta&&x.transcript)ta.value=x.transcript;const p={sentiment:x.sentiment||'Neutro',cls:sentimentClass(x.sentiment),risk:x.risk||'Médio',opp:x.opportunity||'Em avaliação',confidence:x.sentiment_confidence||0,score:Number(x.risk_score||x.opportunity_score||x.sentiment_confidence||0),impact:x.impact||(x.risk&&String(x.risk).toLowerCase().includes('alto')?'Retenção':'Conversão'),priority:x.priority||'Média',deadline:x.deadline||'A definir',action:x.next_move||'Definir próximo movimento',howTo:x.why_it_matters||'Use as evidências e o próximo movimento registrados nesta reunião para orientar o follow-up.',insight:x.summary||'Reunião carregada do histórico persistido.'};window.setTimeout(()=>{if(typeof window.__auraSetDeep==='function')window.__auraSetDeep(p,x.transcript||'');},0)});
 window.addEventListener('load',()=>setTimeout(load,700));
