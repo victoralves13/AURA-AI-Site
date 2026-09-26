@@ -6,7 +6,7 @@ const riskClass=v=>String(v||'').toLowerCase().includes('alto')?'high':String(v|
 const sentimentClass=v=>{const x=String(v||'').toLowerCase();return x.includes('neg')?'negative':x.includes('pos')?'positive':'neutral'};
 function fmtDate(v){try{return new Date(v).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).replace('.','')}catch{return '—'}}
 function applyMetrics(items){
- const total=items.length, opp=items.filter(x=>String(x.opportunity||'').toLowerCase().includes('detect')||String(x.opportunity||'').toLowerCase().includes('sim')).length, critical=items.filter(x=>String(x.risk||'').toLowerCase().includes('alto')).length;
+ const total=items.length, opp=items.filter(x=>String(x.opportunity||'').toLowerCase().includes('detect')).length, critical=items.filter(x=>String(x.risk||'').toLowerCase().includes('alto')).length;
  const action=items.filter(x=>x.next_move).length;
  const vals={};items.forEach(x=>{const s=x.sentiment||'Neutro';vals[s]=(vals[s]||0)+1});
  const pos=vals.Positivo||0, neg=vals.Negativo||0, neu=vals.Neutro||0;
@@ -16,13 +16,29 @@ function applyMetrics(items){
  const title=document.querySelector('#overview .kicker'); if(title) title.textContent=total?'INTELLIGENT MEETING INSIGHTS · DADOS REAIS':'INTELLIGENT MEETING INSIGHTS · AGUARDANDO DADOS';
  const trend=document.querySelector('#overview .trend-card p'); if(trend) trend.textContent=total?`O AURA já consolidou ${total} reunião${total===1?'':'ões'} e continuará atualizando o radar conforme novos sinais forem identificados.`:'O radar será preenchido conforme novas reuniões forem analisadas.';
 }
+function renderClients(items){
+ const grid=document.querySelector('#history .client-grid');if(!grid)return;
+ if(!items.length){grid.innerHTML='<div class="client-empty"><strong>Clientes aparecerão aqui</strong><span>O AURA organizará a evolução de cada cliente conforme novas reuniões forem persistidas.</span></div>';return;}
+ const groups=new Map();
+ items.forEach(x=>{const name=(x.client_name&&x.client_name!=='Cliente não identificado')?x.client_name:(x.file_name||'Cliente não identificado');if(!groups.has(name))groups.set(name,[]);groups.get(name).push(x);});
+ const cards=[...groups.entries()].slice(0,6).map(([name,rows])=>{
+   const latest=rows[0],previous=rows[1],risk=String(latest.risk||'Baixo');
+   const status=risk.toLowerCase().includes('alto')?'ATENÇÃO':risk.toLowerCase().includes('médio')?'OBSERVAR':'ACOMPANHAR';
+   const statusClass=risk.toLowerCase().includes('alto')?'':risk.toLowerCase().includes('médio')?'style="color:var(--yellow)"':'style="color:var(--green)"';
+   let trend=latest.opportunity==='Detectada'?'Oportunidade comercial identificada':risk.toLowerCase().includes('alto')?'Risco de retenção':'Relacionamento em acompanhamento';
+   if(previous){if(previous.risk!==latest.risk)trend='Risco mudou de '+(previous.risk||'—')+' para '+(latest.risk||'—');else if(previous.sentiment!==latest.sentiment)trend='Sentimento mudou de '+(previous.sentiment||'—')+' para '+(latest.sentiment||'—');else trend=rows.length+' reuniões no histórico · cenário estável';}
+   const dots=rows.slice(0,3).reverse().map((x,i)=>'<i'+(i===2&&risk.toLowerCase().includes('alto')?' style="background:var(--red)"':'')+'></i>').join('');
+   return '<div class="client-card"><span class="client-status" '+statusClass+'>'+status+'</span><span class="eyebrow">CLIENTE</span><h3>'+esc(name)+'</h3><small style="color:#71858d">'+esc(trend)+'</small><div class="timeline">'+dots+'</div><small style="display:block;margin-top:10px;color:#71858d">'+rows.length+' reunião'+(rows.length===1?'':'ões')+' analisada'+(rows.length===1?'':'s')+'</small></div>';
+ }).join('');
+ grid.innerHTML=cards;
+}
 function renderHistory(items){
  const table=document.querySelector('#history .table');if(!table||!items.length)return;
  const rows=items.map((x,i)=>`<div class="tr clickable-row live-history-row" data-live-index="${i}"><span>${esc(x.client_name||x.file_name||`Reunião #${i+1}`)}</span><span>${fmtDate(x.created_at)}</span><span class="tag ${sentimentClass(x.sentiment)}">${esc(label(x.sentiment))}</span><span class="${riskClass(x.risk)}">${esc(label(x.risk))}</span><span>Concluída</span></div>`).join('');
  const head=table.querySelector('.th');table.innerHTML=(head?head.outerHTML:'')+rows;
  table.querySelectorAll('.live-history-row').forEach(r=>r.addEventListener('click',()=>{const x=items[Number(r.dataset.liveIndex)];window.AURA_DYNAMIC_MEETING=x;window.dispatchEvent(new CustomEvent('aura:load-meeting',{detail:x}));document.querySelector('[data-view="insights"]')?.click()}));
 }
-async function load(){try{const res=await fetch('/api/meetings?limit=50',{headers:{Accept:'application/json'}});if(!res.ok)return;const data=await res.json();const items=Array.isArray(data)?data:(data.meetings||[]);window.AURA_SERVER_MEETINGS=items;applyMetrics(items);if(items.length)renderHistory(items);}catch(e){console.info('AURA dynamic data unavailable:',e)}}
+async function load(){try{const res=await fetch('/api/meetings?limit=50',{headers:{Accept:'application/json'}});if(!res.ok)return;const data=await res.json();const items=Array.isArray(data)?data:(data.meetings||[]);window.AURA_SERVER_MEETINGS=items;applyMetrics(items);if(items.length){renderHistory(items);renderClients(items)}else{renderClients([])}}catch(e){console.info('AURA dynamic data unavailable:',e)}}
 window.addEventListener('aura:meeting-saved',()=>setTimeout(load,250));
 window.addEventListener('aura:load-meeting',e=>{const x=e.detail;if(!x)return;const ta=document.getElementById('transcript');if(ta&&x.transcript)ta.value=x.transcript;const p={sentiment:x.sentiment||'Neutro',cls:sentimentClass(x.sentiment),risk:x.risk||'Médio',opp:x.opportunity||'Em avaliação',confidence:x.sentiment_confidence||0,score:x.sentiment_confidence||0,impact:x.risk&&String(x.risk).toLowerCase().includes('alto')?'Retenção':'Conversão',deadline:x.deadline||'A definir',action:x.next_move||'Definir próximo movimento',howTo:'Use as evidências e o próximo movimento registrados nesta reunião para orientar o follow-up.',insight:x.summary||'Reunião carregada do histórico persistido.'};window.setTimeout(()=>{if(typeof window.__auraSetDeep==='function')window.__auraSetDeep(p,x.transcript||'');},0)});
 window.addEventListener('load',()=>setTimeout(load,700));
