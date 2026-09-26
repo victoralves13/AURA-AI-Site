@@ -24,6 +24,18 @@ function compareClientHistory(rows){
  if(latest.opportunity!==prev.opportunity)return {label:'MUDANÇA COMERCIAL',text:'Oportunidade mudou de '+(prev.opportunity||'—')+' para '+(latest.opportunity||'—')+'.'};
  return {label:'CENÁRIO ESTÁVEL',text:'Não houve mudança de risco, sentimento ou oportunidade entre as duas últimas reuniões.'};
 }
+function renderActionCenter(items){
+ const box=document.getElementById('actionList');if(!box)return;
+ if(!items.length){box.innerHTML='<div class="client-empty"><strong>Ações aparecerão aqui</strong><span>Após análises persistidas, o AURA organizará prioridade, responsável e prazo.</span></div>';return}
+ const rank={Crítica:0,Alta:1,Média:2,Baixa:3};
+ const rows=items.filter(x=>x.next_move).slice().sort((a,b)=>(rank[a.priority]??4)-(rank[b.priority]??4)||new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,8);
+ box.innerHTML=rows.map((x,i)=>{
+   const priority=x.priority||((String(x.risk||'').toLowerCase().includes('alto'))?'Alta':String(x.opportunity||'').toLowerCase().includes('detect')?'Média':'Baixa');
+   const cls=priority.toLowerCase();
+   const client=x.client_name||x.file_name||'Cliente não identificado';
+   return '<div class="action-row"><div class="action-priority '+cls+'"><span>'+esc(priority)+'</span></div><div class="action-main"><strong>'+esc(x.next_move)+'</strong><span>'+esc(client)+' · '+esc(x.impact||'Qualificação')+'</span></div><div class="action-owner"><span>RESPONSÁVEL</span><b>'+esc(x.owner||'Comercial')+'</b></div><div class="action-deadline"><span>PRAZO</span><b>'+esc(x.deadline||'A definir')+'</b></div></div>';
+ }).join('');
+}
 function renderConsolidated(items){
  const total=items.length,opp=items.filter(x=>String(x.opportunity||'').toLowerCase().includes('detect')).length,risk=items.filter(x=>String(x.risk||'').toLowerCase().includes('alto')).length,actions=items.filter(x=>x.next_move).length;
  const vals={Positivo:0,Neutro:0,Negativo:0};items.forEach(x=>{vals[x.sentiment]=(vals[x.sentiment]||0)+1});
@@ -68,7 +80,7 @@ function renderHistory(items){
  const head=table.querySelector('.th');table.innerHTML=(head?head.outerHTML:'')+rows;
  table.querySelectorAll('.live-history-row').forEach(r=>r.addEventListener('click',()=>{const x=items[Number(r.dataset.liveIndex)];window.AURA_DYNAMIC_MEETING=x;window.dispatchEvent(new CustomEvent('aura:load-meeting',{detail:x}));document.querySelector('[data-view="insights"]')?.click()}));
 }
-async function load(){try{const res=await fetch('/api/meetings?limit=50',{headers:{Accept:'application/json'}});if(!res.ok)return;const data=await res.json();const items=Array.isArray(data)?data:(data.meetings||[]);window.AURA_SERVER_MEETINGS=items;window.AURA_CLIENT_MEMORY=new Map();items.forEach(x=>{const name=(x.client_name&&x.client_name!=='Cliente não identificado')?x.client_name:(x.file_name||'Cliente não identificado');if(!window.AURA_CLIENT_MEMORY.has(name))window.AURA_CLIENT_MEMORY.set(name,[]);window.AURA_CLIENT_MEMORY.get(name).push(x)});applyMetrics(items);renderConsolidated(items);if(items.length){renderHistory(items);renderClients(items)}else{renderClients([])}}catch(e){console.info('AURA dynamic data unavailable:',e)}}
+async function load(){try{const res=await fetch('/api/meetings?limit=50',{headers:{Accept:'application/json'}});if(!res.ok)return;const data=await res.json();const items=Array.isArray(data)?data:(data.meetings||[]);window.AURA_SERVER_MEETINGS=items;window.AURA_CLIENT_MEMORY=new Map();items.forEach(x=>{const name=(x.client_name&&x.client_name!=='Cliente não identificado')?x.client_name:(x.file_name||'Cliente não identificado');if(!window.AURA_CLIENT_MEMORY.has(name))window.AURA_CLIENT_MEMORY.set(name,[]);window.AURA_CLIENT_MEMORY.get(name).push(x)});applyMetrics(items);renderConsolidated(items);renderActionCenter(items);if(items.length){renderHistory(items);renderClients(items)}else{renderClients([])}}catch(e){console.info('AURA dynamic data unavailable:',e)}}
 window.addEventListener('aura:meeting-saved',()=>setTimeout(load,250));
 window.addEventListener('aura:load-meeting',e=>{const x=e.detail;if(!x)return;const ta=document.getElementById('transcript');if(ta&&x.transcript)ta.value=x.transcript;const p={sentiment:x.sentiment||'Neutro',cls:sentimentClass(x.sentiment),risk:x.risk||'Médio',opp:x.opportunity||'Em avaliação',confidence:x.sentiment_confidence||0,score:Number(x.risk_score||x.opportunity_score||x.sentiment_confidence||0),impact:x.impact||(x.risk&&String(x.risk).toLowerCase().includes('alto')?'Retenção':'Conversão'),priority:x.priority||'Média',deadline:x.deadline||'A definir',action:x.next_move||'Definir próximo movimento',howTo:x.why_it_matters||'Use as evidências e o próximo movimento registrados nesta reunião para orientar o follow-up.',insight:x.summary||'Reunião carregada do histórico persistido.'};window.setTimeout(()=>{if(typeof window.__auraSetDeep==='function')window.__auraSetDeep(p,x.transcript||'');},0)});
 window.addEventListener('load',()=>setTimeout(load,700));
