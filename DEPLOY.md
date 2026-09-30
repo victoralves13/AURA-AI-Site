@@ -31,6 +31,9 @@ SUPABASE_SERVICE_ROLE_KEY=...
 AURA_AUDIO_BUCKET=aura-audio
 AURA_OPENAI_ANALYSIS_MODEL=gpt-6-sol
 AURA_OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
+
+# Projeto atual
+SUPABASE_URL=https://vveochvgvilukgpfxbht.supabase.co
 ```
 
 A chave da OpenAI e a service-role key do Supabase **nunca** devem entrar no GitHub ou no JavaScript do navegador.
@@ -67,7 +70,7 @@ python -m uvicorn api.index:app --host 127.0.0.1 --port 8000
 
 A API FastAPI fica em `api/index.py` e pode ser publicada junto do projeto. O frontend usa o mesmo domínio quando `AURA_API_BASE` não é definido.
 
-Para reuniões longas, a duração máxima da Function depende do plano da Vercel. No Hobby, o limite atual é 300 segundos; Pro/Enterprise podem usar durações maiores com Fluid Compute.
+Para reuniões longas, a duração máxima da Function depende do plano da Vercel. No Hobby, a Function está limitada a 300 segundos; Pro/Enterprise podem usar durações maiores com Fluid Compute. Para o produto final, reuniões muito longas devem evoluir para processamento assíncrono.
 
 ## Segurança
 
