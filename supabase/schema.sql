@@ -48,3 +48,18 @@ alter table public.meetings enable row level security;
 
 -- The first MVP uses the server-side service-role key only.
 -- Do not expose SUPABASE_SERVICE_ROLE_KEY in browser code.
+
+
+-- Private audio bucket used by the cloud ingestion pipeline.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'aura-audio',
+  'aura-audio',
+  false,
+  104857600,
+  ARRAY['audio/mpeg','audio/wav','audio/x-wav','audio/mp4','audio/x-m4a','audio/webm','audio/ogg','audio/m4a','video/mp4']::text[]
+)
+on conflict (id) do update
+set public = false,
+    file_size_limit = 104857600,
+    allowed_mime_types = excluded.allowed_mime_types;
