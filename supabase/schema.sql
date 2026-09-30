@@ -21,6 +21,14 @@ create table if not exists public.meetings (
   priority text,
   impact text,
   why_it_matters text,
+  context text not null default 'Outro',
+  is_demo boolean not null default false,
+  demo_scenario text,
+  meeting_title text,
+  decisions jsonb not null default '[]'::jsonb,
+  pending_actions jsonb not null default '[]'::jsonb,
+  important_signals jsonb not null default '[]'::jsonb,
+  participants jsonb not null default '[]'::jsonb,
   intent text,
   objections jsonb not null default '[]'::jsonb,
   products jsonb not null default '[]'::jsonb,
@@ -35,6 +43,8 @@ create table if not exists public.meetings (
 create index if not exists meetings_created_at_idx on public.meetings (created_at desc);
 create index if not exists meetings_sentiment_idx on public.meetings (sentiment);
 create index if not exists meetings_risk_idx on public.meetings (risk);
+create index if not exists meetings_context_idx on public.meetings (context);
+create index if not exists meetings_demo_idx on public.meetings (is_demo);
 
 alter table public.meetings add column if not exists risk_score integer;
 alter table public.meetings add column if not exists opportunity_score integer;
@@ -43,6 +53,14 @@ alter table public.meetings add column if not exists risk_signals jsonb not null
 alter table public.meetings add column if not exists priority text;
 alter table public.meetings add column if not exists impact text;
 alter table public.meetings add column if not exists why_it_matters text;
+alter table public.meetings add column if not exists context text not null default 'Outro';
+alter table public.meetings add column if not exists is_demo boolean not null default false;
+alter table public.meetings add column if not exists demo_scenario text;
+alter table public.meetings add column if not exists meeting_title text;
+alter table public.meetings add column if not exists decisions jsonb not null default '[]'::jsonb;
+alter table public.meetings add column if not exists pending_actions jsonb not null default '[]'::jsonb;
+alter table public.meetings add column if not exists important_signals jsonb not null default '[]'::jsonb;
+alter table public.meetings add column if not exists participants jsonb not null default '[]'::jsonb;
 
 alter table public.meetings enable row level security;
 
