@@ -68,3 +68,18 @@ header .eyebrow{display:none!important}
  .aura-kpis strong{font-size:22px}
  .aura-top-status{display:none}
 }
+/* Intelligence workspace cleanup */
+.intel-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.intel-kpis>div{border:1px solid rgba(130,180,210,.14);background:rgba(8,18,30,.72);padding:18px 16px;min-height:82px}
+.intel-kpis span{display:block;font-size:9px;letter-spacing:.14em;color:#78909b}
+.intel-kpis b{display:block;margin-top:8px;font-size:25px;color:#eef7fb;font-weight:600}
+.intel-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-bottom:12px}
+.intel-grid .detail-panel,.intel-evidence{margin:0}
+.intel-grid h3{margin:10px 0 6px;font-size:17px;font-weight:500;color:#edf7fa}
+.intel-reading{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:13px 0;border-top:1px solid rgba(130,180,210,.1)}
+.intel-reading:first-of-type{border-top:0}
+.intel-reading b{display:block;font-size:12px;color:#eaf5f8;font-weight:500}
+.intel-reading small,.intel-reading span{display:block;margin-top:4px;color:#7e939d;font-size:9px}
+.intel-reading>span{text-align:right;white-space:nowrap}
+@media(max-width:900px){.intel-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.intel-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.intel-kpis{grid-template-columns:1fr}.intel-reading{display:block}.intel-reading>span{text-align:left}}
