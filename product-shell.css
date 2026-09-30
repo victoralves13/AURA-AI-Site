@@ -17,3 +17,32 @@ main{transition:margin-left .22s ease}
 .evolution-client{margin-top:10px;padding:20px;border:1px solid var(--line);border-radius:14px;background:rgba(8,17,23,.72)}.evolution-head{display:flex;justify-content:space-between;gap:20px}.evolution-head h3{margin:6px 0 0;font-size:15px}.evolution-head strong{align-self:center;color:var(--cyan);font:9px 'DM Mono'}.evolution-track{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:18px}.evolution-track>div{padding:11px;border:1px solid var(--line);border-radius:9px;background:#071116}.evolution-track span{display:block;color:var(--cyan);font:8px 'DM Mono'}.evolution-track b{display:block;margin-top:7px;font-size:10px}.evolution-track small{display:block;margin-top:4px;color:#667c84;font-size:8px}.evolution-note{margin:14px 0 0;padding-top:13px;border-top:1px solid rgba(170,220,230,.07);color:#8ca0a7;font-size:10px;line-height:1.6}
 @media(max-width:1050px){.shell-card-grid{grid-template-columns:1fr 1fr}.meeting-workspace-grid{grid-template-columns:1fr}.meeting-list{max-height:none}.context-options{grid-template-columns:1fr 1fr}.detail-columns{grid-template-columns:1fr}.detail-metrics{grid-template-columns:1fr 1fr}.evolution-track{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.rail{position:relative!important;width:100%!important;height:auto!important}.rail-collapse{display:none}.shell-new-analysis{margin-bottom:12px}.shell-nav-label{display:none}.shell-nav{width:auto;flex:0 0 auto}.rail nav{display:flex;gap:5px;overflow:auto;max-height:none}.rail .brand{padding-bottom:12px}.shell-card-grid{grid-template-columns:1fr}.context-options{grid-template-columns:1fr}.meeting-toolbar,.action-shell-row,.shell-page-head{align-items:flex-start;flex-direction:column}.meeting-filter{flex-wrap:wrap}.evolution-track{grid-template-columns:1fr 1fr}.meeting-detail{min-height:0}}
+
+/* AURA shell refinements — section-local navigation and detail workspaces */
+.shell-local-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 14px;padding-bottom:1px;border-bottom:1px solid rgba(170,220,230,.08)}
+.shell-local-tabs button{border:1px solid transparent;background:transparent;color:#71858d;padding:9px 11px;border-radius:9px;cursor:pointer;font:8px 'DM Mono',monospace;transition:.18s}
+.shell-local-tabs button:hover{color:#cfe5e8;background:rgba(101,231,245,.04)}
+.shell-local-tabs button.active{color:#e8fbfd;border-color:rgba(101,231,245,.2);background:rgba(101,231,245,.075)}
+.meeting-local-content{min-height:230px}
+.detail-micro-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.detail-micro-grid>div{padding:12px;border:1px solid var(--line);border-radius:10px;background:#071116}
+.detail-micro-grid span{display:block;color:#61777f;font:7px 'DM Mono'}
+.detail-micro-grid b{display:block;margin-top:6px;font-size:10px}
+.timeline-full{grid-column:1/-1}
+.meeting-timeline{display:grid;gap:0;margin-top:12px}
+.meeting-timeline-item{display:grid;grid-template-columns:12px 1fr;gap:12px;position:relative;padding:0 0 18px}
+.meeting-timeline-item>i{width:7px;height:7px;margin-top:5px;border-radius:50%;background:#526970;box-shadow:0 0 0 4px rgba(82,105,112,.08)}
+.meeting-timeline-item:not(:last-child)>i:after{content:'';position:absolute;left:3px;top:12px;bottom:0;width:1px;background:rgba(170,220,230,.1)}
+.meeting-timeline-item.current>i{background:var(--cyan);box-shadow:0 0 12px rgba(101,231,245,.55),0 0 0 4px rgba(101,231,245,.08)}
+.meeting-timeline-item span{display:block;color:#60767e;font:8px 'DM Mono'}
+.meeting-timeline-item b{display:block;margin-top:5px;font-size:10px}
+.meeting-timeline-item p{margin:5px 0 0;color:#71858d;font-size:9px;line-height:1.6}
+.client-detail-shell{margin-top:14px;padding:21px;border:1px solid rgba(101,231,245,.13);border-radius:15px;background:linear-gradient(145deg,rgba(8,18,25,.9),rgba(5,12,16,.8));animation:auraGuideIn .25s ease both}
+.client-detail-shell .detail-panel{margin-top:10px}
+.client-detail-shell .detail-metrics{margin-bottom:0}
+.signal-shell-row{transition:.18s ease}
+.signal-shell-row:focus-visible,.client-shell-card:focus-visible,.meeting-row:focus-visible{outline:1px solid rgba(101,231,245,.55);outline-offset:2px}
+#shellRiskDetail,#shellOpportunityDetail{margin-top:12px}
+.rail-collapse{z-index:2}
+@media(max-width:1050px){.detail-micro-grid{grid-template-columns:1fr}.timeline-full{grid-column:auto}}
+@media(max-width:700px){.shell-local-tabs{overflow:auto;flex-wrap:nowrap}.shell-local-tabs button{white-space:nowrap}.detail-micro-grid{grid-template-columns:1fr}.client-detail-shell{padding:16px}}
