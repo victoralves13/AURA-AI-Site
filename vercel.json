@@ -1,10 +1,5 @@
 {
   "cleanUrls": true,
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 300
-    }
-  },
   "headers": [
     {
       "source": "/(index.html|app.js|dynamic-data.js|real-engine.js|persistence.js|styles.css|brand.css|app-enhancements.css|real-engine.css)",
