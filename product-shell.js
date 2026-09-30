@@ -144,6 +144,7 @@ function evolution(){
  g.forEach((v,n)=>{if(v.length<2)return;v.sort((x,y)=>new Date(x.created_at)-new Date(y.created_at));const f=v[0],l=v.at(-1),change=f.risk!==l.risk?'Risco: '+(f.risk||'—')+' → '+(l.risk||'—'):f.sentiment!==l.sentiment?'Sentimento: '+(f.sentiment||'—')+' → '+(l.sentiment||'—'):f.opportunity!==l.opportunity?'Oportunidade: '+(f.opportunity||'—')+' → '+(l.opportunity||'—'):'Sem mudança estrutural detectada';out+='<div class="evolution-client"><div class="evolution-head"><div><span class="eyebrow">CLIENTE</span><h3>'+esc(n)+'</h3></div><strong>'+esc(change)+'</strong></div><div class="evolution-track">'+v.slice(-6).map((m,i)=>'<div><span>R'+(v.length-Math.min(5,v.length-1-i))+'</span><b>'+esc(m.sentiment||'—')+'</b><small>Risco '+esc(m.risk||'—')+'</small><small>'+fmt(m.created_at)+'</small></div>').join('')+'</div><p class="evolution-note">'+esc(l.summary||l.why_it_matters||'Sem leitura registrada.')+'</p></div>'});
  h.innerHTML=out||'<div class="shell-empty"><strong>Sem histórico suficiente por cliente</strong><span>Quando o mesmo cliente aparecer em reuniões diferentes, o AURA mostrará o que mudou.</span></div>';
 }
+window.__auraOpenMeeting=(m)=>{activate('history',false);setTimeout(()=>{const a=items();const i=a.findIndex(x=>x&&x.id===m?.id);const b=document.querySelector('.meeting-row[data-mi="'+i+'"]');if(b)b.click()},80)};
 function bind(){
  document.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
 }
