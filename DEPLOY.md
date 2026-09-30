@@ -27,7 +27,7 @@ Configure no ambiente do backend:
 ```text
 OPENAI_API_KEY=...
 SUPABASE_URL=...
-SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_SECRET_KEY=...
 AURA_AUDIO_BUCKET=aura-audio
 AURA_OPENAI_ANALYSIS_MODEL=gpt-6-sol
 AURA_OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
@@ -36,7 +36,7 @@ AURA_OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
 SUPABASE_URL=https://vveochvgvilukgpfxbht.supabase.co
 ```
 
-A chave da OpenAI e a service-role key do Supabase **nunca** devem entrar no GitHub ou no JavaScript do navegador.
+A chave da OpenAI e a secret key do Supabase **nunca** devem entrar no GitHub ou no JavaScript do navegador.
 
 ## Upload de áudio
 
@@ -75,7 +75,7 @@ Para reuniões longas, a duração máxima da Function depende do plano da Verce
 ## Segurança
 
 - `OPENAI_API_KEY`: somente backend.
-- `SUPABASE_SERVICE_ROLE_KEY`: somente backend.
+- `SUPABASE_SECRET_KEY`: somente backend.
 - bucket de áudio: privado.
 - upload: URL assinada e temporária.
 - dados de reunião: Supabase.
