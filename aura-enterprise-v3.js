@@ -87,9 +87,10 @@ function addStatus(){
  actions.insertBefore(s,actions.firstChild);
 }
 function cleanProfile(){
- const p=$('.aura-v2-profile');if(!p)return;
- p.classList.add('aura-profile-clean');
- const avatar=$('.aura-v2-profile-avatar',p);if(avatar)avatar.textContent='VA';
+  const p=$('.aura-v2-profile');
+  if(p)p.classList.add('aura-hide');
+  const legacy=$('.aura-v2-profile-avatar');
+  legacy.forEach(x=>x.classList.add('aura-hide'));
 }
 function removeLegacyAnalysis(){
  const old=$('#analysis .analysis-layout');if(old)old.classList.add('aura-hide');
