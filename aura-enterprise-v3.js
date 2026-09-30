@@ -51,7 +51,18 @@ function renderOverview(){
  const actions=a.filter(x=>x.next_move);
  const latest=a.slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0)).slice(0,4);
  const trend=a.slice().sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0)).slice(-6);
- const trendBars=trend.map(x=>Math.max(18,Math.min(100,Number(x.risk_score||0)||35))).map((h,i)=>'<i style="height:'+h+'%;opacity:'+(0.35+i*.1)+'"></i>').join('');
+ const trendRows=trend.map((m,i)=>{
+   const score=Math.max(0,Math.min(100,Number(m.risk_score)||0));
+   const height=Math.max(8,score);
+   return '<div class="aura-trend-item" title="'+esc(client(m))+' · risco '+score+'% · '+esc(fmt(m.created_at))+'">'+
+     '<div class="aura-trend-value">'+score+'%</div>'+
+     '<div class="aura-trend-bar"><i style="height:'+height+'%"></i></div>'+
+     '<div class="aura-trend-label">'+esc(client(m))+'</div>'+
+     '<small>'+esc(fmt(m.created_at))+'</small>'+
+   '</div>';
+ }).join('');
+ const trendValid=trend.filter(m=>Number.isFinite(Number(m.risk_score))).length;
+ const trendAvg=trendValid?Math.round(trend.reduce((s,m)=>s+(Number(m.risk_score)||0),0)/trendValid):0;
  host.innerHTML=
  '<div class="aura-clean-head"><div><h2>Inteligência da operação</h2></div></div>'+
  '<div class="aura-kpis">'+
@@ -69,9 +80,9 @@ function renderOverview(){
    (latest.map(m=>'<button class="aura-board-row" data-shell-view="history"><span class="aura-date">'+esc(fmt(m.created_at))+'</span><div><b>'+esc(client(m))+(demo(m)?' <small class="aura-demo">DEMO</small>':'')+'</b><small>'+esc(m.context||m.intelligence_type||'Outro')+'</small></div><em>'+esc(m.sentiment||'—')+'</em></button>').join('')||
    '<div class="aura-empty-row"><b>Nenhuma reunião</b><small>Execute uma análise para começar a construir a memória.</small></div>')+
    '</section>'+
-   '<section class="aura-board-card aura-evolution"><div class="aura-card-head"><h3>O que mudou?</h3><button class="aura-link" data-shell-view="evolution">Abrir evolução</button></div>'+
-   '<div class="aura-mini-chart">'+(trendBars||'<div class="aura-chart-empty">Aguardando histórico</div>')+'</div>'+
-   '<div class="aura-chart-meta"><span>Histórico de sinais</span><b>'+a.length+' registros</b></div></section>'+
+   '<section class="aura-board-card aura-evolution"><div class="aura-card-head"><div><h3>O que mudou?</h3><small class="aura-chart-subtitle">Evolução do nível de risco nas reuniões mais recentes</small></div><button class="aura-link" data-shell-view="evolution">Abrir evolução</button></div>'+
+   '<div class="aura-mini-chart">'+(trendRows||'<div class="aura-chart-empty">Aguardando histórico</div>')+'</div>'+
+   '<div class="aura-chart-meta"><span>Risco por reunião · 0–100%</span><b>'+(trendValid?('média '+trendAvg+'%'):'Sem dados de risco')+'</b></div></section>'+
    '<section class="aura-board-card"><div class="aura-card-head"><h3>Próximos movimentos</h3><button class="aura-link" data-shell-view="actions">Ver ações</button></div>'+
    (actions.slice(0,4).map(m=>'<button class="aura-board-row" data-shell-view="actions"><span class="aura-dot cyan"></span><div><b>'+esc(m.next_move)+'</b><small>'+esc(client(m))+' · '+esc(m.owner||'Responsável não definido')+'</small></div><em>'+esc(m.priority||'—')+'</em></button>').join('')||
    '<div class="aura-empty-row"><b>Nenhuma ação</b><small>Decisões e próximos movimentos aparecerão aqui.</small></div>')+
