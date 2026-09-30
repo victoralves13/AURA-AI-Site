@@ -64,7 +64,7 @@ def _supabase_request(method: str, path: str, payload=None):
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
 def _save_meeting(data: dict):
-    fields = ["source_type","file_name","transcript","summary","context","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","next_move","owner","deadline","model"]
+    fields = ["source_type","file_name","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
     result = _supabase_request("POST", "meetings", payload)
