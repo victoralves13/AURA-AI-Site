@@ -81,16 +81,28 @@ function renderOverview(){
  host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>document.querySelector('.shell-nav[data-shell-view="analysis"]')?.click());
 }
 
+function renderHistoryClean(){
+ const h=$('#history'); if(!h)return;
+ let host=$('#auraHistoryClean',h);
+ if(!host){host=document.createElement('div');host.id='auraHistoryClean';h.appendChild(host)}
+ const a=meetings().slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0));
+ host.innerHTML='<div class="aura-clean-head"><div><span class="aura-section-label">REUNIÕES</span><h2>Histórico de reuniões</h2></div></div>'+
+ (a.length?'<div class="aura-history-list">'+a.map((m,i)=>'<button class="aura-history-row" data-history="'+i+'"><span class="aura-history-status '+(risk(m).includes('alto')?'danger':'')+'"></span><div><b>'+esc(client(m))+(demo(m)?' <small class="aura-demo">DEMO</small>':'')+'</b><small>'+esc(m.context||m.intelligence_type||'Outro')+' · '+esc(m.sentiment||'—')+' · risco '+esc(m.risk||'—')+'</small></div><time>'+esc(fmt(m.created_at))+'</time></button>').join('')+'</div>':'<div class="aura-empty-row aura-history-empty"><b>Nenhuma reunião registrada</b><small>As reuniões analisadas aparecerão aqui automaticamente.</small></div>');
+ host.querySelectorAll('[data-history]').forEach(b=>b.onclick=()=>{
+   const m=a[Number(b.dataset.history)];
+   document.querySelector('.shell-nav[data-shell-view="history"]')?.click();
+   setTimeout(()=>window.dispatchEvent(new CustomEvent('aura:meeting-selected',{detail:m})),60);
+ });
+ $('.section-head',h).forEach(x=>x.classList.add('aura-hide'));
+ $('.table,.client-grid,.action-center,.customer360-card',h).forEach(x=>x.classList.add('aura-hide'));
+}
 function addStatus(){
  const actions=$('.top-actions');if(!actions||$('#auraTopStatus'))return;
  const s=document.createElement('div');s.id='auraTopStatus';s.className='aura-top-status';s.innerHTML='<span></span>AURA ENGINE · ONLINE';
  actions.insertBefore(s,actions.firstChild);
 }
 function cleanProfile(){
-  const p=$('.aura-v2-profile');
-  if(p)p.classList.add('aura-hide');
-  const legacy=$('.aura-v2-profile-avatar');
-  legacy.forEach(x=>x.classList.add('aura-hide'));
+  // Keep the real profile control. Only the obsolete static header avatar was removed from index.html.
 }
 function removeLegacyAnalysis(){
  const old=$('#analysis .analysis-layout');if(old)old.classList.add('aura-hide');
@@ -108,9 +120,10 @@ function cleanGeneratedPages(){
  });
 }
 function run(){
- cleanShell();addStatus();cleanProfile();removeLegacyAnalysis();removeDuplicateAnalysisButtons();cleanGeneratedPages();renderOverview();
+ cleanShell();addStatus();cleanProfile();removeLegacyAnalysis();removeDuplicateAnalysisButtons();cleanGeneratedPages();renderOverview();renderHistoryClean();
 }
 let timer;
-function boot(){run();new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(run,120)}).observe($('main')||document.body,{childList:true,subtree:true});window.addEventListener('aura:meeting-saved',()=>setTimeout(run,300));}
+function boot(){run();new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(run,120)}).observe($('main')||document.body,{childList:true,subtree:true});window.addEventListener('aura:meeting-saved',()=>setTimeout(run,300));
+  window.addEventListener('aura:meeting-selected',e=>{const m=e.detail;if(m&&window.__auraOpenMeeting)window.__auraOpenMeeting(m)});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
