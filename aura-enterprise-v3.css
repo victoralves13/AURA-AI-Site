@@ -96,3 +96,46 @@ header .eyebrow{display:none!important}
 .aura-history-row small{display:block;margin-top:5px;font-size:9px;color:#718891}
 .aura-history-row time{font-size:9px;color:#718891;white-space:nowrap}
 .aura-history-empty{margin-top:0;min-height:100px}
+
+/* Final readability pass — clearer enterprise density */
+.aura-section-label{font-size:9px;letter-spacing:.12em}
+.aura-clean-head{padding:8px 0 20px}
+.aura-clean-head h2{font-size:30px;line-height:1.15}
+.aura-clean-action{padding:10px 14px;font-size:9px}
+.aura-kpis{gap:12px;margin:16px 0}
+.aura-kpis>div{min-height:96px;padding:16px 17px}
+.aura-kpis span{font-size:8px}
+.aura-kpis strong{font-size:29px;margin:9px 0 3px}
+.aura-kpis small{font-size:9px;line-height:1.4}
+.aura-dashboard-grid{gap:12px}
+.aura-board-card{padding:18px}
+.aura-card-head{margin-bottom:12px}
+.aura-card-head h3{font-size:14px}
+.aura-link{font-size:9px}
+.aura-board-row{grid-template-columns:10px minmax(0,1fr) minmax(70px,auto);gap:11px;padding:13px 4px}
+.aura-board-row b{font-size:11px;line-height:1.35}
+.aura-board-row small{font-size:9px;line-height:1.45;margin-top:4px}
+.aura-board-row em{font-size:9px;text-align:right}
+.aura-date{font-size:8px}
+.aura-demo{font-size:7px!important}
+.aura-empty-row b{font-size:11px}
+.aura-empty-row small{font-size:9px;line-height:1.45}
+.aura-chart-meta{font-size:9px}
+.aura-history-list{overflow:hidden}
+.aura-history-row{grid-template-columns:10px minmax(0,1fr) minmax(90px,auto);gap:16px;padding:17px 19px}
+.aura-history-row b{font-size:13px;line-height:1.35}
+.aura-history-row small{font-size:10px;line-height:1.45;margin-top:6px}
+.aura-history-row time{font-size:9px;text-align:right}
+.intel-kpis{gap:14px}
+.intel-kpis span{font-size:10px}
+.intel-kpis b{font-size:27px}
+.intel-grid h3{font-size:18px}
+.intel-reading{padding:15px 4px;gap:24px}
+.intel-reading b{font-size:13px}
+.intel-reading small,.intel-reading span{font-size:10px;line-height:1.4}
+@media(max-width:700px){
+ .aura-board-row{grid-template-columns:9px minmax(0,1fr)}
+ .aura-board-row em{grid-column:2;text-align:left;margin-top:2px}
+ .aura-history-row{grid-template-columns:9px minmax(0,1fr)}
+ .aura-history-row time{grid-column:2;text-align:left;margin-top:3px}
+}
