@@ -25,7 +25,7 @@
     return originalFetch(base + "/api/analyze-stored-audio", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({path:meta.path,file_name:file.name,client_name:"Cliente não identificado"})
+      body:JSON.stringify({path:meta.path,file_name:file.name,client_name:"Cliente não identificado",context:window.AURA_SELECTED_CONTEXT||"Outro"})
     });
   };
 })();
