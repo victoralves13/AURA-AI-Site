@@ -198,3 +198,16 @@ header .eyebrow{display:none!important}
 .aura-evolution .aura-card-head{align-items:flex-start}
 .aura-evolution .aura-chart-meta{padding-top:10px}
 @media(max-width:700px){.aura-mini-chart{gap:8px}.aura-trend-item{min-width:72px}.aura-trend-label{font-size:8px}.aura-trend-value{font-size:9px}}
+
+/* Risk evolution — proportional, spaced and presentation-ready */
+.aura-evolution .aura-mini-chart{height:180px;gap:20px;padding:18px 12px 0;align-items:flex-end;justify-content:space-between}
+.aura-evolution .aura-trend-item{min-width:78px;max-width:110px;gap:7px}
+.aura-evolution .aura-trend-value{font-size:11px;color:#d7f5f7}
+.aura-evolution .aura-trend-bar{height:105px;width:46px;position:relative;justify-content:center}
+.aura-evolution .aura-trend-bar::before{content:"";position:absolute;inset:0 0 0 50%;border-left:1px solid rgba(170,220,230,.045);z-index:0}
+.aura-evolution .aura-trend-bar i{position:relative;z-index:1;width:34px;min-height:4px;border-radius:5px 5px 2px 2px;background:linear-gradient(to top,rgba(101,231,245,.12),rgba(101,231,245,.82));box-shadow:0 0 16px rgba(101,231,245,.10);transition:height .25s ease}
+.aura-evolution .aura-trend-item:hover .aura-trend-bar i{box-shadow:0 0 22px rgba(101,231,245,.24)}
+.aura-evolution .aura-trend-label{font-size:9px;color:#c1d5da}
+.aura-evolution .aura-trend-item small{font-size:8px;color:#718991}
+@media(max-width:900px){.aura-evolution .aura-mini-chart{gap:14px}.aura-evolution .aura-trend-item{min-width:72px}.aura-evolution .aura-trend-bar{width:40px}.aura-evolution .aura-trend-bar i{width:30px}}
+@media(max-width:600px){.aura-evolution .aura-mini-chart{gap:10px;justify-content:flex-start}.aura-evolution .aura-trend-item{min-width:76px}.aura-evolution .aura-trend-bar{height:95px}}
