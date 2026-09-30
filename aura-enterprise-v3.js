@@ -53,7 +53,7 @@ function renderOverview(){
  const trend=a.slice().sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0)).slice(-6);
  const trendBars=trend.map(x=>Math.max(18,Math.min(100,Number(x.risk_score||0)||35))).map((h,i)=>'<i style="height:'+h+'%;opacity:'+(0.35+i*.1)+'"></i>').join('');
  host.innerHTML=
- '<div class="aura-clean-head"><div><h2>Inteligência da operação</h2></div><button class="aura-clean-action" data-go="analysis">Nova análise <b>+</b></button></div>'+
+ '<div class="aura-clean-head"><div><h2>Inteligência da operação</h2></div></div>'+
  '<div class="aura-kpis">'+
    '<div><span>REUNIÕES</span><strong>'+a.length+'</strong><small>'+real.length+' reais · '+demos.length+' demo</small></div>'+
    '<div><span>RISCOS</span><strong>'+risks.length+'</strong><small>atenções identificadas</small></div>'+
