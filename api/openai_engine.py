@@ -47,6 +47,8 @@ MAX_OPENAI_AUDIO_BYTES = 25 * 1024 * 1024
 SYSTEM_PROMPT = """
 Você é o motor de inteligência do AURA AI.
 
+O contexto selecionado pelo usuário é fornecido na mensagem de análise. Use-o como lente prioritária, sem inventar fatos.
+
 Sua função é transformar uma reunião real em inteligência estruturada e acionável,
 preservando fielmente o que foi dito.
 
@@ -78,7 +80,7 @@ def _client() -> OpenAI:
     return OpenAI()
 
 
-def analyze_transcript(transcript: str) -> AURAAnalysis:
+def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
     text = (transcript or "").strip()
     if len(text) < 4:
         raise ValueError("Transcrição vazia.")
@@ -87,7 +89,7 @@ def analyze_transcript(transcript: str) -> AURAAnalysis:
         model=ANALYSIS_MODEL,
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": text},
+            {"role": "user", "content": f"CONTEXTO DA ANÁLISE: {context or 'Outro'}\\n\\nTRANSCRIÇÃO:\\n{text}"},
         ],
         text_format=AURAAnalysis,
     )
