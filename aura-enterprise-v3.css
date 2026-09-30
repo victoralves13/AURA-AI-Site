@@ -139,3 +139,18 @@ header .eyebrow{display:none!important}
  .aura-history-row{grid-template-columns:9px minmax(0,1fr)}
  .aura-history-row time{grid-column:2;text-align:left;margin-top:3px}
 }
+
+/* Overview readability — latest meetings */
+.aura-board-card:nth-child(2) .aura-board-row{grid-template-columns:92px minmax(0,1fr) 86px;gap:16px;padding:17px 6px;min-height:72px}
+.aura-board-card:nth-child(2) .aura-board-row b{font-size:13px;line-height:1.4;font-weight:600}
+.aura-board-card:nth-child(2) .aura-board-row small{font-size:10px;line-height:1.5;margin-top:6px;display:block}
+.aura-board-card:nth-child(2) .aura-board-row em{font-size:10px;text-align:right;white-space:nowrap}
+.aura-board-card:nth-child(2) .aura-date{font-size:10px;color:#9bb0ba;white-space:nowrap}
+.aura-board-card:nth-child(2) .aura-demo{font-size:8px!important}
+.aura-board-card:nth-child(2) .aura-card-head h3{font-size:15px}
+.aura-board-card:nth-child(2) .aura-link{font-size:10px}
+@media(max-width:700px){
+ .aura-board-card:nth-child(2) .aura-board-row{grid-template-columns:1fr auto;gap:5px 12px}
+ .aura-board-card:nth-child(2) .aura-date{grid-column:1/2}
+ .aura-board-card:nth-child(2) .aura-board-row em{grid-column:2;grid-row:1/3}
+}
