@@ -2,7 +2,7 @@
   "cleanUrls": true,
   "headers": [
     {
-      "source": "/(index.html|app.js|dynamic-data.js|real-engine.js|persistence.js|styles.css|brand.css|app-enhancements.css|real-engine.css)",
+      "source": "/(index.html|app.js|dynamic-data.js|real-engine.js|persistence.js|styles.css|brand.css|app-enhancements.css|real-engine.css|product-shell.css|product-shell.js|cloud-bridge.js)",
       "headers": [
         {
           "key": "Cache-Control",
