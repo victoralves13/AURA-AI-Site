@@ -30,6 +30,7 @@ function activate(id,scroll=true){
  document.body.dataset.auraView=id;
  if(scroll)window.scrollTo({top:0,behavior:'smooth'});
  if(id==='history')meeting();
+ if(id==='insights')intelligence();
  if(id==='clients')clients();
  if(id==='risks')signals('shellRisks','risco');
  if(id==='opportunities')signals('shellOpportunities','oportunidade');
@@ -109,6 +110,27 @@ function signals(id,type){
  h.innerHTML='<div class="shell-list">'+a.map((m,i)=>'<button class="signal-shell-row" data-signal-index="'+i+'"><i class="'+type+'"></i><span><b>'+esc(m.client_name||m.file_name||'Reunião')+'</b><small>'+esc(m.summary||m.why_it_matters||'Sem contexto registrado.')+'</small></span><em>'+esc(type==='risco'?m.risk:m.opportunity)+'</em></button>').join('')+'</div><div id="'+detailId+'"></div>';
  h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>signalDetail(a[+b.dataset.signalIndex],type));
 }
+function intelligence(){
+ const h=document.getElementById('insights'); if(!h)return;
+ const a=items();
+ const risks=a.filter(x=>low(x.risk).includes('alto')||low(x.risk).includes('médio'));
+ const opps=a.filter(x=>low(x.opportunity).includes('detect'));
+ const acts=a.filter(x=>x.next_move);
+ const decisions=a.flatMap(x=>arr(x,'decisions')).filter(Boolean);
+ const evidence=a.flatMap(x=>[...arr(x,'evidence'),...arr(x,'important_signals')]).filter(Boolean);
+ const contexts={}; a.forEach(x=>{const k=x.context||x.intelligence_type||'Outro';contexts[k]=(contexts[k]||0)+1});
+ const topContext=Object.entries(contexts).sort((x,y)=>y[1]-x[1])[0];
+ const signalCounts={};
+ evidence.forEach(x=>{const k=low(x).replace(/[^a-z0-9áéíóúãõç ]/gi,'').trim();if(k)signalCounts[k]=(signalCounts[k]||0)+1});
+ const recurring=Object.entries(signalCounts).filter(x=>x[1]>1).sort((x,y)=>y[1]-x[1]).slice(0,5);
+ h.innerHTML='<div class="shell-page"><div class="shell-page-head"><div><h2>Inteligência</h2></div></div>'+
+ '<div class="intel-kpis"><div><span>REUNIÕES</span><b>'+a.length+'</b></div><div><span>RISCOS</span><b>'+risks.length+'</b></div><div><span>OPORTUNIDADES</span><b>'+opps.length+'</b></div><div><span>AÇÕES</span><b>'+acts.length+'</b></div></div>'+
+ '<div class="intel-grid">'+
+ '<section class="detail-panel"><span class="eyebrow">LEITURA DA OPERAÇÃO</span><h3>'+esc(a.length?('O contexto mais presente é '+(topContext?topContext[0]:'Outro')+'.'):'Aguardando histórico')+'</h3><p class="detail-muted">'+esc(a.length?('O AURA consolidou '+decisions.length+' decisão(ões), '+risks.length+' sinal(is) de risco e '+opps.length+' oportunidade(s) a partir das reuniões conhecidas.'):'Execute uma análise para começar a construir a inteligência acumulada.')+'</p></section>'+
+ '<section class="detail-panel"><span class="eyebrow">SINAIS RECORRENTES</span>'+(recurring.length?recurring.map(x=>'<div class="detail-line"><b>'+esc(x[0])+'</b><span>'+x[1]+' ocorrências</span></div>').join(''):'<div class="detail-muted">Ainda não há recorrência suficiente para apontar um padrão.</div>')+'</section>'+
+ '</div>'+
+ '<section class="detail-panel intel-evidence"><span class="eyebrow">ÚLTIMAS LEITURAS</span>'+(a.slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0)).slice(0,6).map(x=>'<div class="intel-reading"><div><b>'+esc(x.client_name||x.file_name||'Reunião')+'</b><small>'+esc(x.context||x.intelligence_type||'Outro')+' · '+esc(x.sentiment||'—')+'</small></div><span>Risco '+esc(x.risk||'—')+' · Oportunidade '+esc(x.opportunity||'—')+'</span></div>').join('')||'<div class="detail-muted">Nenhuma leitura registrada.</div>')+'</section></div>';
+}
 function actions(){
  const h=document.getElementById('shellActions');if(!h)return;
  const a=items().filter(x=>x.next_move);
@@ -146,7 +168,7 @@ function setup(){
   head.insertAdjacentElement('afterend',p);window.AURA_SELECTED_CONTEXT=C[0];
   p.querySelectorAll('[data-context]').forEach(x=>x.onclick=()=>{p.querySelectorAll('[data-context]').forEach(y=>y.classList.remove('selected'));x.classList.add('selected');window.AURA_SELECTED_CONTEXT=x.dataset.context});
  }
- bind();activate('overview',false);
+ bind();intelligence();activate('overview',false);
  window.addEventListener('aura:meeting-saved',()=>setTimeout(()=>{meeting();clients();signals('shellRisks','risco');signals('shellOpportunities','oportunidade');actions();evolution()},100));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
