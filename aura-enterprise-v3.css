@@ -89,7 +89,6 @@ header .eyebrow{display:none!important}
 .intel-reading>span{text-align:right;white-space:nowrap}
 @media(max-width:900px){.intel-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.intel-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.intel-kpis{grid-template-columns:1fr}.intel-reading{display:block}.intel-reading>span{text-align:left}}
-
 /* Clean meeting history */
 #auraHistoryClean{margin-top:18px}
 .aura-history-list{border:1px solid rgba(130,180,210,.13);background:rgba(7,17,24,.7)}
@@ -102,7 +101,6 @@ header .eyebrow{display:none!important}
 .aura-history-row small{display:block;margin-top:5px;font-size:9px;color:#718891}
 .aura-history-row time{font-size:9px;color:#718891;white-space:nowrap}
 .aura-history-empty{margin-top:0;min-height:100px}
-
 /* Final readability pass — clearer enterprise density */
 .aura-section-label{font-size:9px;letter-spacing:.12em}
 .aura-clean-head{padding:8px 0 20px}
@@ -145,7 +143,6 @@ header .eyebrow{display:none!important}
  .aura-history-row{grid-template-columns:9px minmax(0,1fr)}
  .aura-history-row time{grid-column:2;text-align:left;margin-top:3px}
 }
-
 /* Overview readability — latest meetings */
 .aura-board-card:nth-child(2) .aura-board-row{grid-template-columns:92px minmax(0,1fr) 86px;gap:16px;padding:17px 6px;min-height:72px}
 .aura-board-card:nth-child(2) .aura-board-row b{font-size:13px;line-height:1.4;font-weight:600}
@@ -160,7 +157,6 @@ header .eyebrow{display:none!important}
  .aura-board-card:nth-child(2) .aura-date{grid-column:1/2}
  .aura-board-card:nth-child(2) .aura-board-row em{grid-column:2;grid-row:1/3}
 }
-
 /* Overview cards — strong readability and clean column separation */
 .aura-dashboard-grid{gap:18px}
 .aura-board-card{padding:22px}
@@ -193,12 +189,10 @@ header .eyebrow{display:none!important}
  .aura-board-card:nth-child(2) .aura-board-row em{grid-column:2;grid-row:1/3}
  .aura-board-card:nth-child(2) .aura-date{grid-column:1}
 }
-
 /* Explainable risk evolution chart */
 .aura-evolution .aura-card-head{align-items:flex-start}
 .aura-evolution .aura-chart-meta{padding-top:10px}
 @media(max-width:700px){.aura-mini-chart{gap:8px}.aura-trend-item{min-width:72px}.aura-trend-label{font-size:8px}.aura-trend-value{font-size:9px}}
-
 /* Risk evolution — proportional, spaced and presentation-ready */
 .aura-evolution .aura-mini-chart{height:180px;gap:20px;padding:18px 12px 0;align-items:flex-end;justify-content:space-between}
 .aura-evolution .aura-trend-item{min-width:78px;max-width:110px;gap:7px}
@@ -222,4 +216,17 @@ header .eyebrow{display:none!important}
 @media(max-width:700px){
  .aura-evolution .aura-trend-label{font-size:11px}
  .aura-evolution .aura-trend-item small{font-size:10px}
+}
+
+/* Evolution chart — labels, clients and dates only */
+.aura-evolution .aura-trend-value{font-size:16px}
+.aura-evolution .aura-trend-label{font-size:15px;line-height:1.25}
+.aura-evolution .aura-trend-item small{font-size:13px}
+.aura-evolution .aura-chart-subtitle{font-size:12px}
+.aura-evolution .aura-chart-meta{font-size:12px}
+.aura-evolution .aura-chart-meta b{font-size:13px}
+@media(max-width:700px){
+ .aura-evolution .aura-trend-label{font-size:14px}
+ .aura-evolution .aura-trend-item small{font-size:12px}
+ .aura-evolution .aura-chart-subtitle{font-size:11px}
 }
