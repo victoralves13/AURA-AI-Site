@@ -83,3 +83,16 @@ header .eyebrow{display:none!important}
 .intel-reading>span{text-align:right;white-space:nowrap}
 @media(max-width:900px){.intel-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.intel-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.intel-kpis{grid-template-columns:1fr}.intel-reading{display:block}.intel-reading>span{text-align:left}}
+
+/* Clean meeting history */
+#auraHistoryClean{margin-top:18px}
+.aura-history-list{border:1px solid rgba(130,180,210,.13);background:rgba(7,17,24,.7)}
+.aura-history-row{width:100%;display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:14px;text-align:left;padding:15px 17px;border:0;border-bottom:1px solid rgba(130,180,210,.09);background:transparent;color:inherit;cursor:pointer}
+.aura-history-row:last-child{border-bottom:0}
+.aura-history-row:hover{background:rgba(30,130,170,.07)}
+.aura-history-status{width:7px;height:7px;border-radius:50%;background:#57d9e8;box-shadow:0 0 10px rgba(87,217,232,.45)}
+.aura-history-status.danger{background:#ff6b6b;box-shadow:0 0 10px rgba(255,107,107,.35)}
+.aura-history-row b{display:block;font-size:12px;font-weight:600;color:#eaf5f8}
+.aura-history-row small{display:block;margin-top:5px;font-size:9px;color:#718891}
+.aura-history-row time{font-size:9px;color:#718891;white-space:nowrap}
+.aura-history-empty{margin-top:0;min-height:100px}
