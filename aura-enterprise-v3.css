@@ -37,9 +37,15 @@ header .eyebrow{display:none!important}
 .aura-empty-row b{display:block;font-size:9px}
 .aura-empty-row small{display:block;color:#667c84;font-size:7px;margin-top:4px}
 .aura-evolution{grid-column:1/-1}
-.aura-mini-chart{height:105px;display:flex;align-items:flex-end;gap:8px;padding:12px 5px 5px;border-top:1px solid rgba(170,220,230,.06);border-bottom:1px solid rgba(170,220,230,.06)}
-.aura-mini-chart i{display:block;flex:1;min-height:8px;border-radius:3px 3px 0 0;background:linear-gradient(to top,rgba(101,231,245,.08),rgba(101,231,245,.65))}
-.aura-chart-empty{width:100%;text-align:center;color:#627880;font:7px 'DM Mono'}
+.aura-mini-chart{height:150px;display:flex;align-items:flex-end;gap:12px;padding:18px 8px 0;border-top:1px solid rgba(170,220,230,.06);border-bottom:1px solid rgba(170,220,230,.06);overflow-x:auto}
+.aura-trend-item{height:100%;min-width:86px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
+.aura-trend-value{font:700 10px 'DM Mono';color:#b9e8ed;line-height:1}
+.aura-trend-bar{height:92px;width:100%;max-width:54px;display:flex;align-items:flex-end;justify-content:center}
+.aura-trend-bar i{display:block;width:100%;min-height:6px;border-radius:5px 5px 2px 2px;background:linear-gradient(to top,rgba(101,231,245,.16),rgba(101,231,245,.78));box-shadow:0 0 14px rgba(101,231,245,.08)}
+.aura-trend-label{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#b8cdd2;font-size:9px;line-height:1.2}
+.aura-trend-item small{font:8px 'DM Mono';color:#667e86;white-space:nowrap}
+.aura-chart-subtitle{display:block;margin-top:4px;color:#70878f;font-size:9px;font-weight:400;line-height:1.4}
+.aura-chart-empty{width:100%;text-align:center;color:#627880;font:9px 'DM Mono'}
 .aura-chart-meta{display:flex;justify-content:space-between;padding-top:8px;color:#647a82;font:7px 'DM Mono'}
 .aura-chart-meta b{color:#a8c2c8}
 .shell-page-head h2{font-size:27px!important;margin:0!important}
@@ -187,3 +193,8 @@ header .eyebrow{display:none!important}
  .aura-board-card:nth-child(2) .aura-board-row em{grid-column:2;grid-row:1/3}
  .aura-board-card:nth-child(2) .aura-date{grid-column:1}
 }
+
+/* Explainable risk evolution chart */
+.aura-evolution .aura-card-head{align-items:flex-start}
+.aura-evolution .aura-chart-meta{padding-top:10px}
+@media(max-width:700px){.aura-mini-chart{gap:8px}.aura-trend-item{min-width:72px}.aura-trend-label{font-size:8px}.aura-trend-value{font-size:9px}}
