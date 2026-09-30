@@ -122,7 +122,7 @@ function removeLegacyAnalysis(){
 function removeDuplicateAnalysisButtons(){
  const buttons=$$('button').filter(b=>norm(b.textContent).includes('nova analise')||norm(b.textContent).includes('nova análise'));
  const primary=buttons.find(b=>b.classList.contains('shell-new-analysis'));
- buttons.forEach(b=>{if(b!==primary&&b.closest('.rail')===null&&b.closest('#history')===null)b.classList.add('aura-hide')});
+ buttons.forEach(b=>{if(b!==primary&&b.closest('.rail')===null)b.classList.add('aura-hide')});
 }
 function cleanGeneratedPages(){
  $$('.shell-generated-view .shell-page-head').forEach(h=>{
