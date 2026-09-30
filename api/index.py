@@ -42,13 +42,13 @@ def _clean(value: str | None) -> str:
 
 def _supabase() -> Client:
     url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    key = os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key or create_client is None:
         raise RuntimeError("Supabase server credentials não configuradas.")
     return create_client(url, key)
 
 def _supabase_request(method: str, path: str, payload=None):
-    url, key = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    url, key = os.getenv("SUPABASE_URL"), (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
     if not url or not key:
         return None
     import urllib.request
@@ -108,7 +108,7 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "aura-ai", "version": "1.0.0-cloud", "engine": "OpenAI + AURA Intelligence", "openai_configured": bool(os.getenv("OPENAI_API_KEY")), "supabase_configured": bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY")), "audio_storage": AUDIO_BUCKET}
+    return {"ok": True, "service": "aura-ai", "version": "1.0.0-cloud", "engine": "OpenAI + AURA Intelligence", "openai_configured": bool(os.getenv("OPENAI_API_KEY")), "supabase_configured": bool(os.getenv("SUPABASE_URL") and (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")), "audio_storage": AUDIO_BUCKET}
 
 @app.get("/api/meetings")
 def meetings(limit: int = 50):
