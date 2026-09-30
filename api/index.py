@@ -104,6 +104,7 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     result = {"ok": True, "source": source_type, "file_name": file_name, "client_name": client_name or "Cliente não identificado", "context": context or "Outro", "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
     if transcription_meta:
         result["transcription"] = transcription_meta
+    result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
     result.update(_save_meeting({**result, "source_type": source_type}))
     return result
 
