@@ -154,3 +154,36 @@ header .eyebrow{display:none!important}
  .aura-board-card:nth-child(2) .aura-date{grid-column:1/2}
  .aura-board-card:nth-child(2) .aura-board-row em{grid-column:2;grid-row:1/3}
 }
+
+/* Overview cards — strong readability and clean column separation */
+.aura-dashboard-grid{gap:18px}
+.aura-board-card{padding:22px}
+.aura-card-head{padding-bottom:5px;margin-bottom:14px}
+.aura-card-head h3{font-size:17px;line-height:1.25}
+.aura-link{font-size:11px}
+.aura-board-row{gap:16px;padding:16px 5px;min-height:78px}
+.aura-board-row b{font-size:14px;line-height:1.4}
+.aura-board-row small{font-size:11px;line-height:1.5;margin-top:6px}
+.aura-board-row em{font-size:11px}
+.aura-dot{width:8px;height:8px}
+.aura-attention .aura-board-row{grid-template-columns:12px minmax(0,1fr) 78px;gap:15px}
+.aura-attention .aura-board-row em{white-space:nowrap;text-align:right}
+.aura-board-card:nth-child(2) .aura-board-row{grid-template-columns:105px minmax(0,1fr) 86px;gap:18px;padding:18px 5px;min-height:86px}
+.aura-board-card:nth-child(2) .aura-board-row b{font-size:14px;line-height:1.4}
+.aura-board-card:nth-child(2) .aura-board-row small{font-size:11px;line-height:1.5;margin-top:7px}
+.aura-board-card:nth-child(2) .aura-board-row em{font-size:11px}
+.aura-board-card:nth-child(2) .aura-date{font-size:11px;line-height:1.4;color:#a7bac3}
+.aura-board-card:nth-child(2) .aura-demo{font-size:8px!important}
+.aura-kpis>div{min-height:108px;padding:19px}
+.aura-kpis span{font-size:9px}
+.aura-kpis strong{font-size:31px}
+.aura-kpis small{font-size:10px}
+.aura-evolution .aura-chart-meta{font-size:10px}
+.aura-evolution .aura-chart-meta b{font-size:11px}
+@media(max-width:900px){
+ .aura-attention .aura-board-row,.aura-board-card:nth-child(2) .aura-board-row{grid-template-columns:1fr auto}
+ .aura-attention .aura-board-row .aura-dot{grid-row:1/3}
+ .aura-attention .aura-board-row em{grid-column:2;grid-row:1/3}
+ .aura-board-card:nth-child(2) .aura-board-row em{grid-column:2;grid-row:1/3}
+ .aura-board-card:nth-child(2) .aura-date{grid-column:1}
+}
