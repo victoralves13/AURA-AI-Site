@@ -89,7 +89,7 @@ def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
         model=ANALYSIS_MODEL,
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"CONTEXTO DA ANÁLISE: {context or 'Outro'}\\n\\nTRANSCRIÇÃO:\\n{text}"},
+            {"role": "user", "content": f"CONTEXTO DA ANÁLISE: {context or 'Outro'}\n\\nTRANSCRIÇÃO:\\n{text}"},
         ],
         text_format=AURAAnalysis,
     )
