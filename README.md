@@ -1,74 +1,81 @@
 # AURA AI — Intelligent Meeting Insights
 
-Plataforma web do AURA AI para transformar reuniões comerciais em inteligência acionável, prioridades e próximos movimentos.
+O AURA AI é uma plataforma de inteligência que transforma reuniões reais em contexto estruturado, sinais, decisões, ações e evolução ao longo do tempo.
 
-O AURA transforma uma reunião em áudio em transcrição, sinais comerciais e próximo movimento. A versão atual foi estruturada para funcionar **sem API paga de IA**: a transcrição roda localmente com `faster-whisper`, a classificação de sentimento usa um **Random Forest treinado sobre a base comercial do projeto** e a leitura comercial usa um motor local de regras + evidências da transcrição.
+A experiência foi desenhada como produto empresarial: a conversa entra no AURA, a inteligência é estruturada e o histórico passa a alimentar decisões e acompanhamento.
 
 ## Fluxo atual
 
 ```text
-ÁUDIO
-  ↓
-faster-whisper LOCAL
-  ↓
-TRANSCRIÇÃO
-  ↓
-Random Forest · motor de sentimento
-  ↓
-Regras comerciais + evidências
-  ↓
-Sentimento · Oportunidade · Risco · Intenção · Objeções
-  ↓
-Next Move
-  ↓
-Histórico AURA / Supabase opcional
+ÁUDIO / TRANSCRIÇÃO
+        ↓
+Supabase Storage (áudio privado)
+        ↓
+AURA API / FastAPI
+        ↓
+OpenAI Transcribe
+        ↓
+OpenAI Responses + AURA Intelligence
+        ↓
+Riscos · Oportunidades · Decisões · Ações · Evidências
+        ↓
+Supabase meetings
+        ↓
+Memória · Customer 360 · Evolução · Action Center
 ```
 
-### Tecnologias
+## Produto
 
-- Python + FastAPI
-- faster-whisper para transcrição local
-- pandas + scikit-learn
-- Random Forest para sentimento
-- Supabase opcional para persistência
-- Frontend AURA em HTML/CSS/JavaScript
+A navegação principal é organizada por perguntas de negócio:
 
-## Rodar localmente
+- **Visão geral** — o que está acontecendo?
+- **Reuniões** — o que foi conversado?
+- **Clientes** — como está cada relacionamento?
+- **Inteligência** — o que o AURA entendeu?
+- **Riscos** — onde existe atenção necessária?
+- **Oportunidades** — o que pode ser explorado?
+- **Ações** — o que precisa ser executado?
+- **Evolução** — o que mudou?
+- **Nova análise** — como alimento o sistema?
 
-No Windows, abra o terminal na pasta do projeto:
+A análise pode receber um contexto operacional — Comercial, Financeiro, Operacional, Gestão, Estratégico, Risco & Compliance, Relacionamento ou Outro. Esse contexto é enviado ao motor de inteligência como lente de análise; as conclusões continuam limitadas às evidências da conversa.
+
+## Arquitetura
+
+- **Frontend:** HTML, CSS e JavaScript.
+- **API:** FastAPI em `api/index.py`.
+- **Inteligência:** OpenAI em `api/openai_engine.py`.
+- **Áudio:** upload direto para bucket privado do Supabase + URL assinada.
+- **Persistência:** `public.meetings` no Supabase.
+- **Memória:** histórico de reuniões, visão de cliente, sinais recorrentes e evolução.
+- **Deploy:** Vercel.
+
+As chaves privilegiadas ficam somente no backend. O navegador recebe apenas URLs temporárias para o fluxo de áudio.
+
+## Variáveis de ambiente
+
+```text
+OPENAI_API_KEY=
+AURA_OPENAI_ANALYSIS_MODEL=gpt-6-sol
+AURA_OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=
+AURA_AUDIO_BUCKET=aura-audio
+```
+
+## Execução local
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
+.venv\\Scripts\\activate
 pip install -r requirements.txt
 python -m uvicorn api.index:app --host 127.0.0.1 --port 8000
 ```
 
-Depois abra:
+Depois, abra `http://127.0.0.1:8000`.
 
-```text
-http://127.0.0.1:8000
-```
+## Princípio do produto
 
-Na primeira análise, o `faster-whisper` pode baixar o modelo escolhido e armazená-lo em cache. Depois disso, as análises seguintes reutilizam o modelo local.
+**Complexo por dentro. Simples por fora.**
 
-### Modelo padrão
-
-`AURA_WHISPER_MODEL=small`
-
-Para um computador mais simples, pode usar `base` ou `tiny`. Para uma máquina com GPU NVIDIA, é possível configurar `AURA_WHISPER_DEVICE=cuda` e o tipo de computação adequado.
-
-## Persistência
-
-O AURA funciona sem banco. Para salvar as reuniões no Supabase, configure no ambiente local:
-
-```text
-SUPABASE_URL=...
-SUPABASE_SERVICE_ROLE_KEY=...
-```
-
-A chave de serviço deve permanecer somente no backend local e nunca ser colocada no JavaScript do navegador.
-
-## Arquitetura futura
-
-A arquitetura mantém a separação entre interface, API, transcrição, Machine Learning e persistência. Isso permite trocar o motor local por outro provedor de IA no futuro sem reconstruir a experiência do produto.
+O AURA não trata cada reunião como um evento isolado. A arquitetura foi preparada para conectar conversa → inteligência → decisão → ação → acompanhamento → evolução.
