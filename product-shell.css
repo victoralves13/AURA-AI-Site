@@ -100,3 +100,37 @@ main{transition:margin-left .22s ease}
 .client-back-button:hover{color:#9af3fb;opacity:1;transform:translateX(-2px)}
 .client-detail-screen .client-detail-shell{margin-top:0}
 @media(max-width:700px){.client-back-button{width:28px;height:28px;font-size:22px}}
+
+/* Risk Center — deep client dossier navigation */
+.signal-list-screen{animation:auraGuideIn .22s ease both}
+.signal-detail-screen[hidden]{display:none!important}
+.signal-detail-screen{animation:auraGuideIn .22s ease both}
+.signal-detail-backbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 8px}
+.signal-back-button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;margin:0;border:0;outline:0;background:transparent;color:#67e7f4;cursor:pointer;transition:.18s;opacity:.82}
+.signal-back-button svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.signal-back-button:hover{color:#9af3fb;opacity:1;transform:translateX(-2px)}
+.risk-detail-shell{margin-top:0}
+.risk-intelligence-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:12px;margin-top:12px}
+.risk-detail-shell .detail-panel h3{margin:7px 0 7px;font-size:17px;color:#eaf6f8}
+.risk-detail-shell .detail-panel>p{font-size:12px;line-height:1.65;color:#a9bdc3}
+.risk-focus-box{margin-top:16px;padding:13px 14px;border:1px solid rgba(255,120,152,.15);border-radius:10px;background:rgba(255,120,152,.035)}
+.risk-focus-box span{display:block;font:9px 'DM Mono';letter-spacing:.1em;color:#ff9fac}
+.risk-focus-box strong{display:block;margin-top:6px;color:#f0dfe2;font-size:14px}
+.risk-focus-box small{display:block;margin-top:5px;color:#718891;font-size:10px}
+.risk-evidence-list{margin-top:9px}
+.risk-evidence-list .detail-evidence{font-size:11px;line-height:1.65;padding:12px 0}
+.risk-insights-list{display:grid;gap:8px;margin-top:10px}
+.risk-insight{padding:11px 12px;border:1px solid rgba(170,220,230,.08);border-radius:10px;background:rgba(101,231,245,.025)}
+.risk-insight>div{display:flex;justify-content:space-between;gap:10px}
+.risk-insight>div b{font:700 8px 'DM Mono';letter-spacing:.08em;color:#ff9fac}
+.risk-insight>div span{font:8px 'DM Mono';color:#8aa1a8}
+.risk-insight strong{display:block;margin-top:7px;color:#d9edf0;font-size:11px;line-height:1.45}
+.risk-insight p{margin:6px 0 0!important;color:#9eb1b8!important;font-size:10px!important;line-height:1.55!important}
+.risk-history-panel{margin-top:12px}
+.risk-mini-history{display:grid;gap:0;margin-top:10px}
+.risk-timeline-row{display:grid;grid-template-columns:130px 120px 1fr;gap:12px;padding:11px 0;border-top:1px solid rgba(150,210,220,.07);align-items:center}
+.risk-timeline-row span{font:8px 'DM Mono';color:#718891}
+.risk-timeline-row b{font-size:10px;color:#d5e8eb}
+.risk-timeline-row small{font-size:10px;line-height:1.5;color:#81979f}
+@media(max-width:850px){.risk-intelligence-grid{grid-template-columns:1fr}.risk-timeline-row{grid-template-columns:1fr;gap:4px}}
+@media(max-width:700px){.signal-back-button{width:28px;height:28px}}
