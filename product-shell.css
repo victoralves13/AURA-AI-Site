@@ -92,7 +92,7 @@ main{transition:margin-left .22s ease}
 .client-detail-screen[hidden]{display:none!important}
 .client-detail-screen{animation:auraGuideIn .22s ease both}
 .client-detail-backbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 8px}
-.client-back-button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;background:transparent;color:#67e7f4;cursor:pointer;font:500 22px/1 Arial,sans-serif;transition:.18s;opacity:.82}
+.client-back-button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;margin:0;border:0;outline:0;background:transparent;color:#67e7f4;cursor:pointer;transition:.18s;opacity:.82}.client-back-button svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.client-back-button:focus{outline:0;box-shadow:none}
 .client-back-button:hover{color:#9af3fb;opacity:1;transform:translateX(-2px)}
 .client-detail-screen .client-detail-shell{margin-top:0}
 @media(max-width:700px){.client-back-button{width:28px;height:28px;font-size:22px}}
