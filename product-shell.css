@@ -109,6 +109,7 @@ main{transition:margin-left .22s ease}
 .signal-back-button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;margin:0;border:0;outline:0;background:transparent;color:#67e7f4;cursor:pointer;transition:.18s;opacity:.82}
 .signal-back-button svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .signal-back-button:hover{color:#9af3fb;opacity:1;transform:translateX(-2px)}
+.signal-back-button svg path{d:path("M14.5 5.5 8 12l6.5 6.5");stroke:currentColor;fill:none}
 .risk-detail-shell{margin-top:0}
 .risk-intelligence-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:12px;margin-top:12px}
 .risk-detail-shell .detail-panel h3{margin:7px 0 7px;font-size:17px;color:#eaf6f8}
