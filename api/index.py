@@ -11,8 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from openai_engine import analyze_transcript, build_product_fields, transcribe_audio
-
 try:
     from supabase import Client, create_client
 except Exception:
@@ -21,6 +19,7 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parents[1]
 app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
+handler = app
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
@@ -99,6 +98,7 @@ def _download_stored_audio(path: str, target: str):
     urllib.request.urlretrieve(url, target)
 
 def _build_result(transcript: str, client_name: str, file_name: str, source_type: str, context: str = "Outro", transcription_meta: dict | None = None, is_demo: bool = False, demo_scenario: str | None = None, meeting_title: str | None = None):
+    from openai_engine import analyze_transcript, build_product_fields
     analysis = analyze_transcript(transcript, context=context)
     fields = build_product_fields(analysis)
     result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": meeting_title or file_name, "client_name": client_name or "Cliente não identificado", "context": context or "Outro", "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
@@ -161,6 +161,7 @@ def analyze_stored_audio(payload: StoredAudioRequest):
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
             temp_path = temp.name
         _download_stored_audio(payload.path, temp_path)
+        from openai_engine import transcribe_audio
         transcript, meta = transcribe_audio(temp_path)
         if not transcript:
             raise HTTPException(status_code=422, detail="Não foi possível transcrever o áudio.")
