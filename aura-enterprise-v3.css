@@ -126,10 +126,10 @@ header .eyebrow{display:none!important}
 .aura-empty-row small{font-size:9px;line-height:1.45}
 .aura-chart-meta{font-size:9px}
 .aura-history-list{overflow:hidden}
-.aura-history-row{grid-template-columns:10px minmax(0,1fr) minmax(90px,auto);gap:16px;padding:17px 19px}
-.aura-history-row b{font-size:18px;line-height:1.3;font-weight:650}
-.aura-history-row small{font-size:13px;line-height:1.4;margin-top:7px;color:#9eb2b9}
-.aura-history-row time{font-size:12px;text-align:right;color:#9eb2b9}
+.aura-history-row{grid-template-columns:10px minmax(0,1fr) minmax(90px,auto);gap:12px;padding:11px 14px}
+.aura-history-row b{font-size:12px;line-height:1.3;font-weight:600}
+.aura-history-row small{font-size:9px;line-height:1.4;margin-top:4px;color:#7f959d}
+.aura-history-row time{font-size:9px;text-align:right;color:#7f959d}
 .intel-kpis{gap:14px}
 .intel-kpis span{font-size:10px}
 .intel-kpis b{font-size:27px}
