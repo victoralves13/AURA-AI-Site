@@ -79,3 +79,5 @@ main{transition:margin-left .22s ease}
 .insight-meta{display:flex;gap:12px;margin-top:9px;color:#61777f;font:8px 'DM Mono';flex-wrap:wrap}
 .insight-empty strong{display:block;margin-top:8px;color:#c8dde1;font-size:12px}
 @media(max-width:700px){.insight-head{flex-direction:column}.insight-time{margin-left:0}.meeting-insight h4{font-size:12px}}
+
+.insight-evidence-text{padding:10px 12px;border-left:2px solid rgba(170,220,230,.18);background:rgba(170,220,230,.025);color:#9eb1b8;font-size:10px;line-height:1.6}
