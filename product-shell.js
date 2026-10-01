@@ -154,10 +154,11 @@ function clients(){
  const g=new Map();items().forEach(m=>{const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');if(!g.has(n))g.set(n,[]);g.get(n).push(m)});
  const names=[...new Set([...CLIENT_DEMO_ORDER,...g.keys()])];
  if(!names.length){h.innerHTML='<div class="shell-empty"><strong>Nenhum cliente na memória</strong><span>Clientes serão organizados conforme novas reuniões forem analisadas.</span></div>';return}
- let out='<div class="client-demo-banner"><span>CLIENTE 360</span><p>Selecione um cliente para abrir a evolução do relacionamento, os principais insights, sinais, oportunidades e próximos movimentos.</p></div><div class="shell-card-grid">';
+ let out='<div class="client-list-screen"><div class="client-demo-banner"><span>CLIENTE 360</span><p>Selecione um cliente para entrar no relacionamento completo, com evolução, insights, sinais, oportunidades e próximos movimentos.</p></div><div class="shell-card-grid">';
  names.forEach(n=>{const a=g.get(n)||[],d=clientDemo(n),r=a.length?a.filter(x=>low(x.risk).includes('alto')).length:(d?.status==='ATENÇÃO'?1:0),o=a.length?a.filter(x=>low(x.opportunity).includes('detect')).length:(d?1:0);const status=a.length?(r?'ATENÇÃO':'MONITORADO'):(d?.status||'DEMO');out+='<button class="client-shell-card" data-client-name="'+esc(n)+'"><div class="client-card-top"><span class="client-avatar">'+esc(n.slice(0,2).toUpperCase())+'</span><span class="detail-badge '+(status==='ATENÇÃO'?'danger':'')+'">'+esc(status)+'</span></div><h3>'+esc(n)+'</h3><p>'+ (a.length?a.length:d?.meetings||0) +' reunião'+((a.length?a.length:d?.meetings||0)===1?'':'ões')+' · '+(a.length?'última '+fmt(a[0].created_at):'visão demonstrativa')+'</p><div><span>'+r+' risco'+(r===1?'':'s')+' altos</span><span>'+o+' oportunidade'+(o===1?'':'s')+'</span></div></button>'});
- out+='</div><div id="clientWorkspaceDetail"></div>';h.innerHTML=out;
- h.querySelectorAll('[data-client-name]').forEach(b=>b.onclick=()=>clientDetail(b.dataset.clientName));
+ out+='</div></div><div class="client-detail-screen" id="clientWorkspaceDetail" hidden></div>';h.innerHTML=out;
+ const list=h.querySelector('.client-list-screen'),detailView=h.querySelector('.client-detail-screen');
+ h.querySelectorAll('[data-client-name]').forEach(b=>b.onclick=()=>{list.hidden=true;detailView.hidden=false;clientDetail(b.dataset.clientName);const back=document.createElement('div');back.className='client-detail-backbar';back.innerHTML='<button type="button" class="client-back-button">← Voltar para clientes</button>';detailView.prepend(back);back.querySelector('button').onclick=()=>clients();window.scrollTo({top:0,behavior:'smooth'});});
 }
 function signalDetail(m,type){
  const h=document.getElementById(type==='risco'?'shellRiskDetail':'shellOpportunityDetail');if(!h)return;
