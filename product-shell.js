@@ -50,8 +50,8 @@ function localTabs(active,items){
 function normalizeInsights(m){
  const raw=Array.isArray(m.insights)&&m.insights.length?m.insights:(Array.isArray(m.evidence)?m.evidence:[]);
  return raw.map((x,i)=>{
-   if(typeof x==='string')return {description:'Sinal identificado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal'};
-   return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal'};
+   if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal',is_quote:false};
+   return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal',is_quote:true};
  }).filter(x=>x.evidence).slice(0,7);
 }
 function renderInsights(m){
