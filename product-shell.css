@@ -53,3 +53,29 @@ main{transition:margin-left .22s ease}
 .rail-collapse{z-index:2}
 @media(max-width:1050px){.detail-micro-grid{grid-template-columns:1fr}.timeline-full{grid-column:auto}}
 @media(max-width:700px){.shell-local-tabs{overflow:auto;flex-wrap:nowrap}.shell-local-tabs button{white-space:nowrap}.detail-micro-grid{grid-template-columns:1fr}.client-detail-shell{padding:16px}}
+
+/* Deep meeting intelligence — evidence-first insight cards */
+.meeting-insights-panel{margin-top:10px;padding:18px}
+.insight-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:14px}
+.insight-head h3{margin:6px 0 4px;font-size:17px;letter-spacing:-.02em}
+.insight-head p{margin:0;color:#71858d;font-size:10px;line-height:1.5}
+.insight-count{flex:none;padding:7px 9px;border:1px solid rgba(101,231,245,.16);border-radius:99px;color:#9db0b6;font:8px 'DM Mono'}
+.meeting-insights-list{display:grid;gap:9px}
+.meeting-insight{padding:14px 15px;border:1px solid rgba(170,220,230,.09);border-radius:12px;background:linear-gradient(145deg,rgba(10,24,31,.9),rgba(7,16,22,.9));position:relative;overflow:hidden}
+.meeting-insight:before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan);opacity:.7}
+.meeting-insight.risco:before{background:var(--red)}
+.meeting-insight.oportunidade:before{background:var(--green)}
+.meeting-insight-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.insight-index{color:#61777f;font:8px 'DM Mono';letter-spacing:.08em}
+.insight-type{padding:4px 7px;border:1px solid rgba(101,231,245,.13);border-radius:99px;color:#91a8af;font:8px 'DM Mono'}
+.meeting-insight.risco .insight-type{color:#ff9daf;border-color:rgba(255,120,152,.2)}
+.meeting-insight.oportunidade .insight-type{color:#8fe7c9;border-color:rgba(99,232,193,.2)}
+.insight-time{margin-left:auto;padding:5px 8px;border:1px solid rgba(101,231,245,.18);border-radius:7px;background:rgba(101,231,245,.06);color:#b9f4f7;font:700 9px 'DM Mono';cursor:pointer}
+.insight-time.muted{border-color:transparent;background:transparent;color:#526970;cursor:default;font-weight:400}
+.meeting-insight h4{margin:10px 0 7px;color:#d9edf0;font-size:13px;line-height:1.35}
+.meeting-insight blockquote{margin:0;padding:10px 12px;border-left:2px solid rgba(101,231,245,.3);background:rgba(101,231,245,.035);color:#b8cbd0;font-size:10px;line-height:1.65;font-style:normal}
+.meeting-insight.risco blockquote{border-left-color:rgba(255,120,152,.32)}
+.meeting-insight.oportunidade blockquote{border-left-color:rgba(99,232,193,.32)}
+.insight-meta{display:flex;gap:12px;margin-top:9px;color:#61777f;font:8px 'DM Mono';flex-wrap:wrap}
+.insight-empty strong{display:block;margin-top:8px;color:#c8dde1;font-size:12px}
+@media(max-width:700px){.insight-head{flex-direction:column}.insight-time{margin-left:0}.meeting-insight h4{font-size:12px}}
