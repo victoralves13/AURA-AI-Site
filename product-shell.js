@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const V={overview:['Visão geral','AURA INTELLIGENCE CENTER'],analysis:['Nova análise','AURA INTELLIGENCE · INGESTÃO'],history:['Reuniões','AURA MEMORY · REUNIÕES'],clients:['Clientes','AURA MEMORY · CUSTOMER 360'],insights:['Inteligência','AURA INTELLIGENCE · EXPLAIN'],risks:['Riscos','AURA SIGNALS · RISCO'],opportunities:['Oportunidades','AURA SIGNALS · OPORTUNIDADES'],actions:['Ações','AURA EXECUTION · PRÓXIMOS MOVIMENTOS'],evolution:['Evolução','AURA MEMORY · O QUE MUDOU']};
+const V={overview:['Visão geral','AURA INTELLIGENCE CENTER'],analysis:['Nova análise','AURA INTELLIGENCE · INGESTÃO'],history:['Reuniões','AURA MEMORY · REUNIÕES'],clients:['Clientes','AURA MEMORY · CUSTOMER 360'],risks:['Riscos','AURA SIGNALS · RISCO'],opportunities:['Oportunidades','AURA SIGNALS · OPORTUNIDADES'],actions:['Ações','AURA EXECUTION · PRÓXIMOS MOVIMENTOS'],evolution:['Evolução','AURA MEMORY · O QUE MUDOU']};
 const C=['Comercial','Financeiro','Operacional','Gestão','Estratégico','Risco & Compliance','Relacionamento','Outro'];
 const S='viewBox="0 0 24 24"';
 const I={
@@ -219,7 +219,7 @@ function bind(){
 }
 function setup(){
  const r=document.querySelector('.rail'),n=r&&r.querySelector('nav');if(!r||!n)return;
- n.innerHTML='<div class="shell-nav-label">NAVEGAÇÃO</div>'+[['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes'],['insights','brain','Inteligência'],['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']].map(x=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>').join('');
+ n.innerHTML='<div class="shell-nav-label">NAVEGAÇÃO</div>'+[['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes'],['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']].map(x=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>').join('');
  const na=document.createElement('button');na.className='shell-new-analysis';na.innerHTML=I.plus+'<span>Nova análise</span>';na.onclick=()=>activate('analysis');r.insertBefore(na,n);
  const col=document.createElement('button');col.className='rail-collapse';col.innerHTML=I.left+'<span>Recolher menu</span>';r.appendChild(col);
  col.onclick=()=>{document.body.classList.toggle('rail-collapsed');const c=document.body.classList.contains('rail-collapsed');col.innerHTML=(c?I.right:I.left)+'<span>'+(c?'Expandir menu':'Recolher menu')+'</span>';localStorage.setItem('aura-rail-collapsed',c?'1':'0')};
