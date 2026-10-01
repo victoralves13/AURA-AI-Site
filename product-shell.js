@@ -131,7 +131,7 @@ const CLIENT_DEMO_ORDER=['Grupo Atlas','Órbita Saúde','Logi Sul','Nova Tech','
 
 function clientDemo(name){return CLIENT_DEMO[name]||null}
 function clientDetail(name){
- const h=document.getElementById('clientWorkspaceDetail'),rows=(window.AURA_CLIENT_MEMORY?.get(name)||[]).slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+ const h=document.getElementById('clientWorkspaceDetail');const memoryRows=window.AURA_CLIENT_MEMORY?.get(name)||[];const fallbackRows=items().filter(m=>(m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado'))===name);const rows=[...(memoryRows.length?memoryRows:fallbackRows)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
  const demo=clientDemo(name);
  if(!h)return;
  if(!rows.length&&!demo)return;
