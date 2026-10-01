@@ -127,9 +127,9 @@ header .eyebrow{display:none!important}
 .aura-chart-meta{font-size:9px}
 .aura-history-list{overflow:hidden}
 .aura-history-row{grid-template-columns:10px minmax(0,1fr) minmax(90px,auto);gap:16px;padding:17px 19px}
-.aura-history-row b{font-size:13px;line-height:1.35}
-.aura-history-row small{font-size:10px;line-height:1.45;margin-top:6px}
-.aura-history-row time{font-size:9px;text-align:right}
+.aura-history-row b{font-size:18px;line-height:1.3;font-weight:650}
+.aura-history-row small{font-size:13px;line-height:1.4;margin-top:7px;color:#9eb2b9}
+.aura-history-row time{font-size:12px;text-align:right;color:#9eb2b9}
 .intel-kpis{gap:14px}
 .intel-kpis span{font-size:10px}
 .intel-kpis b{font-size:27px}
