@@ -16,6 +16,7 @@ class EvidenceItem(BaseModel):
     description: str
     evidence: str
     evidence_strength: EvidenceStrength
+    timestamp: str | None = None
 
 
 class NextAction(BaseModel):
@@ -63,6 +64,8 @@ REGRAS:
 - Não transforme qualquer ideia em oportunidade automaticamente.
 - Se não houver evidência suficiente, deixe a lista vazia.
 - Para riscos, oportunidades, sinais importantes e próximas ações, sempre inclua evidência textual curta.
+- Quando a transcrição trouxer timestamps no formato [MM:SS] ou [HH:MM:SS], associe o timestamp mais próximo da evidência e retorne-o no campo timestamp.
+- Nunca invente timestamp. Se não houver timestamp disponível para aquele trecho, deixe timestamp como null.
 - A força da evidência deve ser alta, média ou baixa.
 - Preserve nomes e informações relevantes para executar ações.
 - Não faça diagnóstico médico nem aconselhamento médico.
@@ -100,7 +103,7 @@ def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
     return parsed
 
 
-def _transcribe_one(path: str, prompt: str = "") -> str:
+def _transcribe_one(path: str, prompt: str = "", offset_seconds: float = 0) -> tuple[str, list[dict]]:
     with open(path, "rb") as audio:
         result = _client().audio.transcriptions.create(
             model=TRANSCRIPTION_MODEL,
@@ -110,15 +113,24 @@ def _transcribe_one(path: str, prompt: str = "") -> str:
                 "Reunião de trabalho em português do Brasil. "
                 "Preserve nomes, siglas, sistemas, números, decisões e termos técnicos."
             ),
+            response_format="verbose_json",
+            timestamp_granularities=["segment"],
         )
-    return (result.text or "").strip()
+    segments = []
+    for segment in (getattr(result, "segments", None) or []):
+        start = float(getattr(segment, "start", 0) or 0) + offset_seconds
+        end = float(getattr(segment, "end", start) or start) + offset_seconds
+        text = (getattr(segment, "text", "") or "").strip()
+        if text:
+            segments.append({"start": round(start, 2), "end": round(end, 2), "text": text})
+    return (result.text or "").strip(), segments
 
 
 def transcribe_audio(path: str) -> tuple[str, dict]:
     source = Path(path)
     if source.stat().st_size <= MAX_OPENAI_AUDIO_BYTES:
-        text = _transcribe_one(str(source))
-        return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL}
+        text, segments = _transcribe_one(str(source))
+        return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "segments": segments}
 
     # OpenAI file transcription accepts up to 25 MB per request.
     # Normalize/compress locally first, then split only when the compressed
@@ -141,10 +153,11 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
         audio.export(normalized, format="mp3", bitrate="64k")
 
         if normalized.stat().st_size <= MAX_OPENAI_AUDIO_BYTES:
-            text = _transcribe_one(str(normalized))
-            return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "normalized": True}
+            text, segments = _transcribe_one(str(normalized))
+            return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "normalized": True, "segments": segments}
 
         chunks: list[str] = []
+        all_segments: list[dict] = []
         chunk_ms = 8 * 60 * 1000
         overlap_ms = 2000
 
@@ -163,7 +176,9 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
                 "Este é um trecho de uma reunião maior. "
                 "Preserve nomes, siglas, sistemas, números, decisões e termos técnicos."
             )
-            chunks.append(_transcribe_one(str(chunk_path), prompt))
+            chunk_text, chunk_segments = _transcribe_one(str(chunk_path), prompt, offset_seconds=chunk_start / 1000)
+            chunks.append(chunk_text)
+            all_segments.extend(chunk_segments)
 
         text = " ".join(part for part in chunks if part).strip()
         return text, {
@@ -171,6 +186,7 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
             "model": TRANSCRIPTION_MODEL,
             "normalized": True,
             "overlap_seconds": 2,
+            "segments": all_segments,
         }
 
 
@@ -235,10 +251,15 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
         "objections": analysis.objections[:5],
         "products": [],
         "evidence": [
-            x.evidence
+            {
+                "description": x.description,
+                "evidence": x.evidence,
+                "evidence_strength": x.evidence_strength,
+                "timestamp": x.timestamp,
+            }
             for x in (analysis.risks + analysis.opportunities + analysis.important_signals)
             if x.evidence
-        ][:5],
+        ][:10],
         "next_move": next_move,
         "owner": "Não identificado",
         "deadline": "Não identificado",
@@ -246,6 +267,17 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
         "decisions": analysis.decisions,
         "pending_actions": analysis.pending_actions,
         "important_signals": [x.description for x in analysis.important_signals],
+        "insights": [
+            {
+                "description": x.description,
+                "evidence": x.evidence,
+                "evidence_strength": x.evidence_strength,
+                "timestamp": x.timestamp,
+                "type": "risco" if x in analysis.risks else "oportunidade" if x in analysis.opportunities else "sinal",
+            }
+            for x in (analysis.risks + analysis.opportunities + analysis.important_signals)
+            if x.evidence
+        ][:7],
         "participants": analysis.participants,
         "sentiment": analysis.sentiment,
         "analysis_model": ANALYSIS_MODEL,
