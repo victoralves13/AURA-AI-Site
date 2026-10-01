@@ -97,9 +97,9 @@ def _download_stored_audio(path: str, target: str):
     import urllib.request
     urllib.request.urlretrieve(url, target)
 
-def _build_result(transcript: str, client_name: str, file_name: str, source_type: str, context: str = "Outro", transcription_meta: dict | None = None, is_demo: bool = False, demo_scenario: str | None = None, meeting_title: str | None = None):
+def _build_result(transcript: str, client_name: str, file_name: str, source_type: str, context: str = "Outro", transcription_meta: dict | None = None, is_demo: bool = False, demo_scenario: str | None = None, meeting_title: str | None = None, analysis_transcript: str | None = None):
     from openai_engine import analyze_transcript, build_product_fields
-    analysis = analyze_transcript(transcript, context=context)
+    analysis = analyze_transcript(analysis_transcript or transcript, context=context)
     fields = build_product_fields(analysis)
     result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": meeting_title or file_name, "client_name": client_name or "Cliente não identificado", "context": context or "Outro", "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
     if transcription_meta:
@@ -165,7 +165,14 @@ def analyze_stored_audio(payload: StoredAudioRequest):
         transcript, meta = transcribe_audio(temp_path)
         if not transcript:
             raise HTTPException(status_code=422, detail="Não foi possível transcrever o áudio.")
-        return _build_result(transcript, _clean(payload.client_name), payload.file_name, "audio", _clean(payload.context) or "Outro", meta, meeting_title=payload.file_name)
+        segments = meta.get("segments") or []
+        def stamp(seconds):
+            total = max(0, int(seconds))
+            hours, rem = divmod(total, 3600)
+            minutes, secs = divmod(rem, 60)
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
+        timed_transcript = "\n".join(f"[{stamp(s.get('start', 0))}] {s.get('text', '').strip()}" for s in segments if s.get('text'))
+        return _build_result(transcript, _clean(payload.client_name), payload.file_name, "audio", _clean(payload.context) or "Outro", meta, meeting_title=payload.file_name, analysis_transcript=timed_transcript or transcript)
     except HTTPException:
         raise
     except Exception as exc:
