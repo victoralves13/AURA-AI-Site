@@ -130,8 +130,13 @@ const CLIENT_DEMO={
 const CLIENT_DEMO_ORDER=['Grupo Atlas','Órbita Saúde','Logi Sul','Nova Tech','Seguro Mais','Viva Corp','Projetou Horizonte'];
 
 function clientDemo(name){return CLIENT_DEMO[name]||null}
-function clientDetail(name){
- const h=document.getElementById('clientWorkspaceDetail');const memoryRows=window.AURA_CLIENT_MEMORY?.get(name)||[];const fallbackRows=items().filter(m=>(m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado'))===name);const rows=[...(memoryRows.length?memoryRows:fallbackRows)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+function clientDetail(name,sourceRows){
+ const h=document.getElementById('clientWorkspaceDetail');
+ const memoryRows=window.AURA_CLIENT_MEMORY?.get(name)||[];
+ const liveRows=Array.isArray(sourceRows)?sourceRows:items().filter(m=>(m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado'))===name);
+ const merged=[...memoryRows,...liveRows];
+ const seen=new Set();
+ const rows=merged.filter(m=>{const key=m.id||((m.file_name||'')+'|'+(m.created_at||'')+'|'+(m.client_name||''));if(seen.has(key))return false;seen.add(key);return true}).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
  const demo=clientDemo(name);
  if(!h)return;
  if(!rows.length&&!demo)return;
@@ -158,7 +163,7 @@ function clients(){
  names.forEach(n=>{const a=g.get(n)||[],d=clientDemo(n),r=a.length?a.filter(x=>low(x.risk).includes('alto')).length:(d?.status==='ATENÇÃO'?1:0),o=a.length?a.filter(x=>low(x.opportunity).includes('detect')).length:(d?1:0);const status=a.length?(r?'ATENÇÃO':'MONITORADO'):(d?.status||'DEMO');out+='<button class="client-shell-card" data-client-name="'+esc(n)+'"><div class="client-card-top"><span class="client-avatar">'+esc(n.slice(0,2).toUpperCase())+'</span><span class="detail-badge '+(status==='ATENÇÃO'?'danger':'')+'">'+esc(status)+'</span></div><h3>'+esc(n)+'</h3><p>'+ (a.length?a.length:d?.meetings||0) +' reunião'+((a.length?a.length:d?.meetings||0)===1?'':'ões')+' · '+(a.length?'última '+fmt(a[0].created_at):'visão demonstrativa')+'</p><div><span>'+r+' risco'+(r===1?'':'s')+' altos</span><span>'+o+' oportunidade'+(o===1?'':'s')+'</span></div></button>'});
  out+='</div></div><div class="client-detail-screen" id="clientWorkspaceDetail" hidden></div>';h.innerHTML=out;
  const list=h.querySelector('.client-list-screen'),detailView=h.querySelector('.client-detail-screen');
- h.querySelectorAll('[data-client-name]').forEach(b=>b.onclick=()=>{list.hidden=true;detailView.hidden=false;clientDetail(b.dataset.clientName);const back=document.createElement('div');back.className='client-detail-backbar';back.innerHTML='<button type="button" class="client-back-button" aria-label="Voltar para clientes" title="Voltar para clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';detailView.prepend(back);back.querySelector('button').onclick=()=>clients();window.scrollTo({top:0,behavior:'smooth'});});
+ h.querySelectorAll('[data-client-name]').forEach(b=>b.onclick=()=>{const name=b.dataset.clientName;const sourceRows=g.get(name)||[];list.hidden=true;detailView.hidden=false;clientDetail(name,sourceRows);const back=document.createElement('div');back.className='client-detail-backbar';back.innerHTML='<button type="button" class="client-back-button" aria-label="Voltar para clientes" title="Voltar para clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';detailView.prepend(back);back.querySelector('button').onclick=()=>clients();window.scrollTo({top:0,behavior:'smooth'});});
 }
 function signalDetail(m,type){
  const h=document.getElementById(type==='risco'?'shellRiskDetail':'shellOpportunityDetail');if(!h)return;
