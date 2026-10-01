@@ -91,8 +91,8 @@ main{transition:margin-left .22s ease}
 .client-list-screen{animation:auraGuideIn .22s ease both}
 .client-detail-screen[hidden]{display:none!important}
 .client-detail-screen{animation:auraGuideIn .22s ease both}
-.client-detail-backbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 10px}
-.client-back-button{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid rgba(101,231,245,.16);border-radius:9px;background:rgba(101,231,245,.035);color:#a9c8cd;cursor:pointer;font:700 9px 'DM Mono',monospace;transition:.18s}
-.client-back-button:hover{color:#e7fbfd;border-color:rgba(101,231,245,.34);background:rgba(101,231,245,.07);transform:translateX(-1px)}
+.client-detail-backbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 8px}
+.client-back-button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;background:transparent;color:#67e7f4;cursor:pointer;font:500 22px/1 Arial,sans-serif;transition:.18s;opacity:.82}
+.client-back-button:hover{color:#9af3fb;opacity:1;transform:translateX(-2px)}
 .client-detail-screen .client-detail-shell{margin-top:0}
-@media(max-width:700px){.client-back-button{font-size:9px;padding:9px 10px}}
+@media(max-width:700px){.client-back-button{width:28px;height:28px;font-size:22px}}
