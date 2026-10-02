@@ -301,3 +301,75 @@ header .eyebrow{display:none!important}
 @media(max-width:1100px){.aura-home-hero{grid-template-columns:1fr;min-height:390px}.aura-home-orbit{right:55px;opacity:.6}.aura-home-context{right:20px}.aura-command-strip{grid-template-columns:1fr 1fr}.aura-command-intro{grid-column:1/-1}.aura-command-strip>div:nth-child(2){border-right:1px solid rgba(170,220,230,.07)}}
 @media(max-width:780px){.aura-home{padding-bottom:20px}.aura-home-hero{min-height:440px;padding:30px 25px;border-radius:17px}.aura-home-hero h1{font-size:40px}.aura-home-hero p{font-size:12px}.aura-home-orbit{right:-55px;top:68%;transform:translateY(-50%) scale(.78);opacity:.45}.aura-home-context{left:25px;right:auto;text-align:left;bottom:22px}.aura-command-strip,.aura-home-grid,.aura-home-footer-grid{grid-template-columns:1fr}.aura-command-strip>div{border-right:0;border-bottom:1px solid rgba(170,220,230,.07)}.aura-command-strip>div:last-child{border-bottom:0}.aura-home-section-head{display:block}.aura-home-link{display:inline-block;margin-top:10px}.aura-home-footer-grid{gap:8px}}
 @media(max-width:500px){.aura-home-hero h1{font-size:34px}.aura-home-actions{flex-direction:column;align-items:stretch}.aura-home-primary,.aura-home-secondary{text-align:center}.aura-home-orbit{right:-92px}.aura-command-strip>div{padding:15px}.aura-home-panel{padding:16px}.aura-home-row.compact{grid-template-columns:70px minmax(0,1fr)}.aura-home-row.compact em{grid-column:2;margin-top:-3px;text-align:left}}
+
+
+/* Overview refinement — restrained enterprise entry */
+.aura-home{max-width:1480px;padding:0 0 34px}
+.aura-home-hero{
+  min-height:228px!important;
+  grid-template-columns:minmax(0,1fr) 300px!important;
+  align-items:center!important;
+  padding:30px 34px!important;
+  border-radius:14px!important;
+  border-color:rgba(170,220,230,.08)!important;
+  background:linear-gradient(135deg,rgba(9,20,28,.94),rgba(5,12,18,.98))!important;
+  box-shadow:0 18px 42px rgba(0,0,0,.16)!important;
+}
+.aura-home-hero:after{display:none!important}
+.aura-home-kicker{font-size:8px!important;letter-spacing:.14em!important}
+.aura-home-hero h1{
+  margin:13px 0 10px!important;
+  font-size:38px!important;
+  line-height:1.08!important;
+  letter-spacing:-.045em!important;
+}
+.aura-home-hero p{max-width:650px!important;font-size:12px!important;line-height:1.6!important;color:#82969e!important}
+.aura-home-actions{margin-top:19px!important}
+.aura-home-primary,.aura-home-secondary{padding:9px 13px!important;font-size:9px!important}
+.aura-home-context{
+  position:relative!important;
+  right:auto!important;
+  bottom:auto!important;
+  align-self:stretch!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  padding-left:28px!important;
+  border-left:1px solid rgba(170,220,230,.08)!important;
+  text-align:left!important;
+}
+.aura-home-context span{font-size:8px!important}
+.aura-home-context strong{font-size:10px!important}
+.aura-home-context small{font-size:8px!important}
+.aura-home-facts{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+  margin-top:18px;
+  border-top:1px solid rgba(170,220,230,.07);
+}
+.aura-home-facts>div{padding-top:12px}
+.aura-home-facts>div+div{padding-left:18px;border-left:1px solid rgba(170,220,230,.07)}
+.aura-home-facts b{display:block;color:#dcecef;font:600 17px Manrope}
+.aura-home-facts span{display:block;margin-top:3px;color:#607981;font:8px 'DM Mono';letter-spacing:.06em}
+.aura-command-strip{margin-top:10px!important;border-radius:11px!important}
+.aura-home-section-head{margin-top:25px!important}
+.aura-home-section-head h2{font-size:21px!important}
+.aura-home-grid{gap:10px!important}
+.aura-home-panel{padding:18px!important;border-radius:12px!important}
+.aura-home-panel-head h3{font-size:15px!important}
+.aura-home-row{padding:12px 2px!important}
+.aura-trajectory-panel{margin-top:10px!important;border-radius:12px!important}
+.aura-home-footer-grid{gap:10px!important}
+.aura-home-next{min-height:82px!important;border-radius:11px!important;padding:15px 17px!important}
+@media(max-width:1100px){
+ .aura-home-hero{grid-template-columns:1fr!important;min-height:0!important}
+ .aura-home-context{margin-top:22px;padding:16px 0 0!important;border-left:0!important;border-top:1px solid rgba(170,220,230,.08)!important}
+ .aura-home-facts{max-width:320px}
+}
+@media(max-width:600px){
+ .aura-home-hero{padding:25px 22px!important}
+ .aura-home-hero h1{font-size:32px!important}
+ .aura-home-hero p{font-size:11px!important}
+ .aura-home-facts{max-width:none}
+}
