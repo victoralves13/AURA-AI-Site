@@ -225,10 +225,46 @@ function intelligence(){
  '</div>'+
  '<section class="detail-panel intel-evidence"><span class="eyebrow">ÚLTIMAS LEITURAS</span>'+(a.slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0)).slice(0,6).map(x=>'<div class="intel-reading"><div><b>'+esc(x.client_name||x.file_name||'Reunião')+'</b><small>'+esc(x.context||x.intelligence_type||'Outro')+' · '+esc(x.sentiment||'—')+'</small></div><span>Risco '+esc(x.risk||'—')+' · Oportunidade '+esc(x.opportunity||'—')+'</span></div>').join('')||'<div class="detail-muted">Nenhuma leitura registrada.</div>')+'</section></div>';
 }
+function actionRecommendedDate(m){
+ if(m.deadline)return String(m.deadline);
+ const base=new Date(m.created_at||Date.now());if(Number.isNaN(base.getTime()))return 'Definir após a análise';
+ const p=low(m.priority||'');
+ const days=p.includes('alta')||p.includes('urg')?7:p.includes('média')||p.includes('media')?14:30;
+ base.setDate(base.getDate()+days);
+ return base.toLocaleDateString('pt-BR');
+}
+function actionDetail(m){
+ const h=document.getElementById('shellActionDetail');if(!h)return;
+ const client=m.client_name||m.file_name||'Cliente não identificado';
+ const action=m.next_move||'Ação não identificada';
+ const context=m.context||m.intelligence_type||'Contexto comercial';
+ const why=m.why_it_matters||m.summary||'A ação foi identificada a partir dos sinais registrados na análise da conversa.';
+ const impact=m.impact||'Impacto a validar';
+ const owner=m.owner||'Responsável não identificado';
+ const deadline=actionRecommendedDate(m);
+ const priority=m.priority||'Acompanhamento';
+ const opportunity=m.opportunity||'—';
+ const risk=m.risk||'—';
+ const decisions=arr(m,'decisions').filter(Boolean);
+ const signals=arr(m,'important_signals').filter(Boolean);
+ const evidence=arr(m,'evidence').filter(Boolean);
+ const resultType=low(context).includes('educ')||low(action).includes('trein')?'Melhoria educativa / capacitação':low(context).includes('atend')||low(action).includes('atend')?'Melhoria no atendimento':low(opportunity).includes('expans')||low(opportunity).includes('receita')||low(opportunity).includes('fatur')?'Resultado comercial / financeiro':'Resultado operacional / estratégico';
+ h.innerHTML='<div class="action-detail-shell">'+
+ '<div class="action-detail-hero"><div><span class="eyebrow">ACTION CENTER · DETALHE DA AÇÃO</span><h2>'+esc(client)+'</h2><p>'+esc(context)+' · '+esc(m.created_at?fmt(m.created_at):'Data da análise não registrada')+'</p></div><span class="detail-badge">'+esc(priority)+'</span></div>'+
+ '<section class="action-focus-card"><span class="eyebrow">AÇÃO SOLICITADA</span><h3>'+esc(action)+'</h3><p>'+esc(why)+'</p><div class="action-deadline"><div><span>DATA INDICADA</span><strong>'+esc(deadline)+'</strong></div><div><span>RESPONSÁVEL</span><strong>'+esc(owner)+'</strong></div><div><span>IMPACTO</span><strong>'+esc(impact)+'</strong></div></div></section>'+
+ '<div class="action-detail-grid"><section class="detail-panel action-section"><span class="eyebrow">POR QUE ESSA AÇÃO IMPORTA</span><h3>O que pode mudar para o negócio</h3><p>'+esc(why)+'</p><div class="action-outcome"><span>RESULTADO ESPERADO</span><strong>'+esc(resultType)+'</strong><small>O resultado é uma leitura orientativa baseada no contexto, nos sinais e na oportunidade identificados — não uma garantia.</small></div></section>'+
+ '<section class="detail-panel action-section"><span class="eyebrow">LEITURA DO AURA</span><h3>Como essa ação se conecta à conversa</h3><div class="action-context-row"><span>Risco</span><b>'+esc(risk)+'</b></div><div class="action-context-row"><span>Oportunidade</span><b>'+esc(opportunity)+'</b></div><div class="action-context-row"><span>Contexto</span><b>'+esc(context)+'</b></div></section></div>'+
+ '<div class="action-detail-grid"><section class="detail-panel action-section"><span class="eyebrow">EVIDÊNCIAS E DECISÕES</span><h3>O que sustenta a ação</h3>'+((evidence.length?evidence:signals).slice(0,5).map((x,i)=>'<div class="action-evidence"><i>'+String(i+1).padStart(2,'0')+'</i><p>'+esc(typeof x==='string'?x:(x.description||x.evidence||''))+'</p></div>').join('')||'<p class="detail-muted">Ainda não há evidências estruturadas suficientes.</p>')+(decisions.length?'<div class="action-subhead">DECISÕES RELACIONADAS</div>'+decisions.slice(0,4).map(x=>'<div class="action-decision">'+esc(x)+'</div>').join(''):'')+'</section>'+
+ '<section class="detail-panel action-section"><span class="eyebrow">PLANO DE EXECUÇÃO</span><h3>Próximo passo</h3><div class="action-plan"><div><span>01 · EXECUTAR</span><p>'+esc(action)+'</p></div><div><span>02 · ACOMPANHAR</span><p>Registrar o resultado e atualizar a leitura do cliente após a execução.</p></div><div><span>03 · EVOLUIR</span><p>Comparar o resultado com a próxima reunião para medir mudança real.</p></div></div></section></div>'+
+ '</div>';
+}
 function actions(){
  const h=document.getElementById('shellActions');if(!h)return;
  const a=items().filter(x=>x.next_move);
- h.innerHTML=a.length?a.map(m=>'<div class="action-shell-row"><div><span class="eyebrow">'+esc(m.priority||'AÇÃO')+'</span><h3>'+esc(m.next_move)+'</h3><p>'+esc(m.client_name||m.file_name||'Reunião')+' · '+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não identificado')+'</p></div><span class="detail-badge">'+esc(m.impact||'Qualificação')+'</span></div>').join(''):'<div class="shell-empty"><strong>Nenhuma ação registrada</strong><span>O AURA transformará decisões e próximos movimentos em execução.</span></div>';
+ h.innerHTML='<div class="action-list-screen">'+(a.length?a.map((m,i)=>'<button type="button" class="action-shell-row" data-action-index="'+i+'"><div><span class="eyebrow">'+esc(m.priority||'AÇÃO')+'</span><h3>'+esc(m.next_move)+'</h3><p>'+esc(m.client_name||m.file_name||'Reunião')+' · '+esc(m.owner||'Responsável não identificado')+' · '+esc(actionRecommendedDate(m))+'</p></div><span class="detail-badge">'+esc(m.impact||'Qualificação')+'</span></button>').join(''):'<div class="shell-empty"><strong>Nenhuma ação registrada</strong><span>O AURA transformará decisões e próximos movimentos em execução.</span></div>')+'</div><div class="action-detail-screen" id="shellActionDetail" hidden></div>';
+ if(!a.length)return;
+ const list=h.querySelector('.action-list-screen'),detail=h.querySelector('#shellActionDetail');
+ h.querySelectorAll('[data-action-index]').forEach(b=>b.onclick=()=>{list.hidden=true;detail.hidden=false;actionDetail(a[+b.dataset.actionIndex]);const back=document.createElement('div');back.className='action-detail-backbar';back.innerHTML='<button type="button" class="action-back-button" aria-label="Voltar para ações" title="Voltar para ações"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';detail.prepend(back);back.querySelector('button').onclick=()=>{detail.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'})}});
 }
 function evolution(){
  const h=document.getElementById('shellEvolution'),a=items();if(!h)return;
