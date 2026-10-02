@@ -277,3 +277,15 @@ main{transition:margin-left .22s ease}
 .action-decision{font-size:12px;line-height:1.65;color:#b8cbd0}
 .action-plan span{font-size:10px}
 .action-plan p{font-size:13px;line-height:1.7;color:#b5c7cc}
+
+/* Ações — segunda camada de legibilidade: evidências e informações críticas */
+.action-outcome strong{font-size:17px!important;line-height:1.5}
+.action-outcome small{font-size:13px!important;line-height:1.7}
+.action-context-row span{font-size:11px!important}
+.action-context-row b{font-size:14px!important;line-height:1.55}
+.action-evidence i{font-size:11px!important}
+.action-evidence p{font-size:15px!important;line-height:1.75!important;color:#bdd0d5!important}
+.action-subhead{font-size:11px!important}
+.action-decision{font-size:13px!important;line-height:1.7!important}
+.action-plan span{font-size:11px!important}
+.action-plan p{font-size:15px!important;line-height:1.75!important;color:#bdd0d5!important}
