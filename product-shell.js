@@ -106,7 +106,7 @@ function meeting(){
  const card=(m,i)=>{
   const riskClass=low(m.risk).includes('alto')?'high':low(m.risk).includes('médio')||low(m.risk).includes('medio')?'medium':'low';
   const signal=m.summary||m.why_it_matters||m.next_move||m.opportunity||'Sem leitura executiva registrada.';
-  return '<button type="button" class="meeting-memory-card" data-mi="'+i+'" data-client="'+esc(low(clientName(m)))+'" data-risk="'+(hasRisk(m)?'1':'0')+'" data-opportunity="'+(hasOpp(m)?'1':'0')+'">'+
+  return '<button type="button" class="meeting-memory-card" data-mi="'+i+'" data-client="'+esc(low(clientName(m)))+'" data-risk="'+(hasRisk(m)?'1':'0')+'" data-opportunity="'+(hasOpp(m)?'1':'0')+'" data-search="'+esc(low([clientName(m),m.context,m.intelligence_type,m.summary,m.why_it_matters,m.risk,m.opportunity,m.next_move,m.intent,...arr(m,'important_signals'),...arr(m,'decisions'),...arr(m,'pending_actions')].filter(Boolean).join(' ')))+'">'+
    '<div class="meeting-card-top"><span class="meeting-card-kind">REUNIÃO · '+esc(m.context||m.intelligence_type||'OUTRO')+'</span><span class="meeting-card-arrow" aria-hidden="true">→</span></div>'+
    '<div class="meeting-card-title"><div class="meeting-card-avatar">'+esc(clientName(m).slice(0,2).toUpperCase())+'</div><div><h3>'+esc(clientName(m))+'</h3><p>'+esc(fmt(m.created_at))+'</p></div></div>'+
    '<div class="meeting-card-status"><span class="meeting-status '+riskClass+'">RISCO · '+esc(m.risk||'—')+'</span><span>'+esc(m.sentiment||'Sentimento não registrado')+'</span></div>'+
@@ -117,7 +117,7 @@ function meeting(){
  h.innerHTML='<div class="meeting-memory-screen">'+
   '<div class="meeting-toolbar meeting-memory-toolbar"><div><span class="eyebrow">AURA MEMORY · REUNIÕES</span><h2>'+source.length+(source.length===1?' reunião':' reuniões')+' na memória</h2><p>Cada conversa é preservada como uma unidade de inteligência, com contexto, evidências e próximos movimentos.</p></div>'+
   '<div class="meeting-memory-kpis"><div><b>'+clients+'</b><span>clientes</span></div><div><b>'+insights+'</b><span>insights</span></div><div class="risk"><b>'+highRisk+'</b><span>riscos altos</span></div><div class="opp"><b>'+opportunities+'</b><span>oportunidades</span></div></div></div>'+
-  '<div class="meeting-memory-controls"><div class="meeting-memory-search"><span>⌕</span><input id="meetingMemorySearch" type="search" placeholder="Buscar cliente, contexto ou sinal..."></div><div class="meeting-memory-filters" role="tablist"><button type="button" class="active" data-meeting-filter="all">Todas · '+source.length+'</button><button type="button" data-meeting-filter="risk">Riscos · '+source.filter(hasRisk).length+'</button><button type="button" data-meeting-filter="opportunity">Oportunidades · '+opportunities+'</button></div></div>'+
+  '<div class="meeting-memory-controls"><div class="meeting-memory-search"><span>⌕</span><input id="meetingMemorySearch" type="search" placeholder="Buscar cliente, contexto, risco ou sinal..." aria-label="Buscar na memória de reuniões"></div><div class="meeting-memory-filter-meta"><span id="meetingMemoryResultCount">'+source.length+' resultados</span><div class="meeting-memory-filters" role="tablist"><button type="button" class="active" data-meeting-filter="all">Todas · '+source.length+'</button><button type="button" data-meeting-filter="risk">Riscos · '+source.filter(hasRisk).length+'</button><button type="button" data-meeting-filter="opportunity">Oportunidades · '+opportunities+'</button></div></div></div>'+
   '<div class="meeting-memory-layout"><div class="meeting-memory-list" id="meetingMemoryList">'+source.map(card).join('')+'</div><div class="meeting-detail meeting-memory-detail" id="meetingDetail"><div class="meeting-select-state"><div class="meeting-select-icon">◷</div><span class="eyebrow">LEITURA CONTEXTUAL</span><h3>Selecione uma reunião</h3><p>O AURA abre aqui a análise aprofundada da conversa, preservando evidências, insights e a linha do tempo do relacionamento.</p></div></div></div></div>';
  const list=h.querySelector('#meetingMemoryList');
  const detailHost=h.querySelector('#meetingDetail');
@@ -125,11 +125,21 @@ function meeting(){
  let activeFilter='all';
  const apply=()=>{
   const q=low(h.querySelector('#meetingMemorySearch')?.value||'');
+  let visible=0;
   h.querySelectorAll('.meeting-memory-card').forEach(b=>{
-   const matchQ=!q||[b.dataset.client,b.querySelector('h3')?.textContent||'',b.querySelector('.meeting-card-reading b')?.textContent||'',b.querySelector('.meeting-card-kind')?.textContent||''].join(' ').toLowerCase().includes(q);
+   const haystack=low([b.dataset.client,b.dataset.search||'',b.querySelector('h3')?.textContent||'',b.querySelector('.meeting-card-reading b')?.textContent||'',b.querySelector('.meeting-card-kind')?.textContent||''].join(' '));
+   const matchQ=!q||haystack.includes(q);
    const matchF=activeFilter==='all'||(activeFilter==='risk'&&b.dataset.risk==='1')||(activeFilter==='opportunity'&&b.dataset.opportunity==='1');
-   b.hidden=!(matchQ&&matchF);
+   const show=matchQ&&matchF;
+   b.hidden=!show;
+   if(show)visible++;
   });
+  const counter=h.querySelector('#meetingMemoryResultCount');
+  if(counter)counter.textContent=visible+' resultado'+(visible===1?'':'s');
+  let empty=h.querySelector('.meeting-filter-empty');
+  if(!visible){
+   if(!empty){empty=document.createElement('div');empty.className='meeting-filter-empty';empty.innerHTML='<span>◌</span><b>Nenhuma reunião encontrada</b><p>Ajuste a busca ou remova o filtro para consultar toda a memória.</p>';list.appendChild(empty);}
+  }else if(empty)empty.remove();
  };
  controls.forEach(b=>b.onclick=()=>{activeFilter=b.dataset.meetingFilter;controls.forEach(x=>x.classList.toggle('active',x===b));apply()});
  h.querySelector('#meetingMemorySearch')?.addEventListener('input',apply);
