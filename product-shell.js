@@ -195,9 +195,10 @@ function signalDetail(m,type){
  const list=h.querySelector('.signal-list-screen'),detailView=h.querySelector('.signal-detail-screen');
  h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{
    list.hidden=true;detailView.hidden=false;signalDetail(a[+b.dataset.signalIndex],type);
-   if(type==='risco'){
+   if(type==='risco'||type==='oportunidade'){
      const back=document.createElement('div');back.className='signal-detail-backbar';
-     back.innerHTML='<button type="button" class="signal-back-button" aria-label="Voltar para riscos" title="Voltar para riscos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';
+     const label=type==='risco'?'Voltar para riscos':'Voltar para oportunidades';
+     back.innerHTML='<button type="button" class="signal-back-button" aria-label="'+label+'" title="'+label+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';
      detailView.prepend(back);
      back.querySelector('button').onclick=()=>{detailView.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'});};
    }
