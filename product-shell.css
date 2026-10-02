@@ -683,3 +683,7 @@ body.shell-generated-active main>header{display:none}
  .meeting-memory-detail .detail-metrics{grid-template-columns:1fr 1fr}
  .meeting-memory-detail .detail-panel p{font-size:13px!important}
 }
+
+/* Hard isolation: when a meeting is open, only the meeting workspace remains */
+main>.view.meeting-focus-mode> *:not(#meetingWorkspace){display:none!important}
+main>.view.meeting-focus-mode #meetingWorkspace{display:block!important;width:100%!important}
