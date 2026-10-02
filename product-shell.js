@@ -139,26 +139,120 @@ function clientDemo(name){return CLIENT_DEMO[name]||null}
 function clientDetail(name,sourceRows){
  const h=document.getElementById('clientWorkspaceDetail');
  const memoryRows=window.AURA_CLIENT_MEMORY?.get(name)||[];
- const liveRows=Array.isArray(sourceRows)?sourceRows:items().filter(m=>(m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado'))===name);
+ const liveRows=Array.isArray(sourceRows)?sourceRows:items().filter(m=>{
+  const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
+  return n===name;
+ });
  const merged=[...memoryRows,...liveRows];
  const seen=new Set();
- const rows=merged.filter(m=>{const key=m.id||((m.file_name||'')+'|'+(m.created_at||'')+'|'+(m.client_name||''));if(seen.has(key))return false;seen.add(key);return true}).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+ const rows=merged.filter(m=>{
+  const key=m.id||((m.file_name||'')+'|'+(m.created_at||'')+'|'+(m.client_name||''));
+  if(seen.has(key))return false; seen.add(key); return true;
+ }).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
  const demo=clientDemo(name);
- if(!h)return;
- if(!rows.length&&!demo)return;
- if(rows.length){
-   const latest=rows[0],previous=rows[1],changes=[];
-   if(previous&&latest.risk!==previous.risk)changes.push('Risco: '+(previous.risk||'—')+' → '+(latest.risk||'—'));
-   if(previous&&latest.sentiment!==previous.sentiment)changes.push('Sentimento: '+(previous.sentiment||'—')+' → '+(latest.sentiment||'—'));
-   if(previous&&latest.opportunity!==previous.opportunity)changes.push('Oportunidade: '+(previous.opportunity||'—')+' → '+(latest.opportunity||'—'));
-   const riskLevel=low(latest.risk).includes('alto')?'ATENÇÃO':low(latest.risk).includes('médio')?'MONITORADO':'ESTÁVEL';
-   h.innerHTML='<div class="client-detail-shell"><div class="meeting-detail-head"><div><span class="eyebrow">CUSTOMER 360 · INTELIGÊNCIA DO RELACIONAMENTO</span><h2>'+esc(name)+'</h2><p>'+rows.length+' reunião'+(rows.length===1?'':'ões')+' · última interação '+fmt(latest.created_at)+'</p></div><span class="detail-badge '+(riskLevel==='ATENÇÃO'?'danger':'')+'">'+riskLevel+'</span></div><div class="detail-metrics"><div><span>REUNIÕES</span><b>'+rows.length+'</b></div><div><span>RISCO ATUAL</span><b>'+esc(latest.risk||'—')+'</b></div><div><span>SENTIMENTO</span><b>'+esc(latest.sentiment||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(latest.opportunity||'—')+'</b></div></div><div class="client-intelligence-grid"><div class="detail-panel client-evolution-panel"><div class="client-panel-head"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Risco ao longo das reuniões</h3></div><span>dados reais</span></div><div class="client-risk-chart">'+rows.slice().reverse().slice(-10).map((x,i)=>'<div class="client-risk-bar"><b>'+esc(x.risk||'—')+'</b><i style="height:'+Math.max(12,Math.min(100,low(x.risk).includes('alto')?82:low(x.risk).includes('médio')?52:25))+'%"></i><small>R'+(i+1)+'</small></div>').join('')+'</div></div><div class="detail-panel"><span class="eyebrow">LEITURA DO AURA</span><h3>O que mudou?</h3><p>'+esc(changes.length?changes.join(' · '):previous?'Os principais sinais permaneceram estáveis entre as reuniões recentes.':'Ainda não existe reunião anterior para comparar.')+'</p><div class="client-focus"><span>PRÓXIMO MOVIMENTO</span><strong>'+esc(latest.next_move||'Nenhum próximo movimento registrado.')+'</strong><small>'+esc(latest.owner||'Responsável não identificado')+' · '+esc(latest.deadline||'Prazo não definido')+'</small></div></div></div><div class="client-intelligence-grid"><div class="detail-panel"><span class="eyebrow">INSIGHTS DO RELACIONAMENTO</span>'+rows.flatMap(x=>Array.isArray(x.insights)?x.insights:Array.isArray(x.evidence)?x.evidence:[]).slice(0,5).map((x,i)=>'<article class="client-insight"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(x.timestamp||'sem timestamp')+'</span></div><p>'+esc(typeof x==='string'?x:(x.evidence||x.description||''))+'</p></article>').join('')+'</div><div class="detail-panel"><span class="eyebrow">LINHA DO TEMPO</span><div class="meeting-timeline">'+rows.slice(0,6).map((x,i)=>'<div class="meeting-timeline-item '+(i===0?'current':'')+'"><i></i><div><span>'+esc(fmt(x.created_at))+' · '+esc(x.context||x.intelligence_type||'Outro')+'</span><b>'+esc(x.sentiment||'—')+' · risco '+esc(x.risk||'—')+'</b><p>'+esc((x.summary||x.why_it_matters||'Sem resumo.').slice(0,220))+'</p></div></div>').join('')+'</div></div></div></div>';
-   h.scrollIntoView({behavior:'smooth',block:'start'}); return;
+ if(!h||(!rows.length&&!demo))return;
+ const isDemo=!rows.length&&!!demo;
+ const source=rows.length?rows:[];
+ const latest=source[0];
+ const previous=source[1];
+ const textOf=m=>[m?.summary,m?.why_it_matters,m?.risk,m?.opportunity,m?.intent,m?.impact,m?.next_move,m?.context,m?.intelligence_type,...arr(m,'important_signals'),...arr(m,'decisions'),...arr(m,'pending_actions')].filter(Boolean).join(' ');
+ const evidenceOf=m=>{
+  const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
+  return raw.map(x=>typeof x==='string'?{description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'}:{description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média'}).filter(x=>x.evidence||x.description);
+ };
+ const allEvidence=source.flatMap(evidenceOf);
+ const allInsights=source.flatMap(m=>Array.isArray(m.insights)?m.insights:[]).filter(Boolean);
+ const risks=source.filter(m=>low(m.risk).includes('alto')||low(m.risk).includes('médio')||low(m.risk).includes('medio'));
+ const opportunities=source.filter(m=>m.opportunity&& !['—','-','nenhuma','nenhum','não identificado','nao identificado','sem oportunidade'].includes(low(m.opportunity)));
+ const actions=[...new Set(source.flatMap(m=>[...arr(m,'pending_actions'),...(m.next_move?[m.next_move]:[])].filter(Boolean)))];
+ const decisions=[...new Set(source.flatMap(m=>arr(m,'decisions').filter(Boolean)))];
+ const signals=[...new Set(source.flatMap(m=>arr(m,'important_signals').filter(Boolean)))];
+ const status=source.length?(low(latest.risk).includes('alto')?'ATENÇÃO':low(latest.risk).includes('médio')||low(latest.risk).includes('medio')?'MONITORADO':'ESTÁVEL'):(demo?.status||'DEMO');
+ const riskNow=source.length?(latest.risk||'Não identificado'):(demo?.risk||'—');
+ const sentimentNow=source.length?(latest.sentiment||'Não identificado'):(demo?.sentiment||'—');
+ const oppNow=source.length?(latest.opportunity||'Nenhuma identificada'):(demo?.opp||'—');
+ const contextNow=source.length?(latest.context||latest.intelligence_type||'Não informado'):(demo?.context||'—');
+ const relationship=low(sentimentNow).includes('positivo')||low(sentimentNow).includes('muito positivo')?'Positivo':low(sentimentNow).includes('negativo')?'Em atenção':low(sentimentNow).includes('cauteloso')?'Cauteloso':'Em acompanhamento';
+ const changes=[];
+ if(previous){
+  if(low(latest.risk)!==low(previous.risk))changes.push({label:'Risco',from:previous.risk||'—',to:latest.risk||'—',tone:low(latest.risk).includes('alto')?'risk':'neutral'});
+  if(low(latest.sentiment)!==low(previous.sentiment))changes.push({label:'Sentimento',from:previous.sentiment||'—',to:latest.sentiment||'—',tone:'positive'});
+  if(low(latest.opportunity)!==low(previous.opportunity))changes.push({label:'Oportunidade',from:previous.opportunity||'—',to:latest.opportunity||'—',tone:'opportunity'});
  }
- const riskPct=demo.riskSeries[demo.riskSeries.length-1];
- const max=Math.max(...demo.riskSeries),min=Math.min(...demo.riskSeries);
- h.innerHTML='<div class="client-detail-shell client-demo-detail"><div class="meeting-detail-head"><div><span class="eyebrow">CUSTOMER 360 · RELATIONSHIP INTELLIGENCE</span><h2>'+esc(name)+'</h2><p>'+demo.meetings+' reuniões no histórico demonstrativo · última interação recente</p></div><span class="detail-badge '+(demo.status==='ATENÇÃO'?'danger':'')+'">'+esc(demo.status)+'</span></div><div class="detail-metrics"><div><span>REUNIÕES</span><b>'+demo.meetings+'</b></div><div><span>RISCO ATUAL</span><b>'+esc(demo.risk)+'</b></div><div><span>SENTIMENTO</span><b>'+esc(demo.sentiment)+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(demo.opp)+'</b></div></div><div class="client-demo-note"><span>DEMONSTRAÇÃO</span><p>Visão contextual demonstrativa preparada para a apresentação. Quando o AURA analisar reuniões reais, estes indicadores serão substituídos pela memória real do cliente.</p></div><div class="client-intelligence-grid"><div class="detail-panel client-evolution-panel"><div class="client-panel-head"><div><span class="eyebrow">EVOLUÇÃO DO RELACIONAMENTO</span><h3>Risco nas últimas reuniões</h3></div><span>'+demo.meetings+' pontos</span></div><div class="client-risk-chart">'+demo.riskSeries.map((v,i)=>'<div class="client-risk-bar"><b>'+v+'</b><i style="height:'+Math.max(10,v)+'%"></i><small>R'+String(i+1).padStart(2,'0')+'</small></div>').join('')+'</div><div class="client-chart-meta"><span>início '+min+'</span><b>'+riskPct+' atual</b><span>menor '+min+'</span></div></div><div class="detail-panel"><span class="eyebrow">LEITURA DO AURA</span><h3>O que mudou?</h3><p>O relacionamento demonstra uma trajetória de '+(riskPct<max?'redução dos sinais de risco':'oscilação nos sinais de risco')+', enquanto a conversa passou a concentrar atenção em <strong>'+esc(demo.commercial)+'</strong>.</p><div class="client-focus"><span>ATENÇÃO ATUAL</span><strong>'+esc(demo.status==='ATENÇÃO'?'Requer acompanhamento próximo':'Relacionamento em acompanhamento')+'</strong><small>Base demonstrativa · contexto '+esc(demo.context)+'</small></div></div></div><div class="client-intelligence-grid"><div class="detail-panel"><span class="eyebrow">INSIGHTS MAIS RELEVANTES</span><p class="detail-muted">Trechos que o AURA destacaria ao consolidar as reuniões do cliente.</p>'+demo.insights.map((x,i)=>'<article class="client-insight '+esc(x[0])+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(x[2])+'</span></div><p>'+esc(x[1])+'</p><small>'+esc(x[0])+'</small></article>').join('')+'</div><div class="detail-panel"><span class="eyebrow">CONTEXTOS IDENTIFICADOS</span><div class="client-context-row"><b>'+esc(demo.context)+'</b><span>principal</span></div><div class="client-context-row"><b>Comercial</b><span>oportunidades</span></div><div class="client-context-row"><b>Financeiro</b><span>impacto potencial</span></div><span class="eyebrow client-section-gap">IMPACTO IDENTIFICADO</span><p>'+esc(demo.financial)+'</p><span class="eyebrow">PRÓXIMO FOCO</span><strong class="detail-next">'+esc(demo.commercial)+'</strong></div></div></div>';
+ const demoChanges=isDemo?[
+  {label:'Risco',from:demo.riskSeries.length>1?(demo.riskSeries[demo.riskSeries.length-2]<50?'Médio':'Alto'):'—',to:demo.risk,tone:demo.risk==='Baixo'?'positive':'risk'},
+  {label:'Oportunidade',from:'Sinal inicial',to:demo.opp,tone:'opportunity'}
+ ]:[];
+ const changeRows=(isDemo?demoChanges:changes).map(x=>'<div class="client-change '+esc(x.tone)+'"><span>'+esc(x.label)+'</span><b>'+esc(x.from)+' <i>→</i> '+esc(x.to)+'</b></div>').join('');
+ const health=[
+  ['Relacionamento',relationship],
+  ['Engajamento',source.length?(actions.length?'Ativo':'Registrado'):'Demonstrativo'],
+  ['Sentimento',sentimentNow],
+  ['Risco',riskNow],
+  ['Oportunidade',oppNow]
+ ];
+ const healthHtml=health.map(x=>'<div class="client-health-row"><span>'+esc(x[0])+'</span><b>'+esc(x[1])+'</b></div>').join('');
+ const execText=source.length
+  ?(latest.summary||latest.why_it_matters||('O relacionamento está '+relationship.toLowerCase()+', com '+(latest.risk||'risco não identificado')+' e '+(latest.opportunity||'nenhuma oportunidade identificada')+'.'))
+  :'O relacionamento demonstrativo apresenta '+relationship.toLowerCase()+', com foco em '+demo.commercial+'. '+demo.financial+'.';
+ const attention=source.length
+  ?(latest.why_it_matters||latest.risk||'Nenhum ponto crítico registrado.')
+  :(demo.status==='ATENÇÃO'?'Acompanhar os pontos de risco antes do próximo avanço.':'Manter acompanhamento do próximo movimento comercial.');
+ const next=source.length?(latest.next_move||actions[0]||'Nenhum próximo movimento registrado.'):(demo.commercial||'Acompanhar próxima interação');
+ const owner=source.length?(latest.owner||'Responsável não identificado'):'Demonstração';
+ const deadline=source.length?(latest.deadline||'Prazo não definido'):'Contexto demonstrativo';
+ const insightsHtml=isDemo
+  ?demo.insights.map((x,i)=>'<article class="client-insight '+esc(x[0])+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(x[2])+'</span></div><p>'+esc(x[1])+'</p><small>'+esc(x[0])+'</small></article>').join('')
+  :allInsights.slice(0,10).map((x,i)=>{
+    const o=typeof x==='string'?{description:'Sinal registrado',evidence:x}:x;
+    return '<article class="client-insight '+esc(o.type||'sinal')+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(o.timestamp||'sem timestamp')+'</span></div><p>'+esc(o.description||o.evidence||'Insight registrado')+'</p>'+(o.evidence?'<blockquote>“'+esc(o.evidence)+'”</blockquote>':'')+'<small>'+esc(o.type||'sinal')+'</small></article>';
+  }).join('')||'<div class="detail-muted">Nenhum insight estruturado registrado.</div>';
+ const riskHtml=isDemo
+  ?'<div class="client-context-row"><b>'+esc(demo.risk)+'</b><span>estado atual</span></div><div class="client-context-row"><b>'+esc(demo.insights.find(x=>x[0]==='risco')?.[1]||'Nenhum risco destacado')+'</b><span>evidência</span></div>'
+  :risks.slice(0,6).map((m,i)=>'<div class="client-dossier-row risk"><div><b>'+esc(m.risk||'Risco identificado')+'</b><p>'+esc(m.why_it_matters||m.summary||'Sem leitura adicional registrada.')+'</p></div><span>'+esc(fmt(m.created_at))+'</span></div>').join('')||'<div class="detail-muted">Nenhum risco relevante registrado.</div>';
+ const oppHtml=isDemo
+  ?'<div class="client-context-row"><b>'+esc(demo.opp)+'</b><span>principal</span></div><div class="client-context-row"><b>'+esc(demo.commercial)+'</b><span>próximo potencial</span></div>'
+  :opportunities.slice(0,6).map((m,i)=>'<div class="client-dossier-row opportunity"><div><b>'+esc(m.opportunity)+'</b><p>'+esc(m.why_it_matters||m.summary||'Oportunidade identificada na conversa.')+'</p></div><span>'+esc(fmt(m.created_at))+'</span></div>').join('')||'<div class="detail-muted">Nenhuma oportunidade registrada.</div>';
+ const actionsHtml=isDemo
+  ?'<div class="client-context-row"><b>'+esc(demo.commercial)+'</b><span>próximo foco</span></div>'
+  :actions.slice(0,8).map((x,i)=>'<div class="client-action-row"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma ação pendente registrada.</div>';
+ const decisionsHtml=isDemo
+  ?'<div class="client-context-row"><b>Próxima etapa comercial</b><span>demonstrativo</span></div>'
+  :decisions.slice(0,8).map((x,i)=>'<div class="client-action-row"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma decisão registrada.</div>';
+ const timelineRows=source.length
+  ?source.slice(0,12).map((m,i)=>'<article class="client-history-row '+(i===0?'current':'')+'"><div class="client-history-date"><b>'+esc(fmt(m.created_at))+'</b><span>REUNIÃO '+String(source.length-i).padStart(2,'0')+'</span></div><div><b>'+esc(m.context||m.intelligence_type||'Interação')+'</b><p>'+esc((m.summary||m.why_it_matters||m.next_move||'Sem resumo registrado.').slice(0,280))+'</p><div><span>'+esc(m.sentiment||'—')+'</span><span>risco '+esc(m.risk||'—')+'</span><span>'+esc(m.opportunity||'sem oportunidade')+'</span></div></div><button type="button" class="client-open-meeting" data-client-meeting-id="'+esc(m.id||'')+'">Abrir análise →</button></article>').join('')
+  :demo.riskSeries.map((v,i)=>'<article class="client-history-row current"><div class="client-history-date"><b>R'+String(i+1).padStart(2,'0')+'</b><span>MEMÓRIA DEMO</span></div><div><b>'+esc(demo.context)+'</b><p>Trajetória demonstrativa do relacionamento, preservando contexto, risco e sinais para apresentação.</p><div><span>'+esc(demo.sentiment)+'</span><span>risco '+(v<40?'Baixo':v<60?'Médio':'Alto')+'</span><span>'+esc(demo.opp)+'</span></div></div></article>').join('');
+ const chart=source.length
+  ?source.slice().reverse().slice(-12).map((m,i)=>'<div class="client-risk-bar"><b>'+esc(m.risk||'—')+'</b><i class="'+(low(m.risk).includes('alto')?'risk':low(m.risk).includes('médio')||low(m.risk).includes('medio')?'medium':'low')+'"></i><small>R'+String(i+1).padStart(2,'0')+'</small></div>').join('')
+  :demo.riskSeries.map((v,i)=>'<div class="client-risk-bar"><b>'+v+'</b><i class="'+(v>=60?'risk':v>=40?'medium':'low')+'" style="height:'+Math.max(12,v)+'%"></i><small>R'+String(i+1).padStart(2,'0')+'</small></div>').join('');
+ const meetingCount=source.length||demo.meetings||0;
+ const insightCount=source.length?allInsights.length:demo.insights.length;
+ const riskCount=source.length?risks.length:1;
+ const oppCount=source.length?opportunities.length:1;
+ const actionCount=source.length?actions.length:1;
+ const decisionCount=source.length?decisions.length:1;
+ const evidenceCount=source.length?allEvidence.length:demo.insights.length;
+ h.innerHTML='<div class="client-detail-shell '+(isDemo?'client-demo-detail':'')+'">'+
+ '<div class="client-360-hero"><div class="client-360-identity"><span class="eyebrow">CUSTOMER 360 · MEMÓRIA DO RELACIONAMENTO</span><div class="client-360-title-row"><div class="client-avatar large">'+esc(name.slice(0,2).toUpperCase())+'</div><div><h2>'+esc(name)+'</h2><p>'+meetingCount+' reunião'+(meetingCount===1?'':'ões')+' · última interação '+(source.length?esc(fmt(latest.created_at)):'demonstrativa')+' · '+esc(contextNow)+'</p></div></div></div><span class="detail-badge '+(status==='ATENÇÃO'?'danger':'')+'">'+esc(status)+'</span></div>'+
+ (isDemo?'<div class="client-demo-note"><span>DEMONSTRAÇÃO</span><p>Esta visão usa dados fictícios para demonstrar o Customer 360. A memória real do cliente permanece separada e substituirá estes indicadores quando novas análises forem registradas.</p></div>':'')+
+ '<section class="client-executive-read"><div><span class="eyebrow">LEITURA EXECUTIVA</span><h3>O que o AURA entende agora</h3><p>'+esc(execText)+'</p><div class="client-executive-tags"><span>'+esc(contextNow)+'</span><span>'+esc(relationship)+'</span><span>'+esc(oppNow)+'</span></div></div><div class="client-now-focus"><span>ATENÇÃO AGORA</span><strong>'+esc(attention)+'</strong><small>Próximo movimento</small><b>'+esc(next)+'</b><small>'+esc(owner)+' · '+esc(deadline)+'</small></div></section>'+
+ '<div class="detail-metrics client-360-metrics"><div><span>REUNIÕES</span><b>'+meetingCount+'</b></div><div><span>INSIGHTS</span><b>'+insightCount+'</b></div><div><span>RISCOS</span><b>'+riskCount+'</b></div><div><span>OPORTUNIDADES</span><b>'+oppCount+'</b></div></div>'+
+ '<div class="client-360-grid top"><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">SAÚDE DO RELACIONAMENTO</span><h3>Estado atual</h3></div><span>leitura qualitativa</span></div><div class="client-health-list">'+healthHtml+'</div></section><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">DESDE A ÚLTIMA INTERAÇÃO</span><h3>O que mudou</h3></div><span>'+ (previous?'comparação direta':'primeiro registro') +'</span></div><div class="client-changes">'+(changeRows||'<div class="detail-muted">'+(source.length?'Os principais sinais permaneceram estáveis entre as últimas interações.':'A trajetória demonstrativa já possui histórico suficiente para comparação.')+'</div>')+'</div></section></div>'+
+ '<div class="client-360-grid main"><section class="detail-panel client-evolution-panel"><div class="client-panel-head"><div><span class="eyebrow">TRAJETÓRIA</span><h3>Risco ao longo das interações</h3></div><span>'+meetingCount+' pontos</span></div><p class="client-section-intro">A evolução abaixo mostra o estado de risco registrado em cada reunião. Não é um score de cliente.</p><div class="client-risk-chart">'+chart+'</div><div class="client-chart-meta"><span>mais antiga</span><b>última interação</b><span>atual: '+esc(riskNow)+'</span></div></section><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">MEMÓRIA COMERCIAL</span><h3>O que merece atenção</h3></div></div><div class="client-attention-list"><div><span>RISCO</span><b>'+esc(riskNow)+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(oppNow)+'</b></div><div><span>DECISÕES</span><b>'+decisionCount+'</b></div><div><span>AÇÕES</span><b>'+actionCount+'</b></div><div><span>EVIDÊNCIAS</span><b>'+evidenceCount+'</b></div></div></section></div>'+
+ '<section class="client-dossier-section"><div class="client-section-head"><div><span class="eyebrow">INTELIGÊNCIA DO RELACIONAMENTO</span><h3>Insights que explicam o cliente</h3><p>O AURA conecta sinais, evidências e momentos da conversa para preservar o contexto.</p></div></div><div class="client-insights-grid">'+insightsHtml+'</div></section>'+
+ '<div class="client-360-grid split"><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">RISCOS</span><h3>Pontos de atenção</h3></div><span>'+riskCount+' registrado'+(riskCount===1?'':'s')+'</span></div><div class="client-dossier-list">'+riskHtml+'</div></section><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">OPORTUNIDADES</span><h3>Potenciais identificados</h3></div><span>'+oppCount+' registrada'+(oppCount===1?'':'s')+'</span></div><div class="client-dossier-list">'+oppHtml+'</div></section></div>'+
+ '<div class="client-360-grid split"><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">EXECUÇÃO</span><h3>Ações pendentes</h3></div><span>'+actionCount+'</span></div><div class="client-actions-list">'+actionsHtml+'</div></section><section class="detail-panel"><div class="client-panel-head"><div><span class="eyebrow">DECISÕES</span><h3>O que já foi definido</h3></div><span>'+decisionCount+'</span></div><div class="client-actions-list">'+decisionsHtml+'</div></section></div>'+
+ '<section class="client-next-move"><div><span class="eyebrow">PRÓXIMO MOVIMENTO</span><h3>'+esc(next)+'</h3><p>'+esc(attention)+'</p></div><div><span>RESPONSÁVEL</span><b>'+esc(owner)+'</b><span>PRAZO</span><b>'+esc(deadline)+'</b></div></section>'+
+ '<section class="client-dossier-section client-history-section"><div class="client-section-head"><div><span class="eyebrow">MEMÓRIA COMPLETA</span><h3>Histórico do relacionamento</h3><p>Cada interação preserva seu contexto e pode levar de volta à análise original.</p></div></div><div class="client-history-list">'+timelineRows+'</div></section>'+
+ '</div>';
  h.scrollIntoView({behavior:'smooth',block:'start'});
+ h.querySelectorAll('[data-client-meeting-id]').forEach(btn=>btn.onclick=()=>{
+  const id=btn.dataset.clientMeetingId;
+  const m=source.find(x=>String(x.id||'')===String(id));
+  if(!m)return;
+  activate('history',false);
+  setTimeout(()=>detail(m),0);
+ });
 }
 function clients(){
  const h=document.getElementById('shellClients');if(!h)return;
