@@ -650,3 +650,36 @@ body.shell-generated-active main>header{display:none}
 /* Meeting analysis isolates the workspace from legacy history content */
 #history.meeting-detail-open > *:not(#meetingWorkspace){display:none!important}
 #history.meeting-detail-open #meetingWorkspace{display:block!important}
+
+/* Meeting analysis — readability pass */
+.meeting-memory-detail .meeting-detail-head h2{font-size:32px!important;line-height:1.18!important}
+.meeting-memory-detail .meeting-detail-head p{font-size:13px!important;line-height:1.5}
+.meeting-memory-detail .detail-metrics{gap:10px}
+.meeting-memory-detail .detail-metrics>div{padding:16px}
+.meeting-memory-detail .detail-metrics span{font-size:9px!important}
+.meeting-memory-detail .detail-metrics b{font-size:15px!important;line-height:1.35}
+.meeting-memory-detail .detail-panel{padding:20px}
+.meeting-memory-detail .detail-panel p{font-size:14px!important;line-height:1.75}
+.meeting-memory-detail .detail-next{font-size:15px!important;line-height:1.6}
+.meeting-memory-detail .detail-muted{font-size:12px!important;line-height:1.6}
+.meeting-memory-detail .detail-evidence,.meeting-memory-detail .detail-line{font-size:13px!important;line-height:1.65;padding:13px 0}
+.meeting-memory-detail .meeting-local-content{font-size:14px}
+.meeting-memory-detail .local-tab,.meeting-memory-detail [data-local-tab]{font-size:11px!important}
+.meeting-memory-detail .insight-head h3{font-size:20px!important}
+.meeting-memory-detail .insight-head p{font-size:12px!important;line-height:1.6}
+.meeting-memory-detail .insight-count{font-size:10px!important}
+.meeting-memory-detail .meeting-insight{padding:17px 18px}
+.meeting-memory-detail .insight-index,.meeting-memory-detail .insight-type,.meeting-memory-detail .insight-time{font-size:10px!important}
+.meeting-memory-detail .meeting-insight h4{font-size:15px!important;line-height:1.45}
+.meeting-memory-detail .meeting-insight blockquote{font-size:14px!important;line-height:1.7}
+.meeting-memory-detail .insight-meta{font-size:11px!important}
+.meeting-memory-detail .detail-micro-grid span{font-size:9px!important}
+.meeting-memory-detail .detail-micro-grid b{font-size:14px!important}
+.meeting-memory-detail .meeting-timeline-item span{font-size:11px!important}
+.meeting-memory-detail .meeting-timeline-item b{font-size:14px!important}
+.meeting-memory-detail .meeting-timeline-item p{font-size:13px!important}
+@media(max-width:760px){
+ .meeting-memory-detail .meeting-detail-head h2{font-size:25px!important}
+ .meeting-memory-detail .detail-metrics{grid-template-columns:1fr 1fr}
+ .meeting-memory-detail .detail-panel p{font-size:13px!important}
+}
