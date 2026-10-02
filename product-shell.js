@@ -145,6 +145,7 @@ function meeting(){
  h.querySelector('#meetingMemorySearch')?.addEventListener('input',apply);
  h.querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>{
   const m=source[+b.dataset.mi];
+  h.classList.add('meeting-detail-open');
   list.hidden=true;list.style.display='none';
   h.querySelector('.meeting-memory-controls').hidden=true;
   h.querySelector('.meeting-memory-toolbar').hidden=true;
@@ -155,6 +156,7 @@ function meeting(){
   back.innerHTML='<button type="button" class="meeting-back-button" aria-label="Voltar para reuniões" title="Voltar para reuniões"><span aria-hidden="true"></span></button>';
   detailHost.prepend(back);
   back.querySelector('button').onclick=()=>{
+   h.classList.remove('meeting-detail-open');
    detailHost.hidden=false;detailHost.style.display='none';
    list.hidden=false;list.style.display='';
    h.querySelector('.meeting-memory-controls').hidden=false;
