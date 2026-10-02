@@ -84,8 +84,10 @@ function renderMeetingPanel(m,tab){
 function detail(m){
  const d=document.getElementById('meetingDetail');if(!d)return;
  const tab=d.dataset.tab||'summary';
+ const back=d.querySelector('.meeting-detail-backbar');
  d.innerHTML='<div class="meeting-detail-head"><div><span class="eyebrow">ANÁLISE APROFUNDADA</span><h2>'+esc(m.client_name||'Cliente não identificado')+'</h2><p>'+fmt(m.created_at)+' · '+esc(m.context||m.intelligence_type||'Outro')+'</p></div><span class="detail-badge '+(low(m.risk).includes('alto')?'danger':'')+'">'+esc(m.priority||'—')+'</span></div><div class="detail-metrics"><div><span>SENTIMENTO</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>RISCO</span><b>'+esc(m.risk||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>TIPO</span><b>'+esc(m.intelligence_type||'—')+'</b></div></div>'+localTabs(tab,[['summary','Resumo'],['evidence','Insights & evidências'],['actions','Decisões & ações'],['timeline','Linha do tempo']])+'<div class="meeting-local-content">'+renderMeetingPanel(m,tab)+'</div>';
  d.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>{d.dataset.tab=b.dataset.localTab;detail(m)});
+ if(back)d.prepend(back);
 }
 function meeting(){
  const h=document.getElementById('meetingWorkspace');if(!h)return;
