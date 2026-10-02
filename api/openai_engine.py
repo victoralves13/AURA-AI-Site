@@ -277,7 +277,7 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
             }
             for x in (analysis.risks + analysis.opportunities + analysis.important_signals)
             if x.evidence
-        ][:7],
+        ],
         "participants": analysis.participants,
         "sentiment": analysis.sentiment,
         "analysis_model": ANALYSIS_MODEL,
