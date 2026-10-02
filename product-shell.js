@@ -716,29 +716,23 @@ function setup(){
  const r=document.querySelector('.rail'),n=r&&r.querySelector('nav');if(!r||!n)return;
  const brand=r.querySelector('.brand');
  if(brand&&!brand.querySelector('.rail-toggle')){
-  const controls=document.createElement('div');
-  controls.className='rail-controls';
   const toggle=document.createElement('button');
   toggle.type='button';toggle.className='rail-toggle';
   toggle.setAttribute('aria-label','Recolher menu');toggle.title='Recolher menu';
-  toggle.innerHTML='<span aria-hidden="true">'+I.left+'</span>';
-  const close=document.createElement('button');
-  close.type='button';close.className='rail-close';
-  close.setAttribute('aria-label','Fechar menu');close.title='Fechar menu';
-  close.innerHTML='<span aria-hidden="true">×</span>';
-  controls.append(toggle,close);
-  brand.parentNode.insertBefore(controls,brand);
+  toggle.innerHTML='<span aria-hidden="true"><i class="rail-toggle-open">×</i><i class="rail-toggle-closed"><span></span><span></span><span></span></i></span>';
+  brand.appendChild(toggle);
+  const syncToggle=collapsed=>{
+   toggle.classList.toggle('is-collapsed',collapsed);
+   toggle.setAttribute('aria-label',collapsed?'Abrir menu':'Recolher menu');
+   toggle.title=collapsed?'Abrir menu':'Recolher menu';
+  };
   toggle.onclick=()=>{
    const collapsed=document.body.classList.toggle('rail-collapsed');
-   toggle.innerHTML='<span aria-hidden="true">'+(collapsed?I.right:I.left)+'</span>';
-   toggle.setAttribute('aria-label',collapsed?'Expandir menu':'Recolher menu');
-   toggle.title=collapsed?'Expandir menu':'Recolher menu';
+   syncToggle(collapsed);
    localStorage.setItem('aura-rail-collapsed',collapsed?'1':'0');
   };
-  close.onclick=()=>{
-   document.body.classList.add('rail-mobile-open');
-  };
-  if(localStorage.getItem('aura-rail-collapsed')==='1')toggle.click();
+  syncToggle(localStorage.getItem('aura-rail-collapsed')==='1');
+  if(localStorage.getItem('aura-rail-collapsed')==='1')document.body.classList.add('rail-collapsed');
  }
  const primary=[['analysis','plus','Nova análise'],['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes']];
  const intelligence=[['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']];
