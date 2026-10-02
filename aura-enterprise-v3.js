@@ -81,7 +81,7 @@ function renderOverview(){
      '<div class="aura-command-metric"><span>OPORTUNIDADES</span><strong class="positive">'+opportunities.length+'</strong><small>sinais identificados</small></div>'+
      '<div class="aura-command-metric"><span>EXECUÇÃO</span><strong>'+actions.length+'</strong><small>próximos movimentos</small></div>'+
    '</section>'+
-   '<div class="aura-home-section-head"><div><span>MEMÓRIA OPERACIONAL</span><h2>O que merece atenção</h2></div><button class="aura-home-link" data-shell-view="risks">Ver inteligência completa →</button></div>'+
+   '<div class="aura-home-section-head"><div><span>MEMÓRIA OPERACIONAL</span><h2>O que merece atenção</h2></div></div>'+
    '<section class="aura-home-grid">'+
      '<article class="aura-home-panel aura-attention-panel">'+
        '<div class="aura-home-panel-head"><div><span class="panel-label">ATENÇÃO</span><h3>Sinais que pedem leitura</h3></div><span class="panel-count">'+risks.length+'</span></div>'+
