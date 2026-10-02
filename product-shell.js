@@ -411,7 +411,7 @@ function setup(){
   head.insertAdjacentElement('afterend',p);window.AURA_SELECTED_CONTEXT=C[0];
   p.querySelectorAll('[data-context]').forEach(x=>x.onclick=()=>{p.querySelectorAll('[data-context]').forEach(y=>y.classList.remove('selected'));x.classList.add('selected');window.AURA_SELECTED_CONTEXT=x.dataset.context});
  }
- bind();intelligence();activate('overview',false);
+ bind();activate('overview',false);
  window.addEventListener('aura:meeting-saved',()=>setTimeout(()=>{meeting();clients();signals('shellRisks','risco');signals('shellOpportunities','oportunidade');actions();evolution()},100));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
