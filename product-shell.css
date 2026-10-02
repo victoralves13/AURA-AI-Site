@@ -380,3 +380,15 @@ body.shell-generated-active main>header{display:none}
 .evolution-meeting-metrics:empty,.evolution-evidence-decision:empty{display:none}
 .evolution-economic-card:empty{display:none}
 @media(max-width:760px){.evolution-client-list{grid-template-columns:1fr}}
+
+
+/* Evolução — lista e detalhe como páginas internas, no mesmo padrão de Ações */
+.evolution-list-screen{max-width:1180px;animation:auraGuideIn .22s ease both}
+.evolution-detail-screen[hidden]{display:none!important}
+.evolution-detail-screen{max-width:1180px;animation:auraGuideIn .22s ease both}
+.evolution-detail-backbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 8px}
+.evolution-back-button{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:30px!important;height:30px!important;padding:0!important;margin:0!important;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:#67e7f4!important;cursor:pointer;opacity:.9;transition:.18s}
+.evolution-back-button span{display:block;width:11px;height:11px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-left:4px}
+.evolution-back-button:hover{color:#9af3fb!important;opacity:1;transform:translateX(-2px)}
+.evolution-back-button:focus{outline:0!important;box-shadow:none!important}
+@media(max-width:760px){.evolution-list-screen,.evolution-detail-screen{max-width:none}.evolution-client-list{grid-template-columns:1fr}}
