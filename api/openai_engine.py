@@ -25,6 +25,14 @@ class NextAction(BaseModel):
     evidence_strength: EvidenceStrength
 
 
+class InsightItem(BaseModel):
+    description: str
+    evidence: str
+    evidence_strength: EvidenceStrength
+    timestamp: str | None = None
+    category: Literal["risco", "oportunidade", "sinal", "relacionamento", "comercial", "operacional", "financeiro", "decisão", "objeção", "ação"]
+
+
 class AURAAnalysis(BaseModel):
     summary: str
     main_topics: list[str]
@@ -34,6 +42,7 @@ class AURAAnalysis(BaseModel):
     opportunities: list[EvidenceItem]
     objections: list[str]
     important_signals: list[EvidenceItem]
+    insights: list[InsightItem]
     next_actions: list[NextAction]
     participants: list[str]
     intelligence_type: str
@@ -64,10 +73,13 @@ REGRAS:
 - Não transforme qualquer ideia em oportunidade automaticamente.
 - Se não houver evidência suficiente, deixe a lista vazia.
 - Para riscos, oportunidades, sinais importantes e próximas ações, sempre inclua evidência textual curta.
-- Extraia todos os sinais distintos e relevantes encontrados na conversa; não limite a análise a apenas 3 itens por categoria ou 3 insights no total.
-- Como referência de abrangência, uma reunião rica pode gerar dezenas de insights estruturados. Busque registrar aproximadamente 8-12 riscos, oportunidades e/ou sinais no total por cada 30-60 minutos de conversa quando houver evidência suficiente, podendo haver menos em reuniões mais objetivas.
-- Não crie insights apenas para atingir uma quantidade: se um sinal não estiver sustentado pela conversa, não o registre.
-- Preserve diferenças entre sinais próximos quando eles representam fatos, decisões, preocupações, oportunidades ou mudanças realmente distintas.
+- Primeiro percorra mentalmente a transcrição inteira e construa uma lista abrangente de insights distintos. Depois selecione/organize os itens em riscos, oportunidades, sinais, decisões e ações quando aplicável.
+- O campo insights é a memória analítica completa da reunião. Registre nele todos os achados distintos e sustentados pela conversa, sem limite artificial de quantidade. Uma reunião rica pode gerar dezenas de itens; uma reunião objetiva pode gerar poucos.
+- Não crie insights apenas para atingir uma quantidade. Qualidade e rastreabilidade vêm antes de volume.
+- Evite condensar vários fatos diferentes em um único insight. Se houver mudanças, preocupações, oportunidades, objeções, decisões ou sinais comerciais distintos, preserve-os separadamente.
+- Use as categorias de insights para permitir posterior filtragem e leitura executiva: risco, oportunidade, sinal, relacionamento, comercial, operacional, financeiro, decisão, objeção ou ação.
+- Os campos risks, opportunities, important_signals, decisions e next_actions continuam existindo como visões estruturadas derivadas dos achados; não devem substituir nem limitar a lista completa de insights.
+- A lista completa deve refletir a reunião inteira, e não apenas os momentos mais dramáticos ou mais importantes.
 - Quando a transcrição trouxer timestamps no formato [MM:SS] ou [HH:MM:SS], associe o timestamp mais próximo da evidência e retorne-o no campo timestamp.
 - Nunca invente timestamp. Se não houver timestamp disponível para aquele trecho, deixe timestamp como null.
 - A força da evidência deve ser alta, média ou baixa.
@@ -277,9 +289,9 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
                 "evidence": x.evidence,
                 "evidence_strength": x.evidence_strength,
                 "timestamp": x.timestamp,
-                "type": "risco" if x in analysis.risks else "oportunidade" if x in analysis.opportunities else "sinal",
+                "type": x.category,
             }
-            for x in (analysis.risks + analysis.opportunities + analysis.important_signals)
+            for x in analysis.insights
             if x.evidence
         ],
         "participants": analysis.participants,
