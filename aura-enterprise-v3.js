@@ -46,52 +46,69 @@ function cleanShell(){
 function renderOverview(){
  const host=$('#auraOverviewClean');if(!host)return;
  const a=meetings(), real=a.filter(x=>!demo(x)), demos=a.filter(demo);
- const risks=a.filter(x=>risk(x).includes('alto')||risk(x).includes('médio'));
- const opportunities=a.filter(x=>opp(x).includes('detect'));
+ const risks=a.filter(x=>risk(x).includes('alto')||risk(x).includes('médio')||risk(x).includes('medio'));
+ const opportunities=a.filter(x=>opp(x).includes('detect')||opp(x).includes('oportun'));
  const actions=a.filter(x=>x.next_move);
  const latest=a.slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0)).slice(0,4);
- const trend=a.slice().sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0)).slice(-6);
- const trendRows=trend.map((m,i)=>{
+ const clientsCount=new Set(a.map(client)).size;
+ const highRisk=risks.filter(x=>risk(x).includes('alto')).length;
+ const latestRisk=latest[0]?.risk||'Sem leitura';
+ const latestSignal=latest[0]?.summary||latest[0]?.why_it_matters||'Aguardando a próxima reunião analisada.';
+ const trend=a.slice().sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0)).slice(-7);
+ const trendRows=trend.map(m=>{
    const score=Math.max(0,Math.min(100,Number(m.risk_score)||0));
-   const height=Math.max(8,score);
-   return '<div class="aura-trend-item" title="'+esc(client(m))+' · risco '+score+'% · '+esc(fmt(m.created_at))+'">'+
-     '<div class="aura-trend-value">'+score+'%</div>'+
-     '<div class="aura-trend-bar"><i style="height:'+height+'%"></i></div>'+
-     '<div class="aura-trend-label">'+esc(client(m))+'</div>'+
-     '<small>'+esc(fmt(m.created_at))+'</small>'+
+   return '<div class="aura-pulse-point" title="'+esc(client(m))+' · risco '+score+'%">'+
+     '<div class="aura-pulse-bar"><i style="height:'+Math.max(7,score)+'%"></i></div>'+
+     '<span>'+esc(client(m))+'</span><small>'+score+'%</small>'+
    '</div>';
  }).join('');
  const trendValid=trend.filter(m=>Number.isFinite(Number(m.risk_score))).length;
  const trendAvg=trendValid?Math.round(trend.reduce((s,m)=>s+(Number(m.risk_score)||0),0)/trendValid):0;
+ const riskTone=highRisk?'critical':'stable';
  host.innerHTML=
- '<div class="aura-clean-head"><div><h2>Inteligência da operação</h2></div></div>'+
- '<div class="aura-kpis">'+
-   '<div><span>REUNIÕES</span><strong>'+a.length+'</strong><small>'+real.length+' reais · '+demos.length+' demo</small></div>'+
-   '<div><span>RISCOS</span><strong>'+risks.length+'</strong><small>atenções identificadas</small></div>'+
-   '<div><span>OPORTUNIDADES</span><strong>'+opportunities.length+'</strong><small>sinais detectados</small></div>'+
-   '<div><span>AÇÕES</span><strong>'+actions.length+'</strong><small>próximos movimentos</small></div>'+
- '</div>'+
- '<div class="aura-dashboard-grid">'+
-   '<section class="aura-board-card aura-attention"><div class="aura-card-head"><h3>Atenção agora</h3><button class="aura-link" data-shell-view="risks">Ver riscos</button></div>'+
-   (risks.slice(0,4).map(m=>'<button class="aura-board-row" data-shell-view="risks"><span class="aura-dot red"></span><div><b>'+esc(client(m))+'</b><small>'+esc(m.summary||m.why_it_matters||'Sinal de atenção registrado.')+'</small></div><em>'+esc(m.risk||'Atenção')+'</em></button>').join('')||
-   '<div class="aura-empty-row"><b>Sem sinais críticos</b><small>Quando o AURA encontrar atenção relevante, ela aparecerá aqui.</small></div>')+
+ '<div class="aura-home">'+
+   '<section class="aura-home-hero">'+
+     '<div class="aura-home-hero-copy">'+
+       '<div class="aura-home-kicker"><span></span>AURA INTELLIGENCE CENTER</div>'+
+       '<h1>O que está acontecendo<br><em>agora?</em></h1>'+
+       '<p>Uma leitura executiva da memória comercial, dos sinais detectados e dos próximos movimentos da operação.</p>'+
+       '<div class="aura-home-actions"><button class="aura-home-primary" data-go="analysis">Nova análise <b>→</b></button><button class="aura-home-secondary" data-shell-view="history">Explorar memória</button></div>'+
+     '</div>'+
+     '<div class="aura-home-orbit" aria-hidden="true"><div class="aura-orbit-ring ring-a"></div><div class="aura-orbit-ring ring-b"></div><div class="aura-orb-core"><span>A</span></div><i></i><i></i><i></i></div>'+
+     '<div class="aura-home-context"><span>ESTADO DO SISTEMA</span><strong>ONLINE</strong><small>'+a.length+' reuniões na memória · '+clientsCount+' clientes</small></div>'+
    '</section>'+
-   '<section class="aura-board-card"><div class="aura-card-head"><h3>Últimas reuniões</h3><button class="aura-link" data-shell-view="history">Ver todas</button></div>'+
-   (latest.map(m=>'<button class="aura-board-row" data-shell-view="history"><span class="aura-date">'+esc(fmt(m.created_at))+'</span><div><b>'+esc(client(m))+(demo(m)?' <small class="aura-demo">DEMO</small>':'')+'</b><small>'+esc(m.context||m.intelligence_type||'Outro')+'</small></div><em>'+esc(m.sentiment||'—')+'</em></button>').join('')||
-   '<div class="aura-empty-row"><b>Nenhuma reunião</b><small>Execute uma análise para começar a construir a memória.</small></div>')+
+   '<section class="aura-command-strip">'+
+     '<div class="aura-command-intro"><span>LEITURA DE AGORA</span><strong>'+esc(latest[0]?'Última interação processada':'Aguardando primeira análise')+'</strong><p>'+esc(latestSignal)+'</p></div>'+
+     '<div class="aura-command-metric"><span>RISCO</span><strong class="'+(riskTone==='critical'?'critical':'')+'">'+esc(latestRisk)+'</strong><small>'+highRisk+' alto'+(highRisk===1?'':'s')+' no histórico</small></div>'+
+     '<div class="aura-command-metric"><span>OPORTUNIDADES</span><strong class="positive">'+opportunities.length+'</strong><small>sinais identificados</small></div>'+
+     '<div class="aura-command-metric"><span>EXECUÇÃO</span><strong>'+actions.length+'</strong><small>próximos movimentos</small></div>'+
    '</section>'+
-   '<section class="aura-board-card aura-evolution"><div class="aura-card-head"><div><h3>O que mudou?</h3><small class="aura-chart-subtitle">Evolução do nível de risco nas reuniões mais recentes</small></div><button class="aura-link" data-shell-view="evolution">Abrir evolução</button></div>'+
-   '<div class="aura-mini-chart">'+(trendRows||'<div class="aura-chart-empty">Aguardando histórico</div>')+'</div>'+
-   '<div class="aura-chart-meta"><span>Risco por reunião · 0–100%</span><b>'+(trendValid?('média '+trendAvg+'%'):'Sem dados de risco')+'</b></div></section>'+
-   '<section class="aura-board-card"><div class="aura-card-head"><h3>Próximos movimentos</h3><button class="aura-link" data-shell-view="actions">Ver ações</button></div>'+
-   (actions.slice(0,4).map(m=>'<button class="aura-board-row" data-shell-view="actions"><span class="aura-dot cyan"></span><div><b>'+esc(m.next_move)+'</b><small>'+esc(client(m))+' · '+esc(m.owner||'Responsável não definido')+'</small></div><em>'+esc(m.priority||'—')+'</em></button>').join('')||
-   '<div class="aura-empty-row"><b>Nenhuma ação</b><small>Decisões e próximos movimentos aparecerão aqui.</small></div>')+
+   '<div class="aura-home-section-head"><div><span>MEMÓRIA OPERACIONAL</span><h2>O que merece atenção</h2></div><button class="aura-home-link" data-shell-view="risks">Ver inteligência completa →</button></div>'+
+   '<section class="aura-home-grid">'+
+     '<article class="aura-home-panel aura-attention-panel">'+
+       '<div class="aura-home-panel-head"><div><span class="panel-label">ATENÇÃO</span><h3>Sinais que pedem leitura</h3></div><span class="panel-count">'+risks.length+'</span></div>'+
+       (risks.slice(0,3).map(m=>'<button class="aura-home-row" data-shell-view="risks"><span class="aura-row-marker red"></span><div><strong>'+esc(client(m))+'</strong><p>'+esc(m.risk||'Risco identificado')+'</p><small>'+esc((m.summary||m.why_it_matters||'Sinal registrado.').slice(0,150))+'</small></div><b>→</b></button>').join('')||
+       '<div class="aura-home-empty"><strong>Operação sem alertas críticos</strong><span>Novos sinais aparecerão aqui conforme as reuniões forem analisadas.</span></div>')+
+     '</article>'+
+     '<article class="aura-home-panel aura-memory-panel">'+
+       '<div class="aura-home-panel-head"><div><span class="panel-label">ATIVIDADE RECENTE</span><h3>Memória da operação</h3></div><button class="aura-home-link" data-shell-view="history">Abrir →</button></div>'+
+       (latest.map(m=>'<button class="aura-home-row compact" data-shell-view="history"><span class="aura-row-date">'+esc(fmt(m.created_at))+'</span><div><strong>'+esc(client(m))+'</strong><small>'+esc(m.context||m.intelligence_type||'Reunião analisada')+'</small></div><em>'+esc(m.sentiment||'—')+'</em></button>').join('')||
+       '<div class="aura-home-empty"><strong>A memória ainda está vazia</strong><span>A primeira análise cria o histórico que alimenta o AURA.</span></div>')+
+     '</article>'+
+   '</section>'+
+   '<section class="aura-home-panel aura-trajectory-panel">'+
+     '<div class="aura-home-panel-head"><div><span class="panel-label">TRAJETÓRIA</span><h3>Como o nível de risco vem se comportando</h3><p>Leitura por reunião — não é score de cliente.</p></div><div class="aura-trajectory-meta"><strong>'+(trendValid?(trendAvg+'%'):'—')+'</strong><span>'+(trendValid?'média recente':'sem dados suficientes')+'</span></div></div>'+
+     '<div class="aura-pulse-chart">'+(trendRows||'<div class="aura-home-empty"><strong>Aguardando histórico</strong><span>O gráfico será preenchido conforme novas reuniões forem analisadas.</span></div>')+'</div>'+
+   '</section>'+
+   '<section class="aura-home-footer-grid">'+
+     '<button class="aura-home-next" data-shell-view="opportunities"><span class="panel-label">POTENCIAL</span><strong>Oportunidades detectadas</strong><b>'+opportunities.length+' sinais →</b></button>'+
+     '<button class="aura-home-next" data-shell-view="actions"><span class="panel-label">EXECUÇÃO</span><strong>Próximos movimentos</strong><b>'+actions.length+' acompanhamentos →</b></button>'+
+     '<button class="aura-home-next" data-shell-view="clients"><span class="panel-label">RELACIONAMENTO</span><strong>Customer 360</strong><b>'+clientsCount+' clientes →</b></button>'+
    '</section>'+
  '</div>';
  host.querySelectorAll('[data-shell-view]').forEach(b=>b.onclick=e=>{e.preventDefault();document.querySelector('.shell-nav[data-shell-view="'+b.dataset.shellView+'"]')?.click()});
  host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>document.querySelector('.shell-nav[data-shell-view="analysis"]')?.click());
 }
-
 function renderHistoryClean(){
  const h=$('#history'); if(!h)return;
  let host=$('#auraHistoryClean',h);
