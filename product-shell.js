@@ -55,7 +55,7 @@ function normalizeInsights(m){
  return insightRawList(m).map((x,i)=>{
    if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal',is_quote:false};
    return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal',is_quote:true};
- }).filter(x=>x.evidence).slice(0,7);
+ }).filter(x=>x.evidence);
 }
 function renderInsights(m){
  const allCount=insightRawList(m).length;
