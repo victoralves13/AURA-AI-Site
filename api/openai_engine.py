@@ -64,6 +64,10 @@ REGRAS:
 - Não transforme qualquer ideia em oportunidade automaticamente.
 - Se não houver evidência suficiente, deixe a lista vazia.
 - Para riscos, oportunidades, sinais importantes e próximas ações, sempre inclua evidência textual curta.
+- Extraia todos os sinais distintos e relevantes encontrados na conversa; não limite a análise a apenas 3 itens por categoria ou 3 insights no total.
+- Como referência de abrangência, uma reunião rica pode gerar dezenas de insights estruturados. Busque registrar aproximadamente 8-12 riscos, oportunidades e/ou sinais no total por cada 30-60 minutos de conversa quando houver evidência suficiente, podendo haver menos em reuniões mais objetivas.
+- Não crie insights apenas para atingir uma quantidade: se um sinal não estiver sustentado pela conversa, não o registre.
+- Preserve diferenças entre sinais próximos quando eles representam fatos, decisões, preocupações, oportunidades ou mudanças realmente distintas.
 - Quando a transcrição trouxer timestamps no formato [MM:SS] ou [HH:MM:SS], associe o timestamp mais próximo da evidência e retorne-o no campo timestamp.
 - Nunca invente timestamp. Se não houver timestamp disponível para aquele trecho, deixe timestamp como null.
 - A força da evidência deve ser alta, média ou baixa.
