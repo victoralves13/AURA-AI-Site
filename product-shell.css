@@ -1160,3 +1160,34 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   }
   .rail .rail-toggle{display:none!important}
 }
+
+
+/* Final nav spacing correction — move only the control, never the workspace */
+.rail .brand{
+  min-height:42px!important;
+  height:42px!important;
+  padding:0 40px 0 8px!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+}
+.rail .rail-toggle{
+  top:-8px!important;
+  right:5px!important;
+  transform:none!important;
+  width:27px!important;
+  height:27px!important;
+}
+.rail-collapsed .rail .brand{
+  min-height:42px!important;
+  height:42px!important;
+  padding:0!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.rail-collapsed .rail .rail-toggle{
+  top:-8px!important;
+  right:5px!important;
+  transform:none!important;
+  width:25px!important;
+  height:25px!important;
+}
