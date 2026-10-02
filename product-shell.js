@@ -714,11 +714,26 @@ function bind(){
 }
 function setup(){
  const r=document.querySelector('.rail'),n=r&&r.querySelector('nav');if(!r||!n)return;
- n.innerHTML='<div class="shell-nav-label">NAVEGAÇÃO</div>'+[['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes'],['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']].map(x=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>').join('');
- const na=document.createElement('button');na.className='shell-new-analysis';na.innerHTML=I.plus+'<span>Nova análise</span>';na.onclick=()=>activate('analysis');r.insertBefore(na,n);
- const col=document.createElement('button');col.className='rail-collapse';col.innerHTML=I.left+'<span>Recolher menu</span>';r.appendChild(col);
- col.onclick=()=>{document.body.classList.toggle('rail-collapsed');const c=document.body.classList.contains('rail-collapsed');col.innerHTML=(c?I.right:I.left)+'<span>'+(c?'Expandir menu':'Recolher menu')+'</span>';localStorage.setItem('aura-rail-collapsed',c?'1':'0')};
- if(localStorage.getItem('aura-rail-collapsed')==='1')col.click();
+ const brand=r.querySelector('.brand');
+ if(brand&&!brand.querySelector('.rail-toggle')){
+  const toggle=document.createElement('button');
+  toggle.type='button';toggle.className='rail-toggle';
+  toggle.setAttribute('aria-label','Recolher menu');toggle.title='Recolher menu';
+  toggle.innerHTML='<span aria-hidden="true">'+I.left+'</span>';
+  brand.appendChild(toggle);
+  toggle.onclick=()=>{
+   const collapsed=document.body.classList.toggle('rail-collapsed');
+   toggle.innerHTML='<span aria-hidden="true">'+(collapsed?I.right:I.left)+'</span>';
+   toggle.setAttribute('aria-label',collapsed?'Expandir menu':'Recolher menu');
+   toggle.title=collapsed?'Expandir menu':'Recolher menu';
+   localStorage.setItem('aura-rail-collapsed',collapsed?'1':'0');
+  };
+  if(localStorage.getItem('aura-rail-collapsed')==='1')toggle.click();
+ }
+ const primary=[['analysis','plus','Nova análise'],['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes']];
+ const intelligence=[['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']];
+ const item=(x)=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>';
+ n.innerHTML='<div class="shell-nav-primary">'+item(primary[0])+'</div>'+primary.slice(1).map(item).join('')+'<div class="shell-nav-divider"></div><div class="shell-nav-label">INTELIGÊNCIA</div>'+intelligence.map(item).join('');
  add('clients','Clientes','CUSTOMER 360','Entenda a história de cada relacionamento a partir das reuniões que o AURA conhece.','shellClients');
  add('risks','Riscos','RISK CENTER','Sinais que merecem atenção, sempre ligados às evidências das reuniões.','shellRisks');
  add('opportunities','Oportunidades','OPPORTUNITY CENTER','Potenciais movimentos identificados pelo AURA a partir de conversas reais.','shellOpportunities');
