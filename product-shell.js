@@ -248,65 +248,81 @@ function opportunityDetail(m){
  '</div>';
  h.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function signalDetail(m,type){
- if(type==='oportunidade'){opportunityDetail(m);return;}
+function riskEvidence(m){
+ const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
+ return raw.map(x=>typeof x==='string'?{description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'}:{description:x?.description||'Sinal identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média'}).filter(x=>x.evidence||x.description);
+}
+function riskKind(m){
+ const t=low([m.risk,m.summary,m.why_it_matters,m.impact,m.context,m.intelligence_type,...riskEvidence(m).flatMap(x=>[x.description,x.evidence])].filter(Boolean).join(' '));
+ if(/finance|faturamento|receita|custo|pagamento|orçamento|orcamento/.test(t))return 'FINANCEIRO';
+ if(/estratégi|estrategi|expans|contrato|mercado/.test(t))return 'ESTRATÉGICO';
+ if(/relacionamento|cliente|insatis|confiança|confianca/.test(t))return 'RELACIONAMENTO';
+ return 'OPERACIONAL';
+}
+function riskState(m,related){
+ const t=low([m.summary,m.why_it_matters,m.next_move,m.risk].filter(Boolean).join(' '));
+ if(/resolvid|concluíd|concluid|encerrad/.test(t))return 'RESOLVIDO';
+ if(/estabiliz/.test(t))return 'ESTABILIZADO';
+ if(m.next_move)return 'EM CONTENÇÃO';
+ return related.length>1?'EM MONITORAMENTO':'NOVO';
+}
+function riskSeverity(m){
+ const t=low(m.risk);
+ if(t.includes('alto'))return 'ALTO';
+ if(t.includes('médio')||t.includes('medio'))return 'MÉDIO';
+ if(t.includes('baixo'))return 'BAIXO';
+ return m.risk||'NÃO CLASSIFICADO';
+}
+function riskRelated(m){
+ const key=m.client_name||m.file_name||'Cliente não identificado';
+ return items().filter(x=>(x.client_name||x.file_name||'Cliente não identificado')===key).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+}
+function riskDetail(m){
  const h=document.getElementById('shellRiskDetail');if(!h)return;
- const signals=[...(arr(m,'risk_signals')),...arr(m,'evidence')].slice(0,8);
- const insights=normalizeInsights(m).slice(0,5);
- const clientName=m.client_name||m.file_name||'Reunião';
- const related=items().filter(x=>{
-  const a=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
-  const b=x.client_name&&x.client_name!=='Cliente não identificado'?x.client_name:(x.file_name||'Cliente não identificado');
-  return a===b;
- }).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
- const latest=related[related.length-1]||m, previous=related[related.length-2];
- const riskScore=low(m.risk).includes('alto')?82:low(m.risk).includes('médio')?52:24;
- const previousScore=previous?(low(previous.risk).includes('alto')?82:low(previous.risk).includes('médio')?52:24):null;
- const direction=previousScore===null?'Primeiro registro deste cliente':riskScore>previousScore?'O risco aumentou desde a reunião anterior':riskScore<previousScore?'O risco reduziu desde a reunião anterior':'O nível de risco permaneceu estável';
- const actions=[...arr(m,'pending_actions'),...(m.next_move?[m.next_move]:[])].filter(Boolean).slice(0,4);
- const attention=low(m.risk).includes('alto')?'Atenção imediata':low(m.risk).includes('médio')?'Monitoramento ativo':'Acompanhamento regular';
- const evidenceHtml=signals.map((x,i)=>'<div class="risk-evidence-item"><span class="risk-item-index">'+String(i+1).padStart(2,'0')+'</span><p>'+esc(typeof x==='string'?x:(x.evidence||x.description||x.text||''))+'</p></div>').join('');
- const insightsHtml=insights.map((x,i)=>'<article class="risk-insight"><div class="risk-insight-head"><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b>'+(x.timestamp?'<span>'+esc(x.timestamp)+'</span>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p></article>').join('');
- const timelineHtml=related.slice(-6).reverse().map((x,i)=>'<div class="risk-timeline-row"><span>'+esc(fmt(x.created_at))+'</span><b>'+esc(x.risk||'Sem classificação')+'</b><small>'+esc((x.summary||x.why_it_matters||'Sem contexto registrado.').slice(0,180))+'</small></div>').join('');
- h.innerHTML='<div class="client-detail-shell risk-detail-shell"><div class="risk-hero"><div><span class="eyebrow">DOSSIÊ DO RISCO</span><h2>'+esc(clientName)+'</h2><p>'+fmt(m.created_at)+' · '+esc(m.context||m.intelligence_type||'Contexto não informado')+'</p></div><span class="detail-badge danger">'+esc(m.risk||'Risco identificado')+'</span></div><div class="risk-summary-grid"><div class="risk-summary-card"><span>Nível de risco</span><strong>'+esc(m.risk||'—')+'</strong><small>Classificação atual</small></div><div class="risk-summary-card"><span>Prioridade</span><strong>'+esc(m.priority||'—')+'</strong><small>Urgência identificada</small></div><div class="risk-summary-card"><span>Impacto</span><strong>'+esc(m.impact||'—')+'</strong><small>Efeito potencial</small></div><div class="risk-summary-card risk-attention-card"><span>Atenção necessária</span><strong>'+attention+'</strong><small>'+esc(direction)+'</small></div></div><section class="risk-section"><div class="risk-section-head"><div><span class="eyebrow">LEITURA DO RISCO</span><h3>O que está acontecendo</h3></div></div><div class="risk-reading-grid"><div class="risk-reading-block"><span>Leitura atual</span><p>'+esc(m.summary||m.why_it_matters||'Sem leitura registrada.')+'</p></div><div class="risk-reading-block"><span>Por que importa</span><p>'+esc(m.why_it_matters||'Sem justificativa registrada.')+'</p></div></div><div class="risk-status-strip"><div><span>Status de atenção</span><strong>'+attention+'</strong></div><div><span>Evolução</span><strong>'+esc(direction)+'</strong></div></div></section><section class="risk-section"><div class="risk-section-head"><div><span class="eyebrow">IMPACTO E PLANO</span><h3>O que precisa acontecer agora</h3></div></div><div class="risk-action-grid"><div class="risk-reading-block"><span>Impacto potencial</span><p>'+esc(m.impact||'Impacto ainda não qualificado.')+'</p></div><div class="risk-reading-block"><span>Próximo movimento</span><p>'+esc(m.next_move||'Nenhum próximo movimento registrado.')+'</p><small class="risk-owner-line">'+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não definido')+'</small></div></div></section><div class="risk-intelligence-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">EVIDÊNCIAS DO RISCO</span><h3>O que sustenta essa leitura</h3></div></div><div class="risk-evidence-list">'+(evidenceHtml||'<div class="detail-muted">Nenhuma evidência estruturada.</div>')+'</div></section><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">INSIGHTS DA CONVERSA</span><h3>O que o AURA percebeu</h3></div></div><div class="risk-insights-list">'+(insightsHtml||'<div class="detail-muted">Nenhum insight rastreável disponível.</div>')+'</div></section></div><section class="detail-panel risk-history-panel risk-section"><div class="client-panel-head"><div><span class="eyebrow">MEMÓRIA DO RELACIONAMENTO</span><h3>Evolução do risco</h3></div><span>'+related.length+' reunião'+(related.length===1?'':'ões')+'</span></div><div class="risk-mini-history">'+(timelineHtml||'<div class="detail-muted">Sem histórico relacionado.</div>')+'</div></section><div class="risk-intelligence-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">AÇÕES DE CONTENÇÃO</span><h3>Próximas ações</h3></div></div>'+(actions.map((x,i)=>'<div class="risk-action-item"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma ação de contenção registrada.</div>')+'</section><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">CONTEXTO COMERCIAL</span><h3>Como esse risco se relaciona ao negócio</h3></div></div><div class="risk-context-grid"><div><span>Oportunidade</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>Intenção</span><b>'+esc(m.intent||'—')+'</b></div><div><span>Sentimento</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>Tipo de inteligência</span><b>'+esc(m.intelligence_type||'—')+'</b></div></div></section></div></div>';
+ const related=riskRelated(m), evidence=riskEvidence(m).filter(x=>x.evidence).slice(0,10), sev=riskSeverity(m), kind=riskKind(m), state=riskState(m,related);
+ const idx=related.findIndex(x=>x===m), prev=idx>0?related[idx-1]:null;
+ const prevSev=prev?riskSeverity(prev):null;
+ const trend=!prev?'Primeiro registro — ainda sem comparação histórica':sev===prevSev?'Estável em relação ao registro anterior':(['ALTO','MÉDIO'].includes(sev)&&prevSev==='BAIXO')?'Aumento de atenção':'Mudança de classificação';
+ const actions=[...arr(m,'pending_actions'),...(m.next_move?[m.next_move]:[])].filter(Boolean);
+ const opportunity=m.opportunity&&m.opportunity!=='—'?m.opportunity:null;
+ const impact=m.impact||null;
+ const text=[m.summary,m.why_it_matters,m.impact,...evidence.flatMap(x=>[x.description,x.evidence])].filter(Boolean).join(' ');
+ const consequence=m.why_it_matters||m.impact||'Consequência potencial ainda não qualificada na fonte.';
+ const cause=m.summary||evidence[0]?.evidence||'Causa ainda não explicitada na análise.';
+ const resolution=/conclu|resolv|encerr/i.test(text)?'Critério indicado pela própria análise ou conversa.':'Confirmar que o bloqueador deixou de existir e validar a estabilidade na próxima interação.';
+ const timeline=related.filter(x=>riskSeverity(x)!=='NÃO CLASSIFICADO').slice(-8).reverse().map(x=>'<div class="risk-timeline-row '+(x===m?'current':'')+'"><span>'+esc(fmt(x.created_at))+'</span><div><b>'+esc(riskSeverity(x))+'</b><p>'+esc(x.summary||x.why_it_matters||'Sem leitura registrada.')+'</p></div></div>').join('');
+ const evHtml=evidence.map((x,i)=>'<article class="risk-evidence-item"><div><span>'+String(i+1).padStart(2,'0')+'</span><b>'+esc(x.type)+'</b>'+(x.timestamp?'<button type="button">'+esc(x.timestamp)+'</button>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p><small>Evidência '+esc(x.strength)+'</small></article>').join('');
+ const actionHtml=actions.slice(0,6).map((x,i)=>'<div class="risk-action-item"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('');
+ const matrix=[['Comercial',/receita|contrato|venda|expans|oportun/i.test(low(text))],['Operacional',/integra|prazo|process|implanta|técnic|tecnic/i.test(low(text))],['Financeiro',/r\$|finance|faturamento|receita|custo|pagamento/i.test(low(text))],['Relacionamento',/cliente|insatis|confiança|confianca|relacionamento/i.test(low(text))]].filter(x=>x[1]);
+ h.innerHTML='<div class="risk-center-shell"><div class="risk-hero"><div><span class="eyebrow">RISK INTELLIGENCE · DOSSIÊ</span><h2>'+esc(m.client_name||m.file_name||'Cliente não identificado')+'</h2><p>'+esc(m.context||m.intelligence_type||'Contexto não informado')+' · '+fmt(m.created_at)+'</p></div><div class="risk-hero-badge"><b>'+esc(sev)+'</b><span>'+esc(kind)+' · '+esc(state)+'</span></div></div>'+
+ '<div class="risk-summary-grid"><div class="risk-summary-card"><span>SEVERIDADE</span><strong>'+esc(sev)+'</strong><small>classificação registrada</small></div><div class="risk-summary-card"><span>STATUS</span><strong>'+esc(state)+'</strong><small>estado atual da leitura</small></div><div class="risk-summary-card"><span>EXPOSIÇÃO</span><strong>'+esc(kind)+'</strong><small>dimensão predominante</small></div><div class="risk-summary-card"><span>EVIDÊNCIAS</span><strong>'+evidence.length+'</strong><small>trechos rastreáveis</small></div></div>'+
+ '<section class="risk-section risk-executive"><div class="risk-section-head"><div><span class="eyebrow">LEITURA EXECUTIVA</span><h3>Por que o AURA está acompanhando este risco?</h3></div></div><p>'+esc(m.why_it_matters||m.summary||'O risco foi identificado a partir dos sinais disponíveis na conversa.')+'</p><div class="risk-executive-chain"><div><span>CAUSA</span><b>'+esc(cause)+'</b></div><i>→</i><div><span>RISCO</span><b>'+esc(m.risk||'Risco identificado')+'</b></div><i>→</i><div><span>CONSEQUÊNCIA</span><b>'+esc(consequence)+'</b></div></div></section>'+
+ '<div class="risk-main-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">EXPOSIÇÃO</span><h3>Onde esse risco pode repercutir</h3></div></div><div class="risk-exposure-grid">'+(matrix.length?matrix.map(x=>'<div><span>'+x[0]+'</span><b>Exposição identificada</b><small>há evidência relacionada nesta análise</small></div>').join(''):'<div class="risk-empty-exposure">Nenhuma dimensão adicional foi sustentada pela fonte.</div>')+'</div></section>'+
+ '<section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">DESDE A ÚLTIMA REUNIÃO</span><h3>'+esc(trend)+'</h3></div></div><div class="risk-before-after"><div><span>REGISTRO ANTERIOR</span><strong>'+esc(prev?riskSeverity(prev):'Sem comparação')+'</strong></div><div><span>AGORA</span><strong>'+esc(sev)+'</strong></div></div><p class="risk-note">'+esc(prev?(m.summary||m.why_it_matters||'Mudança registrada nesta reunião.'):'Ainda não há histórico suficiente para determinar tendência.')+'</p></section></div>'+
+ '<section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">EVIDÊNCIAS DO RISCO</span><h3>Declarações e sinais que sustentam a leitura</h3></div><span>'+evidence.length+' rastreáveis</span></div><div class="risk-evidence-list">'+(evHtml||'<div class="detail-muted">Nenhuma evidência estruturada disponível.</div>')+'</div></section>'+
+ '<div class="risk-main-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">CONSEQUÊNCIA POTENCIAL</span><h3>O que pode acontecer se nada mudar</h3></div></div><p class="risk-body-copy">'+esc(consequence)+'</p><small class="risk-inference-note">Leitura baseada nos sinais disponíveis; não representa resultado certo.</small></section>'+
+ '<section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">RISCO DECLARADO × INFERIDO</span><h3>Origem da leitura</h3></div></div><div class="risk-origin-grid"><div><span>DECLARADO</span><p>'+esc(evidence[0]?.evidence||'Nenhuma declaração direta identificada.')+'</p></div><div><span>LEITURA DO AURA</span><p>'+esc(m.why_it_matters||m.summary||'Nenhuma inferência adicional registrada.')+'</p></div></div></section></div>'+
+ '<section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">TRAJETÓRIA DO RISCO</span><h3>Como o sinal evoluiu</h3></div><span>'+related.length+' reunião'+(related.length===1?'':'ões')+'</span></div><div class="risk-trajectory-chart"><div class="risk-trajectory-line">'+related.map((x,i)=>'<i style="left:'+ (related.length===1?50:(i/(related.length-1))*92+4) +'%;bottom:'+ (riskSeverity(x)==='ALTO'?82:riskSeverity(x)==='MÉDIO'?52:26) +'%"><b>'+String(i+1).padStart(2,'0')+'</b></i>').join('')+'</div><div class="risk-chart-axis">'+related.map(x=>'<span>'+esc(fmt(x.created_at))+'</span>').join('')+'</div><p>Trajetória baseada nas classificações registradas nas reuniões; não é uma pontuação probabilística.</p></div><div class="risk-timeline">'+(timeline||'<div class="detail-muted">Sem histórico suficiente.</div>')+'</div></section>'+
+ '<div class="risk-main-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">PLANO DE CONTENÇÃO</span><h3>O que precisa acontecer agora</h3></div></div><div class="risk-containment"><div><span>PRÓXIMO MOVIMENTO</span><strong>'+esc(m.next_move||'Nenhum movimento registrado.')+'</strong><small>'+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não definido')+'</small></div><div><span>CRITÉRIO DE RESOLUÇÃO</span><strong>'+esc(resolution)+'</strong></div></div>'+actionHtml+'</section>'+
+ '<section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">RISCO ↔ NEGÓCIO</span><h3>Relações importantes</h3></div></div>'+(opportunity?'<div class="risk-linked-card"><span>OPORTUNIDADE RELACIONADA</span><strong>'+esc(opportunity)+'</strong><p>Este risco pode interferir na captura da oportunidade identificada na mesma conversa.</p></div>':'<div class="detail-muted">Nenhuma oportunidade relacionada foi registrada nesta análise.</div>')+'<div class="risk-memory-grid"><div><span>PRIMEIRO REGISTRO</span><b>'+esc(fmt(related[0]?.created_at||m.created_at))+'</b></div><div><span>ÚLTIMO REGISTRO</span><b>'+esc(fmt(related.at(-1)?.created_at||m.created_at))+'</b></div><div><span>RECORRÊNCIA</span><b>'+related.length+' reunião'+(related.length===1?'':'ões')+'</b></div><div><span>ESTADO</span><b>'+esc(state)+'</b></div></div></section></div>'+
+ '</div>';
  h.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function signalDetail(m,type){if(type==='oportunidade'){opportunityDetail(m);return;}riskDetail(m);}
 function signals(id,type){
  const h=document.getElementById(id);if(!h)return;
  const a=items().filter(x=>type==='risco'?(low(x.risk).includes('alto')||low(x.risk).includes('médio')||low(x.risk).includes('medio')):opportunityHasValue(x));
  const detailId=type==='risco'?'shellRiskDetail':'shellOpportunityDetail';
  if(!a.length){h.innerHTML='<div class="shell-empty"><strong>'+ (type==='risco'?'Nenhum risco registrado':'Nenhuma oportunidade registrada') +'</strong><span>O AURA mostrará evidências aqui conforme novas reuniões forem persistidas.</span></div>';const d=document.getElementById(detailId);if(d)d.innerHTML='';return}
- if(type==='oportunidade'){
-  h.innerHTML='<div class="opportunity-list-screen"><div class="opportunity-list-head"><div><span class="eyebrow">OPPORTUNITY INTELLIGENCE</span><h2>Mapa de oportunidades</h2><p>Potenciais movimentos comerciais identificados nas conversas e acompanhados por evidências, maturidade e próximos movimentos.</p></div><span class="opportunity-count">'+a.length+(a.length===1?' sinal':' sinais')+'</span></div><div class="opportunity-list-grid">'+a.map((m,i)=>'<button type="button" class="opportunity-list-card" data-signal-index="'+i+'"><div class="opportunity-card-top"><span class="opportunity-class">'+esc(opportunityClass(m))+'</span><span class="opportunity-card-arrow">→</span></div><h3>'+esc(m.client_name||m.file_name||'Cliente não identificado')+'</h3><strong>'+esc(m.opportunity||'Oportunidade identificada')+'</strong><p>'+esc(m.summary||m.why_it_matters||'Sinal comercial identificado na conversa.')+'</p><div class="opportunity-card-meta"><span>'+esc(m.priority||'Prioridade não registrada')+'</span><span>'+esc(opportunityMaturity(m))+'</span><span>'+esc(fmt(m.created_at))+'</span></div><div class="opportunity-card-foot"><span>'+opportunityEvidence(m).filter(x=>x.evidence).length+' evidências</span><span>'+esc(m.next_move||'Próximo movimento não definido')+'</span></div></button>').join('')+'</div></div><div class="opportunity-detail-screen" id="shellOpportunityDetail" hidden></div>';
-  const list=h.querySelector('.opportunity-list-screen'),detail=h.querySelector('.opportunity-detail-screen'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
-  h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{
-   list.hidden=true;list.style.display='none';
-   if(pageHead){pageHead.hidden=true;pageHead.style.display='none'}
-   detail.hidden=false;detail.style.display='block';
-   opportunityDetail(a[+b.dataset.signalIndex]);
-   const back=document.createElement('div');back.className='opportunity-detail-backbar';
-   back.innerHTML='<button type="button" class="opportunity-back-button" aria-label="Voltar para oportunidades" title="Voltar para oportunidades"><span aria-hidden="true"></span></button>';
-   detail.prepend(back);
-   requestAnimationFrame(()=>detail.scrollIntoView({block:'start',behavior:'smooth'}));
-   back.querySelector('button').onclick=()=>{
-    detail.hidden=true;detail.style.display='none';list.hidden=false;list.style.display='';
-    if(pageHead){pageHead.hidden=false;pageHead.style.display=''}
-    requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
-   };
-  });
+ if(type==='oportunidade'){ 
+ const list=h.querySelector('.opportunity-list-screen'),detail=h.querySelector('.opportunity-detail-screen'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
+ h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{list.hidden=true;list.style.display='none';if(pageHead){pageHead.hidden=true;pageHead.style.display='none'}detail.hidden=false;detail.style.display='block';opportunityDetail(a[+b.dataset.signalIndex]);const back=document.createElement('div');back.className='opportunity-detail-backbar';back.innerHTML='<button type="button" class="opportunity-back-button" aria-label="Voltar para oportunidades" title="Voltar para oportunidades"><span aria-hidden="true"></span></button>';detail.prepend(back);requestAnimationFrame(()=>detail.scrollIntoView({block:'start',behavior:'smooth'}));back.querySelector('button').onclick=()=>{detail.hidden=true;detail.style.display='none';list.hidden=false;list.style.display='';if(pageHead){pageHead.hidden=false;pageHead.style.display=''}requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));};});
   return;
  }
  h.innerHTML='<div class="signal-list-screen"><div class="shell-list">'+a.map((m,i)=>'<button class="signal-shell-row" data-signal-index="'+i+'"><i class="'+type+'"></i><span><b>'+esc(m.client_name||m.file_name||'Reunião')+'</b><small>'+esc(m.summary||m.why_it_matters||'Sem contexto registrado.')+'</small></span><em>'+esc(m.risk)+'</em></button>').join('')+'</div></div><div class="signal-detail-screen" id="'+detailId+'" hidden></div>';
  const list=h.querySelector('.signal-list-screen'),detailView=h.querySelector('.signal-detail-screen');
- h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{
-   list.hidden=true;detailView.hidden=false;signalDetail(a[+b.dataset.signalIndex],type);
-   const back=document.createElement('div');back.className='signal-detail-backbar';
-   back.innerHTML='<button type="button" class="signal-back-button" aria-label="Voltar para riscos" title="Voltar para riscos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';
-   detailView.prepend(back);
-   back.querySelector('button').onclick=()=>{detailView.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'});};
- });
-}
-function intelligence(){
+ h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{list.hidden=true;detailView.hidden=false;signalDetail(a[+b.dataset.signalIndex],type);const back=document.createElement('div');back.className='signal-detail-backbar';back.innerHTML='<button type="button" class="signal-back-button" aria-label="Voltar para riscos" title="Voltar para riscos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';detailView.prepend(back);back.querySelector('button').onclick=()=>{detailView.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'});};});
+}function intelligence(){
  const h=document.getElementById('insights'); if(!h)return;
  const a=items();
  const risks=a.filter(x=>low(x.risk).includes('alto')||low(x.risk).includes('médio'));
