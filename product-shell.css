@@ -640,3 +640,9 @@ body.shell-generated-active main>header{display:none}
 .meeting-memory-card:focus-visible{outline:1px solid rgba(101,231,245,.55);outline-offset:2px}
 .meeting-memory-card.is-selected{border-color:rgba(101,231,245,.3);box-shadow:inset 2px 0 0 #63dfe9,0 10px 28px rgba(0,0,0,.14)}
 @media(max-width:720px){.meeting-memory-filter-meta{width:100%;justify-content:space-between}.meeting-memory-controls{flex-direction:column;align-items:stretch}.meeting-memory-search{max-width:none}.meeting-memory-list{grid-template-columns:1fr}}
+
+/* Meeting detail — full workspace mode */
+.meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-layout{display:block!important}
+.meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-detail{width:100%!important;max-width:none!important;min-width:0!important;grid-column:1/-1!important}
+.meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-layout{width:100%!important;max-width:none!important}
+.meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-detail > *{max-width:none}
