@@ -1076,3 +1076,33 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 .rail .rail-toggle.is-collapsed .rail-toggle-closed{
   display:block!important;
 }
+
+
+/* Navigation control sits above the brand mark, not over it */
+.rail{position:relative!important}
+.rail .brand{
+  padding-top:34px!important;
+  min-height:76px!important;
+  height:76px!important;
+  align-items:flex-end!important;
+}
+.rail .rail-toggle{
+  top:7px!important;
+  right:8px!important;
+  transform:none!important;
+}
+.rail-collapsed .rail .brand{
+  padding-top:0!important;
+  min-height:76px!important;
+  height:76px!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+}
+.rail-collapsed .rail .brand-logo{
+  margin-bottom:2px!important;
+}
+.rail-collapsed .rail .rail-toggle{
+  top:6px!important;
+  right:5px!important;
+  transform:none!important;
+}
