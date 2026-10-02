@@ -687,3 +687,169 @@ body.shell-generated-active main>header{display:none}
 /* Hard isolation: when a meeting is open, only the meeting workspace remains */
 main>.view.meeting-focus-mode> *:not(#meetingWorkspace){display:none!important}
 main>.view.meeting-focus-mode #meetingWorkspace{display:block!important;width:100%!important}
+
+/* Navigation refinement — restrained enterprise workspace inspired by GitHub */
+.rail{
+  width:236px!important;
+  padding:14px 12px!important;
+  background:rgba(5,10,15,.96)!important;
+  backdrop-filter:blur(12px)!important;
+  border-right:1px solid rgba(170,220,230,.10)!important;
+  transition:width .24s cubic-bezier(.2,.7,.2,1),padding .24s ease,background .2s ease!important;
+}
+.rail .brand{
+  position:relative;
+  min-height:42px;
+  padding:0 8px 24px!important;
+  gap:10px;
+}
+.rail .brand-logo{width:30px!important;height:30px!important;border-radius:7px!important}
+.rail .brand>div strong{font:700 17px Manrope,sans-serif!important;letter-spacing:.08em!important}
+.rail .brand>div span{font:600 9px 'DM Mono',monospace!important;letter-spacing:.16em!important}
+.rail-toggle{
+  position:absolute!important;
+  top:0!important;
+  right:0!important;
+  width:30px!important;
+  height:30px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid rgba(170,220,230,.10)!important;
+  border-radius:7px!important;
+  background:rgba(255,255,255,.025)!important;
+  color:#8ea4ac!important;
+  cursor:pointer!important;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease!important;
+}
+.rail-toggle:hover{background:rgba(101,231,245,.06)!important;border-color:rgba(101,231,245,.20)!important;color:#dceff2!important}
+.rail-toggle svg{width:15px!important;height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.rail nav{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:2px!important;
+  max-height:calc(100vh - 112px)!important;
+  padding:0 1px 10px 0!important;
+  overflow-y:auto!important;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(120,150,160,.28) transparent;
+}
+.rail nav::-webkit-scrollbar{width:6px}
+.rail nav::-webkit-scrollbar-track{background:transparent}
+.rail nav::-webkit-scrollbar-thumb{background:rgba(120,150,160,.22);border-radius:8px}
+.shell-nav-label{
+  margin:15px 10px 6px!important;
+  color:#60767f!important;
+  font:600 9px Manrope,sans-serif!important;
+  letter-spacing:.08em!important;
+}
+.shell-nav-primary{margin-bottom:3px!important}
+.shell-nav-divider{
+  height:1px!important;
+  margin:10px 9px 2px!important;
+  background:rgba(170,220,230,.08)!important;
+}
+.shell-nav{
+  width:100%!important;
+  min-height:38px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:11px!important;
+  padding:9px 10px!important;
+  border:1px solid transparent!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:#8a9da4!important;
+  text-align:left!important;
+  cursor:pointer!important;
+  font:600 12px Manrope,sans-serif!important;
+  letter-spacing:0!important;
+  transition:background .15s ease,color .15s ease,border-color .15s ease!important;
+}
+.shell-nav i{
+  width:18px!important;
+  height:18px!important;
+  flex:0 0 18px!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#7d9198!important;
+}
+.shell-nav svg{
+  width:16px!important;height:16px!important;
+  fill:none!important;stroke:currentColor!important;
+  stroke-width:1.55!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.shell-nav:hover{
+  background:rgba(255,255,255,.035)!important;
+  color:#dbe9ec!important;
+}
+.shell-nav:hover i{color:#b8cbd0!important}
+.shell-nav.active{
+  background:rgba(101,231,245,.075)!important;
+  border-color:rgba(101,231,245,.10)!important;
+  color:#edf8fa!important;
+}
+.shell-nav.active i{color:#65e7f5!important}
+.shell-nav-primary .shell-nav{
+  color:#d0e1e5!important;
+  margin-bottom:3px!important;
+}
+.shell-nav-primary .shell-nav i{color:#65e7f5!important}
+.rail-bottom,.shell-new-analysis,.rail-collapse{display:none!important}
+.rail-collapsed .rail{
+  width:68px!important;
+  padding:12px 8px!important;
+}
+.rail-collapsed .rail .brand{
+  min-height:42px!important;
+  height:42px!important;
+  padding:0!important;
+  justify-content:center!important;
+}
+.rail-collapsed .rail .brand-logo{
+  width:30px!important;height:30px!important;
+}
+.rail-collapsed .rail .brand>div{display:none!important}
+.rail-collapsed .rail .rail-toggle{
+  top:0!important;
+  right:-2px!important;
+  width:25px!important;height:25px!important;
+  border-radius:6px!important;
+  background:rgba(5,10,15,.92)!important;
+}
+.rail-collapsed .rail nav{
+  max-height:calc(100vh - 68px)!important;
+  padding-top:5px!important;
+}
+.rail-collapsed .shell-nav-label{display:none!important}
+.rail-collapsed .shell-nav-divider{margin:8px 5px!important}
+.rail-collapsed .shell-nav{
+  justify-content:center!important;
+  gap:0!important;
+  min-height:40px!important;
+  padding:10px 0!important;
+  border-radius:7px!important;
+}
+.rail-collapsed .shell-nav span{display:none!important}
+.rail-collapsed .shell-nav i{
+  width:18px!important;height:18px!important;
+  flex:0 0 18px!important;
+}
+.rail-collapsed main{margin-left:68px!important}
+.rail-collapsed .shell-nav-primary .shell-nav{margin-bottom:3px!important}
+main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,.2,1)!important}
+@media(max-width:900px){
+  .rail{width:68px!important;padding:12px 8px!important}
+  .rail .brand{justify-content:center!important;padding:0 0 20px!important}
+  .rail .brand>div{display:none!important}
+  .rail .rail-toggle{right:-2px!important;width:25px!important;height:25px!important}
+  .rail nav{max-height:calc(100vh - 68px)!important}
+  .shell-nav-label{display:none!important}
+  .shell-nav{justify-content:center!important;gap:0!important;padding:10px 0!important}
+  .shell-nav span{display:none!important}
+  main{margin-left:68px!important}
+}
+@media(max-width:600px){
+  .rail{display:none!important}
+  main{margin-left:0!important}
+}
