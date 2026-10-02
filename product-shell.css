@@ -921,3 +921,111 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   }
   .rail-close span{transform:translateY(-1px)!important}
 }
+
+
+/* Navigation toggle — compact GitHub-style header control */
+.rail-controls{display:none!important}
+.rail-close{display:none!important}
+.rail .brand{
+  position:relative!important;
+  min-height:42px!important;
+  height:42px!important;
+  padding:0 40px 0 8px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+}
+.rail .brand-logo{flex:0 0 auto!important}
+.rail .brand>div{min-width:0!important}
+.rail-toggle{
+  position:absolute!important;
+  top:50%!important;
+  right:4px!important;
+  transform:translateY(-50%)!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid transparent!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  color:#9aadb4!important;
+  cursor:pointer!important;
+  z-index:2!important;
+}
+.rail-toggle:hover{
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(170,220,230,.10)!important;
+  color:#e8f3f5!important;
+}
+.rail-toggle>span{
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.rail-toggle-open,.rail-toggle-closed{
+  margin:0!important;
+  padding:0!important;
+  font-style:normal!important;
+}
+.rail-toggle-open{
+  display:block!important;
+  font:300 24px/26px Arial,sans-serif!important;
+  transform:translateY(-1px)!important;
+}
+.rail-toggle-closed{
+  display:none!important;
+  width:15px!important;
+  height:13px!important;
+  align-content:center!important;
+  gap:3px!important;
+}
+.rail-toggle-closed span{
+  display:block!important;
+  width:15px!important;
+  height:1.5px!important;
+  border-radius:2px!important;
+  background:currentColor!important;
+}
+.rail-toggle.is-collapsed{
+  right:1px!important;
+}
+.rail-toggle.is-collapsed .rail-toggle-open{display:none!important}
+.rail-toggle.is-collapsed .rail-toggle-closed{display:grid!important}
+.rail-collapsed .rail .brand{
+  min-height:42px!important;
+  height:42px!important;
+  padding:0!important;
+  justify-content:center!important;
+}
+.rail-collapsed .rail .brand-logo{
+  width:30px!important;
+  height:30px!important;
+}
+.rail-collapsed .rail .rail-toggle{
+  top:3px!important;
+  right:1px!important;
+  transform:none!important;
+  width:24px!important;
+  height:24px!important;
+  min-width:24px!important;
+  border-radius:5px!important;
+}
+@media(max-width:900px){
+  .rail .brand{
+    padding-right:36px!important;
+  }
+  .rail .rail-toggle{
+    display:grid!important;
+  }
+}
+@media(max-width:600px){
+  .rail .brand{padding-right:36px!important}
+}
+
+/* Remove the extra control row so the rail header no longer visually protrudes */
+.rail{padding-top:10px!important}
