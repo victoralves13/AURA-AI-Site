@@ -146,6 +146,7 @@ function meeting(){
  h.querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>{
   const m=source[+b.dataset.mi];
   h.classList.add('meeting-detail-open');
+  h.closest('.view')?.classList.add('meeting-focus-mode');
   list.hidden=true;list.style.display='none';
   h.querySelector('.meeting-memory-controls').hidden=true;
   h.querySelector('.meeting-memory-toolbar').hidden=true;
@@ -157,6 +158,7 @@ function meeting(){
   detailHost.prepend(back);
   back.querySelector('button').onclick=()=>{
    h.classList.remove('meeting-detail-open');
+   h.closest('.view')?.classList.remove('meeting-focus-mode');
    detailHost.hidden=false;detailHost.style.display='none';
    list.hidden=false;list.style.display='';
    h.querySelector('.meeting-memory-controls').hidden=false;
