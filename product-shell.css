@@ -363,3 +363,20 @@ body.shell-generated-active main>header{display:none}
 @media(max-width:950px){.evolution-journey-grid,.evolution-value-strip,.evolution-meeting-overview{grid-template-columns:1fr}}
 @media(max-width:760px){.evolution-meeting-metrics{grid-template-columns:1fr 1fr}.evolution-meeting-top{flex-direction:column}.evolution-meeting-badges{text-align:left}.evolution-client-head{flex-direction:column}.evolution-client-index{text-align:left}.evolution-axis span{font-size:7px}}
 @media(max-width:520px){.evolution-meeting-metrics{grid-template-columns:1fr}.evolution-current-grid{grid-template-columns:1fr}.evolution-client{padding:14px}}
+/* Evolução — navegação por cliente e hierarquia enterprise */
+.evolution-client-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.evolution-client-list-card{position:relative;width:100%;padding:17px 18px;border:1px solid rgba(150,210,220,.09);border-radius:12px;background:rgba(7,18,23,.52);color:var(--text);text-align:left;cursor:pointer;transition:.18s;box-sizing:border-box}
+.evolution-client-list-card:hover{border-color:rgba(103,231,244,.24);background:rgba(103,231,244,.035);transform:translateY(-1px)}
+.evolution-client-list-card .evolution-client-head{padding-right:26px}
+.evolution-client-list-card .evolution-client-head h3{font-size:18px}
+.evolution-list-arrow{position:absolute;right:17px;top:50%;transform:translateY(-50%);color:#67e7f4;font-size:18px;opacity:.65}
+.evolution-client-detail{animation:auraGuideIn .22s ease both}
+.evolution-detail-backbar{display:flex;margin:0 0 8px}
+.evolution-back-button{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:30px!important;height:30px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#67e7f4!important;cursor:pointer}
+.evolution-back-button span{display:block;width:11px;height:11px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-left:4px}
+.evolution-financial-impact{margin-top:12px;padding:14px 15px;border:1px solid rgba(141,232,206,.16);border-radius:10px;background:rgba(99,232,193,.035)}
+.evolution-financial-impact strong{display:block;margin-top:7px;color:#9aecd1;font-size:21px;line-height:1.3}
+.evolution-financial-impact p{margin:7px 0 0;color:#829a9f;font-size:10px;line-height:1.55}
+.evolution-meeting-metrics:empty,.evolution-evidence-decision:empty{display:none}
+.evolution-economic-card:empty{display:none}
+@media(max-width:760px){.evolution-client-list{grid-template-columns:1fr}}
