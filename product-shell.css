@@ -292,3 +292,74 @@ main{transition:margin-left .22s ease}
 
 /* Generated workspace pages already have their own local page header; avoid duplicating the global title. */
 body.shell-generated-active main>header{display:none}
+
+/* Evolução — jornada completa e rastreável */
+.evolution-intro{padding:4px 0 18px;border-bottom:1px solid rgba(150,210,220,.08)}
+.evolution-intro h2{margin:6px 0 6px;font-size:25px;color:#edf8fa}
+.evolution-intro p{margin:0;max-width:820px;color:#8da2a9;font-size:13px;line-height:1.65}
+.evolution-intro-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.evolution-intro-chips span{padding:6px 9px;border:1px solid rgba(101,231,245,.11);border-radius:7px;color:#86dce4;background:rgba(101,231,245,.025);font:700 9px 'DM Mono'}
+.evolution-client{margin-top:14px;padding:20px;border:1px solid rgba(150,210,220,.09);border-radius:14px;background:rgba(8,17,23,.72)}
+.evolution-client-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.evolution-client-head h3{margin:6px 0 4px;font-size:21px;color:#edf8fa}
+.evolution-client-head p{margin:0;color:#82989f;font-size:12px;line-height:1.5}
+.evolution-client-index{min-width:125px;text-align:right}
+.evolution-client-index b{display:block;font-size:24px;color:#67e7f4;line-height:1}
+.evolution-client-index span{display:block;margin-top:5px;color:#718891;font:9px 'DM Mono'}
+.evolution-journey-grid{display:grid;grid-template-columns:1.5fr .85fr;gap:12px;margin-top:15px}
+.evolution-curve-panel,.evolution-current-panel,.evolution-value-strip>div{padding:16px;border:1px solid rgba(150,210,220,.08);border-radius:11px;background:rgba(7,18,23,.42)}
+.evolution-section-head,.evolution-history-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}
+.evolution-section-head h4,.evolution-history-head h4{margin:6px 0 0;font-size:17px;color:#eaf6f8}
+.evolution-section-head>span{font:9px 'DM Mono';color:#718891;white-space:nowrap}
+.evolution-line-chart{height:175px;margin-top:14px;padding:8px 4px 0;border-top:1px solid rgba(150,210,220,.07);border-bottom:1px solid rgba(150,210,220,.07)}
+.evolution-line-chart svg{width:100%;height:100%;overflow:visible}
+.evolution-line{fill:none;stroke:#67e7f4;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(103,231,244,.18))}
+.evolution-line-area{fill:rgba(103,231,244,.045)}
+.evolution-line-dot{fill:#071116;stroke:#67e7f4;stroke-width:2}
+.evolution-axis{display:flex;justify-content:space-between;gap:5px;margin-top:8px;overflow:hidden}
+.evolution-axis span{color:#718891;font:8px 'DM Mono';text-align:center;white-space:nowrap}
+.evolution-axis small{display:block;margin-top:3px;color:#526a72;font:7px 'DM Mono'}
+.evolution-chart-note{margin:10px 0 0;color:#70868e;font-size:10px;line-height:1.55}
+.evolution-current-panel>h4{margin:8px 0 0;font-size:17px;line-height:1.5;color:#dceff2}
+.evolution-current-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.evolution-current-grid>div{padding:10px;border:1px solid rgba(150,210,220,.06);border-radius:8px;background:rgba(101,231,245,.018)}
+.evolution-current-grid span,.evolution-fields span,.evolution-meeting-metrics span{display:block;color:#718891;font:9px 'DM Mono';text-transform:uppercase}
+.evolution-current-grid b{display:block;margin-top:5px;color:#d5e9ec;font-size:12px;line-height:1.4}
+.evolution-value-strip{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
+.evolution-value-strip strong{display:block;margin-top:7px;color:#dff1f3;font-size:15px;line-height:1.5}
+.evolution-value-strip p{margin:7px 0 0;color:#849ba3;font-size:11px;line-height:1.6}
+.evolution-full-history{margin-top:18px}
+.evolution-history-head{padding-bottom:12px;border-bottom:1px solid rgba(150,210,220,.08)}
+.evolution-history-head p{margin:5px 0 0;color:#82989f;font-size:11px}
+.evolution-meeting-card{margin-top:12px;padding:17px;border:1px solid rgba(150,210,220,.08);border-radius:12px;background:rgba(7,18,23,.48)}
+.evolution-meeting-top{display:flex;justify-content:space-between;gap:18px;padding-bottom:13px;border-bottom:1px solid rgba(150,210,220,.07)}
+.evolution-meeting-top h4{margin:5px 0 3px;font-size:16px;color:#e9f5f7}
+.evolution-meeting-top p{margin:0;color:#748b93;font-size:11px}
+.evolution-meeting-badges{text-align:right}
+.evolution-meeting-badges b{display:block;color:#ffadb9;font-size:12px}
+.evolution-meeting-badges span{display:block;margin-top:4px;color:#7f969e;font:9px 'DM Mono'}
+.evolution-meeting-overview{display:grid;grid-template-columns:1.15fr .85fr;gap:11px;margin-top:12px}
+.evolution-reading,.evolution-economic-card{padding:14px;border-radius:9px;border:1px solid rgba(150,210,220,.06);background:rgba(101,231,245,.018)}
+.evolution-reading strong{display:block;margin-top:7px;color:#dceff2;font-size:15px;line-height:1.55}
+.evolution-reading p,.evolution-economic-card p{margin:7px 0 0;color:#9eb2b9;font-size:12px;line-height:1.65}
+.evolution-economic-card strong{display:block;margin-top:7px;color:#8de8ce;font-size:14px;line-height:1.55}
+.evolution-money{margin-top:10px;padding-top:9px;border-top:1px solid rgba(150,210,220,.06);color:#c7e6ea;font-size:11px;line-height:1.5}
+.evolution-meeting-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.evolution-meeting-metrics>div{padding:10px;border-bottom:1px solid rgba(150,210,220,.06)}
+.evolution-meeting-metrics b{display:block;margin-top:5px;color:#d5e8eb;font-size:12px;line-height:1.45}
+.evolution-insights-section{margin-top:12px;padding:14px;border:1px solid rgba(101,231,245,.07);border-radius:10px;background:rgba(101,231,245,.018)}
+.evolution-section-head h5{margin:6px 0 0;color:#dff0f2;font-size:14px}
+.evolution-section-head>span{color:#718891;font:9px 'DM Mono'}
+.evolution-insight-list{margin-top:10px}
+.evolution-insight-item{display:grid;grid-template-columns:32px 1fr;gap:11px;padding:11px 0;border-top:1px solid rgba(150,210,220,.06)}
+.evolution-insight-item:first-child{border-top:0}
+.evolution-insight-item>span{font:700 10px 'DM Mono';color:#67e7f4}
+.evolution-insight-item b{display:block;color:#dceff2;font-size:13px;line-height:1.55}
+.evolution-insight-item p{margin:6px 0 0;color:#b4c8cd;font-size:12px;line-height:1.65}
+.evolution-insight-item small{display:block;margin-top:6px;color:#70878f;font:9px 'DM Mono'}
+.evolution-evidence-decision{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(150,210,220,.07)}
+.evolution-evidence-decision p{margin:6px 0 0;color:#a8bdc3;font-size:12px;line-height:1.65}
+.evolution-muted{padding:12px;color:#718891;font-size:11px}
+@media(max-width:950px){.evolution-journey-grid,.evolution-value-strip,.evolution-meeting-overview{grid-template-columns:1fr}}
+@media(max-width:760px){.evolution-meeting-metrics{grid-template-columns:1fr 1fr}.evolution-meeting-top{flex-direction:column}.evolution-meeting-badges{text-align:left}.evolution-client-head{flex-direction:column}.evolution-client-index{text-align:left}.evolution-axis span{font-size:7px}}
+@media(max-width:520px){.evolution-meeting-metrics{grid-template-columns:1fr}.evolution-current-grid{grid-template-columns:1fr}.evolution-client{padding:14px}}
