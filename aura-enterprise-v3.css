@@ -400,3 +400,26 @@ header .eyebrow{display:none!important}
  .aura-home-primary,.aura-home-secondary{font-size:10px!important}
  .aura-home-section-head h2{font-size:20px!important}
 }
+
+
+/* Overview — enlarge secondary/gray typography */
+.aura-home-context span,
+.aura-command-intro span,
+.aura-command-metric span,
+.panel-label,
+.aura-home-section-head>div>span{font-size:10px!important;line-height:1.4!important}
+.aura-command-intro p{font-size:12px!important;line-height:1.55!important}
+.aura-command-metric small{font-size:10px!important;line-height:1.45!important}
+.aura-home-section-head p{font-size:12px!important;line-height:1.55!important}
+.aura-home-panel-head>div>p{font-size:11px!important;line-height:1.5!important}
+.aura-home-row p{font-size:12px!important;line-height:1.5!important}
+.aura-home-row small{font-size:11px!important;line-height:1.5!important}
+.aura-home-row.compact strong{font-size:12px!important}
+.aura-home-row.compact small{font-size:10px!important;line-height:1.5!important}
+.aura-home-row.compact em{font-size:10px!important}
+.aura-row-date{font-size:10px!important}
+.aura-home-empty span{font-size:11px!important;line-height:1.55!important}
+.aura-trajectory-meta span{font-size:10px!important}
+.aura-pulse-point>span{font-size:10px!important}
+.aura-pulse-point>small{font-size:10px!important}
+.aura-home-next b{font-size:10px!important}
