@@ -171,15 +171,93 @@ function clients(){
  const list=h.querySelector('.client-list-screen'),detailView=h.querySelector('.client-detail-screen');
  h.querySelectorAll('[data-client-name]').forEach(b=>b.onclick=()=>{const name=b.dataset.clientName;const sourceRows=g.get(name)||[];list.hidden=true;detailView.hidden=false;clientDetail(name,sourceRows);const back=document.createElement('div');back.className='client-detail-backbar';back.innerHTML='<button type="button" class="client-back-button" aria-label="Voltar para clientes" title="Voltar para clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';detailView.prepend(back);back.querySelector('button').onclick=()=>clients();window.scrollTo({top:0,behavior:'smooth'});});
 }
+function opportunityEvidence(m){
+ const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
+ return raw.map(x=>{
+  if(typeof x==='string')return {description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'};
+  return {description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média'};
+ }).filter(x=>x.evidence||x.description);
+}
+function opportunityText(m){
+ return [m?.opportunity,m?.summary,m?.why_it_matters,m?.impact,m?.intent,m?.next_move,m?.context,m?.intelligence_type,...opportunityEvidence(m).flatMap(x=>[x.description,x.evidence]),...arr(m,'important_signals'),...arr(m,'decisions')].filter(Boolean).join(' ');
+}
+function opportunityHasValue(m){
+ const x=low(m?.opportunity);
+ return !!x && !['—','-','nenhuma','nenhum','não identificado','nao identificado','sem oportunidade','não há oportunidade','nao ha oportunidade'].includes(x);
+}
+function opportunityClass(m){
+ const t=low(opportunityText(m));
+ if(/cross.?sell|módulo adicional|modulo adicional|produto adicional/.test(t))return 'CROSS-SELL';
+ if(/upsell|upgrade/.test(t))return 'UPSELL';
+ if(/expans|novas unidades|ampliar|amplia/.test(t))return 'EXPANSÃO';
+ if(/receita|faturamento|venda|contrato|renova/.test(t))return 'RECEITA';
+ if(/efici|produtiv|custo|automat/.test(t))return 'EFICIÊNCIA';
+ if(/estratégi|estrategi|nova frente/.test(t))return 'ESTRATÉGICA';
+ return 'COMERCIAL';
+}
+function opportunityMoney(m){
+ const matches=opportunityText(m).match(/(?:R\$\s?[\d.]+(?:,\d{1,2})?|\d+(?:,\d+)?\s?(?:mil|milhões|milhao|milhão)|\d+(?:[,.]\d+)?\s?%)/gi)||[];
+ return [...new Set(matches)].slice(0,8);
+}
+function opportunityMaturity(m){
+ const t=low(opportunityText(m));
+ if(/proposta formal|proposta comercial|enviar proposta|apresentar proposta/.test(t))return 'PROPOSTA';
+ if(/negocia|condiç|condicao|fechar|aprovação|aprovacao/.test(t))return 'NEGOCIAÇÃO';
+ if(/validar|piloto|teste|prova de conceito|poc/.test(t))return 'VALIDAÇÃO';
+ if(/interesse|queremos|gostaria|vamos avaliar|podemos discutir/.test(t))return 'INTERESSE';
+ return 'SINAL IDENTIFICADO';
+}
+function opportunityDetail(m){
+ const h=document.getElementById('shellOpportunityDetail');if(!h)return;
+ const client=m.client_name||m.file_name||'Cliente não identificado';
+ const opportunity=m.opportunity||'Oportunidade identificada';
+ const context=m.context||m.intelligence_type||'Contexto não informado';
+ const evidence=opportunityEvidence(m).filter(x=>x.evidence).slice(0,8);
+ const related=items().filter(x=>{
+  const a=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
+  const b=x.client_name&&x.client_name!=='Cliente não identificado'?x.client_name:(x.file_name||'Cliente não identificado');
+  return a===b;
+ }).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+ const relatedOpp=related.filter(opportunityHasValue);
+ const values=opportunityMoney(m);
+ const allValues=[...new Set(relatedOpp.flatMap(opportunityMoney))];
+ const maturity=opportunityMaturity(m);
+ const blockers=relatedOpp.flatMap(x=>low(x.risk).includes('alto')||low(x.risk).includes('médio')||low(x.risk).includes('medio')?[x.risk,x.why_it_matters].filter(Boolean):[]).filter(Boolean).slice(0,4);
+ const actions=[...arr(m,'pending_actions'),...(m.next_move?[m.next_move]:[])].filter(Boolean).slice(0,5);
+ const decisions=arr(m,'decisions').filter(Boolean).slice(0,4);
+ const last=relatedOpp.at(-1)||m;
+ const first=relatedOpp[0]||m;
+ const opportunitySignal=relatedOpp.length;
+ const timeline=relatedOpp.map((x,i)=>'<div class="opportunity-timeline-row '+(x.id===m.id?'current':'')+'"><span>'+esc(fmt(x.created_at))+'</span><div><b>'+esc(x.opportunity||'Oportunidade registrada')+'</b><p>'+esc(x.summary||x.why_it_matters||'Sem leitura adicional registrada.')+'</p></div></div>').join('');
+ const evidenceHtml=evidence.map((x,i)=>'<article class="opportunity-evidence-item"><div><span>'+String(i+1).padStart(2,'0')+'</span><b>'+esc(x.type||'sinal')+'</b>'+(x.timestamp?'<button type="button">'+esc(x.timestamp)+'</button>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p><small>Evidência '+esc(x.strength)+'</small></article>').join('');
+ const maturitySteps=['SINAL IDENTIFICADO','INTERESSE','VALIDAÇÃO','PROPOSTA','NEGOCIAÇÃO','EXPANSÃO'];
+ const maturityIndex=Math.max(0,maturitySteps.indexOf(maturity));
+ const maturityHtml=maturitySteps.map((x,i)=>'<div class="opportunity-stage '+(i<maturityIndex?'done ':'')+(i===maturityIndex?'current':'')+'"><span>'+String(i+1).padStart(2,'0')+'</span><b>'+x+'</b></div>').join('');
+ h.innerHTML='<div class="opportunity-detail-shell">'+
+ '<div class="opportunity-hero"><div><span class="eyebrow">OPPORTUNITY INTELLIGENCE · DOSSIÊ</span><h2>'+esc(client)+'</h2><p>'+esc(context)+' · última evidência '+fmt(last.created_at)+'</p></div><div class="opportunity-hero-badge"><b>'+esc(opportunityClass(m))+'</b><span>'+esc(m.opportunity||'Sinal identificado')+'</span></div></div>'+
+ '<div class="opportunity-kpis"><div><span>POTENCIAL</span><strong>'+esc(m.priority||'Acompanhar')+'</strong><small>prioridade registrada</small></div><div><span>MATURIDADE</span><strong>'+esc(maturity)+'</strong><small>leitura baseada na conversa</small></div><div><span>EVIDÊNCIAS</span><strong>'+evidence.length+'</strong><small>trechos rastreáveis</small></div><div><span>REUNIÕES RELACIONADAS</span><strong>'+opportunitySignal+'</strong><small>com sinal de oportunidade</small></div></div>'+
+ '<section class="opportunity-section opportunity-focus"><div class="opportunity-section-head"><div><span class="eyebrow">OPORTUNIDADE IDENTIFICADA</span><h3>'+esc(opportunity)+'</h3></div><span class="opportunity-source">FONTE · REUNIÃO '+esc(fmt(m.created_at))+'</span></div><div class="opportunity-reading-grid"><div><span>O QUE FOI IDENTIFICADO</span><p>'+esc(m.summary||opportunity)+'</p></div><div><span>POR QUE IMPORTA</span><p>'+esc(m.why_it_matters||m.impact||'A análise identificou um potencial movimento comercial a partir dos sinais disponíveis.')+'</p></div></div></section>'+
+ '<div class="opportunity-main-grid"><section class="detail-panel opportunity-section"><div class="opportunity-section-head"><div><span class="eyebrow">IMPACTO ECONÔMICO</span><h3>O que a conversa permite afirmar</h3></div></div>'+(values.length?'<div class="opportunity-money-list">'+values.map(v=>'<div><strong>'+esc(v)+'</strong><span>valor mencionado na fonte</span></div>').join('')+'</div>':'<div class="opportunity-empty-value"><strong>Potencial financeiro identificado</strong><p>Existe relevância econômica no sinal, mas a conversa atual não quantificou um valor. O AURA não estima um número que não esteja na fonte.</p></div>')+
+ (values.length?'<p class="opportunity-data-note">Os valores acima são dados mencionados na conversa; não representam receita realizada nem previsão de fechamento.</p>':'')+'</section>'+
+ '<section class="detail-panel opportunity-section"><div class="opportunity-section-head"><div><span class="eyebrow">CAMINHO PARA CAPTURA</span><h3>O que precisa acontecer agora</h3></div></div><div class="opportunity-next-card"><span>PRÓXIMO MOVIMENTO</span><strong>'+esc(m.next_move||'Definir próximo movimento após validação da oportunidade.')+'</strong><small>'+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não definido')+'</small></div><div class="opportunity-stage-line">'+maturityHtml+'</div></section></div>'+
+ '<div class="opportunity-main-grid"><section class="detail-panel opportunity-section"><div class="opportunity-section-head"><div><span class="eyebrow">EVIDÊNCIAS</span><h3>O que sustenta a oportunidade</h3></div><span>'+evidence.length+' rastreáveis</span></div><div class="opportunity-evidence-list">'+(evidenceHtml||'<div class="detail-muted">Nenhuma evidência estruturada disponível.</div>')+'</div></section>'+
+ '<section class="detail-panel opportunity-section"><div class="opportunity-section-head"><div><span class="eyebrow">BLOQUEADORES E RISCOS</span><h3>O que pode impedir a captura</h3></div></div>'+(blockers.length?blockers.map((x,i)=>'<div class="opportunity-blocker"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join(''):'<div class="opportunity-safe"><strong>Nenhum bloqueador relacionado foi registrado.</strong><p>Isso não significa ausência de risco; significa apenas que a análise atual não vinculou um risco diretamente a esta oportunidade.</p></div>')+'</section></div>'+
+ '<section class="detail-panel opportunity-section opportunity-journey"><div class="opportunity-section-head"><div><span class="eyebrow">EVOLUÇÃO DA OPORTUNIDADE</span><h3>Como o sinal apareceu ao longo do relacionamento</h3></div><span>'+relatedOpp.length+' marco'+(relatedOpp.length===1?'':'s')+'</span></div><div class="opportunity-signal-chart"><div class="opportunity-chart-line">'+relatedOpp.map((x,i)=>'<i style="left:'+ (relatedOpp.length===1?50:(i/(relatedOpp.length-1))*92+4) +'%;bottom:'+ (28+(i/(Math.max(1,relatedOpp.length-1)))*58) +'%"><b>'+String(i+1).padStart(2,'0')+'</b></i>').join('')+'</div><div class="opportunity-chart-axis">'+relatedOpp.map(x=>'<span>'+esc(fmt(x.created_at))+'</span>').join('')+'</div><p>O gráfico mostra a presença recorrente do sinal de oportunidade nas reuniões relacionadas; não representa probabilidade de fechamento.</p></div><div class="opportunity-timeline">'+(timeline||'<div class="detail-muted">Sem histórico suficiente para comparar a oportunidade.</div>')+'</div></section>'+
+ '<div class="opportunity-main-grid"><section class="detail-panel opportunity-section"><div class="opportunity-section-head"><div><span class="eyebrow">AÇÕES RELACIONADAS</span><h3>Da inteligência para execução</h3></div></div>'+(actions.length?actions.map((x,i)=>'<div class="opportunity-action"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join(''):'<div class="detail-muted">Nenhuma ação vinculada foi registrada.</div>')+(decisions.length?'<div class="opportunity-subhead">DECISÕES RELACIONADAS</div>'+decisions.map(x=>'<div class="opportunity-decision">'+esc(x)+'</div>').join(''):'')+'</section>'+
+ '<section class="detail-panel opportunity-section"><div class="opportunity-section-head"><div><span class="eyebrow">MEMÓRIA DA OPORTUNIDADE</span><h3>O que o AURA acumulou</h3></div></div><div class="opportunity-memory"><div><span>PRIMEIRO SINAL</span><strong>'+esc(fmt(first.created_at))+'</strong></div><div><span>ÚLTIMO SINAL</span><strong>'+esc(fmt(last.created_at))+'</strong></div><div><span>RECORRÊNCIA</span><strong>'+opportunitySignal+' reunião'+(opportunitySignal===1?'':'ões')+'</strong></div><div><span>IMPACTO</span><strong>'+esc(allValues.length?allValues.join(' · '):'Ainda não quantificado')+'</strong></div></div><p class="opportunity-memory-note">A memória reúne apenas sinais que o AURA conseguiu relacionar a esta oportunidade. Potencial não é tratado como resultado realizado.</p></section></div>'+
+ '</div>';
+ h.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function signalDetail(m,type){
- const h=document.getElementById(type==='risco'?'shellRiskDetail':'shellOpportunityDetail');if(!h)return;
- const signals=[...(arr(m,type==='risco'?'risk_signals':'opportunity_signals')),...arr(m,'evidence')].slice(0,8);
+ if(type==='oportunidade'){opportunityDetail(m);return;}
+ const h=document.getElementById('shellRiskDetail');if(!h)return;
+ const signals=[...(arr(m,'risk_signals')),...arr(m,'evidence')].slice(0,8);
  const insights=normalizeInsights(m).slice(0,5);
  const clientName=m.client_name||m.file_name||'Reunião';
  const related=items().filter(x=>{
-   const a=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
-   const b=x.client_name&&x.client_name!=='Cliente não identificado'?x.client_name:(x.file_name||'Cliente não identificado');
-   return a===b;
+  const a=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
+  const b=x.client_name&&x.client_name!=='Cliente não identificado'?x.client_name:(x.file_name||'Cliente não identificado');
+  return a===b;
  }).sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
  const latest=related[related.length-1]||m, previous=related[related.length-2];
  const riskScore=low(m.risk).includes('alto')?82:low(m.risk).includes('médio')?52:24;
@@ -192,22 +270,40 @@ function signalDetail(m,type){
  const timelineHtml=related.slice(-6).reverse().map((x,i)=>'<div class="risk-timeline-row"><span>'+esc(fmt(x.created_at))+'</span><b>'+esc(x.risk||'Sem classificação')+'</b><small>'+esc((x.summary||x.why_it_matters||'Sem contexto registrado.').slice(0,180))+'</small></div>').join('');
  h.innerHTML='<div class="client-detail-shell risk-detail-shell"><div class="risk-hero"><div><span class="eyebrow">DOSSIÊ DO RISCO</span><h2>'+esc(clientName)+'</h2><p>'+fmt(m.created_at)+' · '+esc(m.context||m.intelligence_type||'Contexto não informado')+'</p></div><span class="detail-badge danger">'+esc(m.risk||'Risco identificado')+'</span></div><div class="risk-summary-grid"><div class="risk-summary-card"><span>Nível de risco</span><strong>'+esc(m.risk||'—')+'</strong><small>Classificação atual</small></div><div class="risk-summary-card"><span>Prioridade</span><strong>'+esc(m.priority||'—')+'</strong><small>Urgência identificada</small></div><div class="risk-summary-card"><span>Impacto</span><strong>'+esc(m.impact||'—')+'</strong><small>Efeito potencial</small></div><div class="risk-summary-card risk-attention-card"><span>Atenção necessária</span><strong>'+attention+'</strong><small>'+esc(direction)+'</small></div></div><section class="risk-section"><div class="risk-section-head"><div><span class="eyebrow">LEITURA DO RISCO</span><h3>O que está acontecendo</h3></div></div><div class="risk-reading-grid"><div class="risk-reading-block"><span>Leitura atual</span><p>'+esc(m.summary||m.why_it_matters||'Sem leitura registrada.')+'</p></div><div class="risk-reading-block"><span>Por que importa</span><p>'+esc(m.why_it_matters||'Sem justificativa registrada.')+'</p></div></div><div class="risk-status-strip"><div><span>Status de atenção</span><strong>'+attention+'</strong></div><div><span>Evolução</span><strong>'+esc(direction)+'</strong></div></div></section><section class="risk-section"><div class="risk-section-head"><div><span class="eyebrow">IMPACTO E PLANO</span><h3>O que precisa acontecer agora</h3></div></div><div class="risk-action-grid"><div class="risk-reading-block"><span>Impacto potencial</span><p>'+esc(m.impact||'Impacto ainda não qualificado.')+'</p></div><div class="risk-reading-block"><span>Próximo movimento</span><p>'+esc(m.next_move||'Nenhum próximo movimento registrado.')+'</p><small class="risk-owner-line">'+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não definido')+'</small></div></div></section><div class="risk-intelligence-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">EVIDÊNCIAS DO RISCO</span><h3>O que sustenta essa leitura</h3></div></div><div class="risk-evidence-list">'+(evidenceHtml||'<div class="detail-muted">Nenhuma evidência estruturada.</div>')+'</div></section><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">INSIGHTS DA CONVERSA</span><h3>O que o AURA percebeu</h3></div></div><div class="risk-insights-list">'+(insightsHtml||'<div class="detail-muted">Nenhum insight rastreável disponível.</div>')+'</div></section></div><section class="detail-panel risk-history-panel risk-section"><div class="client-panel-head"><div><span class="eyebrow">MEMÓRIA DO RELACIONAMENTO</span><h3>Evolução do risco</h3></div><span>'+related.length+' reunião'+(related.length===1?'':'ões')+'</span></div><div class="risk-mini-history">'+(timelineHtml||'<div class="detail-muted">Sem histórico relacionado.</div>')+'</div></section><div class="risk-intelligence-grid"><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">AÇÕES DE CONTENÇÃO</span><h3>Próximas ações</h3></div></div>'+(actions.map((x,i)=>'<div class="risk-action-item"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma ação de contenção registrada.</div>')+'</section><section class="detail-panel risk-section"><div class="risk-section-head"><div><span class="eyebrow">CONTEXTO COMERCIAL</span><h3>Como esse risco se relaciona ao negócio</h3></div></div><div class="risk-context-grid"><div><span>Oportunidade</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>Intenção</span><b>'+esc(m.intent||'—')+'</b></div><div><span>Sentimento</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>Tipo de inteligência</span><b>'+esc(m.intelligence_type||'—')+'</b></div></div></section></div></div>';
  h.scrollIntoView({behavior:'smooth',block:'start'});
-}function signals(id,type){
+}
+function signals(id,type){
  const h=document.getElementById(id);if(!h)return;
- const a=items().filter(x=>type==='risco'?(low(x.risk).includes('alto')||low(x.risk).includes('médio')):low(x.opportunity).includes('detect'));
+ const a=items().filter(x=>type==='risco'?(low(x.risk).includes('alto')||low(x.risk).includes('médio')||low(x.risk).includes('medio')):opportunityHasValue(x));
  const detailId=type==='risco'?'shellRiskDetail':'shellOpportunityDetail';
- if(!a.length){h.innerHTML='<div class="shell-empty"><strong>Nenhum sinal registrado</strong><span>O AURA mostrará evidências aqui conforme novas reuniões forem persistidas.</span></div>';const d=document.getElementById(detailId);if(d)d.innerHTML='';return}
- h.innerHTML='<div class="signal-list-screen"><div class="shell-list">'+a.map((m,i)=>'<button class="signal-shell-row" data-signal-index="'+i+'"><i class="'+type+'"></i><span><b>'+esc(m.client_name||m.file_name||'Reunião')+'</b><small>'+esc(m.summary||m.why_it_matters||'Sem contexto registrado.')+'</small></span><em>'+esc(type==='risco'?m.risk:m.opportunity)+'</em></button>').join('')+'</div></div><div class="signal-detail-screen" id="'+detailId+'" hidden></div>';
+ if(!a.length){h.innerHTML='<div class="shell-empty"><strong>'+ (type==='risco'?'Nenhum risco registrado':'Nenhuma oportunidade registrada') +'</strong><span>O AURA mostrará evidências aqui conforme novas reuniões forem persistidas.</span></div>';const d=document.getElementById(detailId);if(d)d.innerHTML='';return}
+ if(type==='oportunidade'){
+  h.innerHTML='<div class="opportunity-list-screen"><div class="opportunity-list-head"><div><span class="eyebrow">OPPORTUNITY INTELLIGENCE</span><h2>Mapa de oportunidades</h2><p>Potenciais movimentos comerciais identificados nas conversas e acompanhados por evidências, maturidade e próximos movimentos.</p></div><span class="opportunity-count">'+a.length+(a.length===1?' sinal':' sinais')+'</span></div><div class="opportunity-list-grid">'+a.map((m,i)=>'<button type="button" class="opportunity-list-card" data-signal-index="'+i+'"><div class="opportunity-card-top"><span class="opportunity-class">'+esc(opportunityClass(m))+'</span><span class="opportunity-card-arrow">→</span></div><h3>'+esc(m.client_name||m.file_name||'Cliente não identificado')+'</h3><strong>'+esc(m.opportunity||'Oportunidade identificada')+'</strong><p>'+esc(m.summary||m.why_it_matters||'Sinal comercial identificado na conversa.')+'</p><div class="opportunity-card-meta"><span>'+esc(m.priority||'Prioridade não registrada')+'</span><span>'+esc(opportunityMaturity(m))+'</span><span>'+esc(fmt(m.created_at))+'</span></div><div class="opportunity-card-foot"><span>'+opportunityEvidence(m).filter(x=>x.evidence).length+' evidências</span><span>'+esc(m.next_move||'Próximo movimento não definido')+'</span></div></button>').join('')+'</div></div><div class="opportunity-detail-screen" id="shellOpportunityDetail" hidden></div>';
+  const list=h.querySelector('.opportunity-list-screen'),detail=h.querySelector('.opportunity-detail-screen'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
+  h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{
+   list.hidden=true;list.style.display='none';
+   if(pageHead){pageHead.hidden=true;pageHead.style.display='none'}
+   detail.hidden=false;detail.style.display='block';
+   opportunityDetail(a[+b.dataset.signalIndex]);
+   const back=document.createElement('div');back.className='opportunity-detail-backbar';
+   back.innerHTML='<button type="button" class="opportunity-back-button" aria-label="Voltar para oportunidades" title="Voltar para oportunidades"><span aria-hidden="true"></span></button>';
+   detail.prepend(back);
+   requestAnimationFrame(()=>detail.scrollIntoView({block:'start',behavior:'smooth'}));
+   back.querySelector('button').onclick=()=>{
+    detail.hidden=true;detail.style.display='none';list.hidden=false;list.style.display='';
+    if(pageHead){pageHead.hidden=false;pageHead.style.display=''}
+    requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
+   };
+  });
+  return;
+ }
+ h.innerHTML='<div class="signal-list-screen"><div class="shell-list">'+a.map((m,i)=>'<button class="signal-shell-row" data-signal-index="'+i+'"><i class="'+type+'"></i><span><b>'+esc(m.client_name||m.file_name||'Reunião')+'</b><small>'+esc(m.summary||m.why_it_matters||'Sem contexto registrado.')+'</small></span><em>'+esc(m.risk)+'</em></button>').join('')+'</div></div><div class="signal-detail-screen" id="'+detailId+'" hidden></div>';
  const list=h.querySelector('.signal-list-screen'),detailView=h.querySelector('.signal-detail-screen');
  h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{
    list.hidden=true;detailView.hidden=false;signalDetail(a[+b.dataset.signalIndex],type);
-   if(type==='risco'||type==='oportunidade'){
-     const back=document.createElement('div');back.className='signal-detail-backbar';
-     const label=type==='risco'?'Voltar para riscos':'Voltar para oportunidades';
-     back.innerHTML='<button type="button" class="signal-back-button" aria-label="'+label+'" title="'+label+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';
-     detailView.prepend(back);
-     back.querySelector('button').onclick=()=>{detailView.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'});};
-   }
+   const back=document.createElement('div');back.className='signal-detail-backbar';
+   back.innerHTML='<button type="button" class="signal-back-button" aria-label="Voltar para riscos" title="Voltar para riscos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>';
+   detailView.prepend(back);
+   back.querySelector('button').onclick=()=>{detailView.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'});};
  });
 }
 function intelligence(){
