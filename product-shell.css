@@ -646,3 +646,7 @@ body.shell-generated-active main>header{display:none}
 .meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-detail{width:100%!important;max-width:none!important;min-width:0!important;grid-column:1/-1!important}
 .meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-layout{width:100%!important;max-width:none!important}
 .meeting-memory-screen:has(.meeting-memory-detail[style*="display: block"]) .meeting-memory-detail > *{max-width:none}
+
+/* Meeting analysis isolates the workspace from legacy history content */
+#history.meeting-detail-open > *:not(#meetingWorkspace){display:none!important}
+#history.meeting-detail-open #meetingWorkspace{display:block!important}
