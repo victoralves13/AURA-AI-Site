@@ -853,3 +853,71 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   .rail{display:none!important}
   main{margin-left:0!important}
 }
+
+/* Navigation controls — GitHub-style top utility placement */
+.rail-controls{
+  width:100%!important;
+  height:28px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:4px!important;
+  padding:0 2px 2px!important;
+}
+.rail .brand{
+  min-height:48px!important;
+  padding:4px 8px 18px!important;
+}
+.rail-toggle,.rail-close{
+  position:static!important;
+  width:26px!important;
+  height:26px!important;
+  flex:0 0 26px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid transparent!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  color:#81959d!important;
+  cursor:pointer!important;
+  transition:background .16s ease,color .16s ease,border-color .16s ease!important;
+}
+.rail-toggle:hover,.rail-close:hover{
+  background:rgba(255,255,255,.045)!important;
+  border-color:rgba(170,220,230,.10)!important;
+  color:#e4f1f3!important;
+}
+.rail-toggle svg{
+  width:15px!important;height:15px!important;
+  fill:none!important;stroke:currentColor!important;
+  stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+.rail-close{display:none!important}
+.rail-collapsed .rail-controls{
+  justify-content:center!important;
+  padding-bottom:2px!important;
+}
+.rail-collapsed .rail-toggle{
+  width:28px!important;height:28px!important;
+  border-color:rgba(170,220,230,.08)!important;
+  background:rgba(255,255,255,.025)!important;
+}
+.rail-collapsed .rail .brand{
+  min-height:42px!important;
+  height:42px!important;
+  padding:0!important;
+  justify-content:center!important;
+}
+.rail-collapsed .rail .brand-logo{
+  width:30px!important;height:30px!important;
+}
+@media(max-width:900px){
+  .rail-controls{height:34px!important;padding:0 4px 3px!important}
+  .rail-toggle{display:none!important}
+  .rail-close{
+    display:grid!important;
+    font:400 24px/1 Arial,sans-serif!important;
+  }
+  .rail-close span{transform:translateY(-1px)!important}
+}
