@@ -513,3 +513,11 @@ body.shell-generated-active main>header{display:none}
 .risk-linked-card{padding:13px;border:1px solid rgba(99,232,193,.1);border-radius:9px;background:rgba(99,232,193,.025)}.risk-linked-card span{display:block;color:#718890;font:700 9px 'DM Mono'}.risk-linked-card strong{display:block;margin-top:7px;color:#9aecd1;font-size:15px}.risk-linked-card p{margin:6px 0 0;color:#849ba3;font-size:11px;line-height:1.6}.risk-memory-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.risk-memory-grid>div{padding:10px;border:1px solid rgba(150,210,220,.06);border-radius:8px;background:rgba(255,255,255,.012)}.risk-memory-grid b{display:block;margin-top:6px;color:#dceff2;font-size:12px}.risk-safe{color:#9aecd1}
 @media(max-width:900px){.risk-main-grid{grid-template-columns:1fr}.risk-summary-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.risk-hero{flex-direction:column}.risk-hero-badge{width:100%;box-sizing:border-box;text-align:left}.risk-executive-chain{grid-template-columns:1fr}.risk-executive-chain>i{transform:rotate(90deg)}.risk-exposure-grid,.risk-origin-grid,.risk-before-after,.risk-memory-grid{grid-template-columns:1fr}.risk-timeline-row{grid-template-columns:1fr;gap:5px}}
+
+/* Risk Center layout fixes — keep evidence content in the full-width column. */
+.risk-evidence-item{display:block!important}
+.risk-evidence-item>div{display:flex;align-items:center;gap:8px;min-width:0}
+.risk-evidence-item strong{display:block;width:auto;max-width:none;margin-top:9px;overflow-wrap:anywhere}
+.risk-evidence-item p{display:block;width:auto;max-width:none;margin:7px 0 0;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+.signal-client-chip{display:inline-flex!important;align-items:center;width:max-content;max-width:100%;padding:5px 9px;border:1px solid rgba(103,231,244,.16);border-radius:999px;background:rgba(103,231,244,.045);color:#dff5f7!important;font-size:13px!important;line-height:1.2!important;font-weight:700!important;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.signal-shell-row .signal-client-chip{margin:0 0 1px}
