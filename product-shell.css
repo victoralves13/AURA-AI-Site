@@ -1106,3 +1106,57 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   right:5px!important;
   transform:none!important;
 }
+
+
+/* Final navigation positioning fix — control above the brand mark */
+.rail{
+  position:fixed!important;
+  left:0!important;
+  top:0!important;
+  bottom:0!important;
+  height:100vh!important;
+  z-index:20!important;
+}
+.rail .brand{
+  position:relative!important;
+  min-height:76px!important;
+  height:76px!important;
+  padding:30px 40px 8px 8px!important;
+  align-items:flex-end!important;
+  justify-content:flex-start!important;
+}
+.rail .rail-toggle{
+  position:absolute!important;
+  top:3px!important;
+  right:5px!important;
+  transform:none!important;
+  width:27px!important;
+  height:27px!important;
+}
+.rail-collapsed .rail .brand{
+  min-height:76px!important;
+  height:76px!important;
+  padding:30px 0 8px!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+}
+.rail-collapsed .rail .brand-logo{
+  width:30px!important;
+  height:30px!important;
+}
+.rail-collapsed .rail .rail-toggle{
+  top:3px!important;
+  right:5px!important;
+  transform:none!important;
+  width:25px!important;
+  height:25px!important;
+}
+@media(max-width:900px){
+  .rail .brand{
+    min-height:76px!important;
+    height:76px!important;
+    padding:30px 0 8px!important;
+    justify-content:center!important;
+  }
+  .rail .rail-toggle{display:none!important}
+}
