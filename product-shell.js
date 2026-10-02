@@ -47,18 +47,24 @@ function add(id,title,eyebrow,desc,host){
 function localTabs(active,items){
  return '<div class="shell-local-tabs">'+items.map(x=>'<button type="button" class="'+(x[0]===active?'active':'')+'" data-local-tab="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
 }
-function normalizeInsights(m){
+function insightRawList(m){
  const raw=Array.isArray(m.insights)&&m.insights.length?m.insights:(Array.isArray(m.evidence)?m.evidence:[]);
- return raw.map((x,i)=>{
+ return raw.filter(x=>typeof x==='string'||(x&&typeof x==='object'&&(x.evidence||x.quote||x.text)));
+}
+function normalizeInsights(m){
+ return insightRawList(m).map((x,i)=>{
    if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal',is_quote:false};
    return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal',is_quote:true};
  }).filter(x=>x.evidence).slice(0,7);
 }
 function renderInsights(m){
+ const allCount=insightRawList(m).length;
  const insights=normalizeInsights(m);
  const typeLabel={risco:'Risco',oportunidade:'Oportunidade',sinal:'Sinal importante',objeção:'Objeção',decisão:'Decisão'};
  if(!insights.length)return '<div class="detail-panel insight-empty"><span class="eyebrow">INSIGHTS DA CONVERSA</span><strong>Nenhum insight rastreável disponível.</strong><p class="detail-muted">Quando a análise tiver evidências estruturadas, o AURA destacará os trechos mais relevantes aqui.</p></div>';
- return '<div class="detail-panel meeting-insights-panel"><div class="insight-head"><div><span class="eyebrow">INSIGHTS DA CONVERSA</span><h3>Os momentos que mais importam</h3><p>Trechos selecionados pela análise para explicar riscos, oportunidades e sinais.</p></div><span class="insight-count">'+insights.length+' selecionados</span></div><div class="meeting-insights-list">'+insights.map((x,i)=>'<article class="meeting-insight '+esc(x.type)+'"><div class="meeting-insight-top"><span class="insight-index">INSIGHT '+String(i+1).padStart(2,'0')+'</span><span class="insight-type">'+esc(typeLabel[x.type]||'Sinal importante')+'</span>'+(x.timestamp?'<button type="button" class="insight-time" title="Timestamp da evidência">'+esc(x.timestamp)+'</button>':'<span class="insight-time muted">timestamp não disponível</span>')+'</div><h4>'+esc(x.description)+'</h4><blockquote>“'+esc(x.evidence)+'”</blockquote><div class="insight-meta"><span>Evidência '+esc(x.evidence_strength)+'</span>'+(x.timestamp?'<span>Momento rastreado na reunião</span>':'<span>Sem marcação temporal na fonte</span>')+'</div></article>').join('')+'</div></div>';
+ const registeredLabel=allCount===1?'1 insight registrado':allCount+' insights registrados';
+ const priorityLabel=insights.length===1?'1 prioritário':insights.length+' prioritários';
+ return '<div class="detail-panel meeting-insights-panel"><div class="insight-head"><div><span class="eyebrow">INSIGHTS DA CONVERSA</span><h3>Os momentos que mais importam</h3><p>O AURA preserva todos os insights registrados e destaca os sinais mais relevantes para leitura executiva.</p></div><span class="insight-count">'+registeredLabel+' · '+priorityLabel+'</span></div><div class="meeting-insights-list">'+insights.map((x,i)=>'<article class="meeting-insight '+esc(x.type)+'"><div class="meeting-insight-top"><span class="insight-index">INSIGHT '+String(i+1).padStart(2,'0')+'</span><span class="insight-type">'+esc(typeLabel[x.type]||'Sinal importante')+'</span>'+(x.timestamp?'<button type="button" class="insight-time" title="Timestamp da evidência">'+esc(x.timestamp)+'</button>':'<span class="insight-time muted">timestamp não disponível</span>')+'</div><h4>'+esc(x.description)+'</h4><blockquote>“'+esc(x.evidence)+'”</blockquote><div class="insight-meta"><span>Evidência '+esc(x.evidence_strength)+'</span>'+(x.timestamp?'<span>Momento rastreado na reunião</span>':'<span>Sem marcação temporal na fonte</span>')+'</div></article>').join('')+'</div></div>';
 }
 function renderMeetingPanel(m,tab){
  const ev=[...arr(m,'evidence'),...arr(m,'risk_signals'),...arr(m,'opportunity_signals')];
