@@ -521,3 +521,21 @@ body.shell-generated-active main>header{display:none}
 .risk-evidence-item p{display:block;width:auto;max-width:none;margin:7px 0 0;white-space:normal;word-break:normal;overflow-wrap:anywhere}
 .signal-client-chip{display:inline-flex!important;align-items:center;width:max-content;max-width:100%;padding:5px 9px;border:1px solid rgba(103,231,244,.16);border-radius:999px;background:rgba(103,231,244,.045);color:#dff5f7!important;font-size:13px!important;line-height:1.2!important;font-weight:700!important;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .signal-shell-row .signal-client-chip{margin:0 0 1px}
+
+/* Risk Center list — same card language as Opportunities, without wrapping the client name. */
+.risk-list-screen{max-width:1180px;animation:auraGuideIn .22s ease both}
+.risk-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}
+.risk-list-card{position:relative;width:100%;min-height:210px;padding:18px 20px;text-align:left;color:var(--text);background:linear-gradient(145deg,rgba(18,19,28,.84),rgba(8,17,23,.62));border:1px solid rgba(255,120,148,.11);border-radius:13px;cursor:pointer;transition:.18s;box-sizing:border-box}
+.risk-list-card:hover{transform:translateY(-2px);border-color:rgba(255,120,148,.28);background:linear-gradient(145deg,rgba(25,23,33,.92),rgba(8,18,24,.72));box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.risk-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.risk-class{padding:5px 8px;border-radius:6px;border:1px solid rgba(255,120,148,.16);color:#ffabb8;background:rgba(255,90,120,.035);font:700 9px 'DM Mono';letter-spacing:.07em}
+.risk-card-arrow{font-size:20px;line-height:1;color:#ff91a8;opacity:.72}
+.risk-list-card h3{margin:16px 0 5px;font-size:20px;line-height:1.3;color:#edf8fa}
+.risk-list-card>strong{display:block;color:#ffb0bb;font-size:15px;line-height:1.45}
+.risk-list-card>p{margin:8px 0 15px;color:#a7bbc1;font-size:12px;line-height:1.6;min-height:39px}
+.risk-card-meta{display:flex;gap:7px;flex-wrap:wrap;padding-top:11px;border-top:1px solid rgba(150,210,220,.07)}
+.risk-card-meta span{padding:5px 7px;border-radius:6px;background:rgba(255,255,255,.018);border:1px solid rgba(150,210,220,.05);color:#82989f;font:9px 'DM Mono'}
+.risk-card-foot{display:flex;justify-content:space-between;gap:14px;margin-top:11px;color:#718890;font:9px 'DM Mono'}
+.risk-card-foot span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.signal-client-chip{display:inline!important;padding:0!important;border:0!important;background:transparent!important;color:inherit!important;font-size:inherit!important}
+@media(max-width:850px){.risk-list-grid{grid-template-columns:1fr}}
