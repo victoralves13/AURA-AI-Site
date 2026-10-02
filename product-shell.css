@@ -259,3 +259,21 @@ main{transition:margin-left .22s ease}
 .action-plan span{font:700 9px 'DM Mono';letter-spacing:.06em;color:#67e7f4}
 .action-plan p{margin:6px 0 0;color:#a9bdc3;font-size:11px;line-height:1.6}
 @media(max-width:760px){.action-detail-grid{grid-template-columns:1fr}.action-deadline{grid-template-columns:1fr}.action-detail-hero{flex-direction:column;gap:10px}.action-list-head{align-items:flex-start}.action-shell-row{grid-template-columns:34px 1fr 10px;gap:11px;padding:13px}.action-row-meta{display:none}}
+
+/* Ações — leitura prioritária: conteúdo executivo maior e mais legível */
+.action-focus-card h3{font-size:21px;line-height:1.4}
+.action-focus-card>p{font-size:14px;line-height:1.75;color:#b9cbd0}
+.action-deadline span,.action-outcome span{font-size:10px}
+.action-deadline strong{font-size:14px;line-height:1.4}
+.action-section h3{font-size:18px;line-height:1.4}
+.action-section>p{font-size:14px;line-height:1.75;color:#b5c7cc}
+.action-outcome strong{font-size:15px;line-height:1.45}
+.action-outcome small{font-size:11px;line-height:1.6}
+.action-context-row span{font-size:10px}
+.action-context-row b{font-size:13px;line-height:1.5}
+.action-evidence i{font-size:10px}
+.action-evidence p{font-size:13px;line-height:1.7;color:#b5c7cc}
+.action-subhead{font-size:10px}
+.action-decision{font-size:12px;line-height:1.65;color:#b8cbd0}
+.action-plan span{font-size:10px}
+.action-plan p{font-size:13px;line-height:1.7;color:#b5c7cc}
