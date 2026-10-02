@@ -27,7 +27,7 @@ function activate(id,scroll=true){
  document.querySelectorAll('.shell-nav').forEach(x=>x.classList.toggle('active',x.dataset.shellView===id));
  const t=document.getElementById('pageTitle'),e=document.querySelector('header .eyebrow');
  if(t)t.textContent=V[id][0]; if(e)e.textContent=V[id][1];
- document.body.dataset.auraView=id;
+ document.body.dataset.auraView=id;document.body.classList.toggle('shell-generated-active',['history','clients','risks','opportunities','actions','evolution'].includes(id));
  if(scroll)window.scrollTo({top:0,behavior:'smooth'});
  if(id==='history')meeting();
  if(id==='insights')intelligence();
