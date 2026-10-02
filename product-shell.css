@@ -289,3 +289,6 @@ main{transition:margin-left .22s ease}
 .action-decision{font-size:13px!important;line-height:1.7!important}
 .action-plan span{font-size:11px!important}
 .action-plan p{font-size:15px!important;line-height:1.75!important;color:#bdd0d5!important}
+
+/* Generated workspace pages already have their own local page header; avoid duplicating the global title. */
+body.shell-generated-active main>header{display:none}
