@@ -1029,3 +1029,50 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 
 /* Remove the extra control row so the rail header no longer visually protrudes */
 .rail{padding-top:10px!important}
+
+
+/* Final navigation icon state — explicit, conflict-proof */
+.rail .rail-toggle .rail-toggle-open{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  color:currentColor!important;
+  font:300 24px/24px Arial,sans-serif!important;
+  font-style:normal!important;
+  opacity:1!important;
+}
+.rail .rail-toggle .rail-toggle-closed{
+  display:none!important;
+  position:relative!important;
+  width:16px!important;
+  height:14px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:visible!important;
+}
+.rail .rail-toggle .rail-toggle-closed::before,
+.rail .rail-toggle .rail-toggle-closed::after{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  width:16px!important;
+  height:2px!important;
+  border-radius:2px!important;
+  background:currentColor!important;
+}
+.rail .rail-toggle .rail-toggle-closed::before{
+  top:0!important;
+  box-shadow:0 6px 0 currentColor,0 12px 0 currentColor!important;
+}
+.rail .rail-toggle .rail-toggle-closed::after{
+  display:none!important;
+}
+.rail .rail-toggle .rail-toggle-closed span{
+  display:none!important;
+}
+.rail .rail-toggle.is-collapsed .rail-toggle-open{
+  display:none!important;
+}
+.rail .rail-toggle.is-collapsed .rail-toggle-closed{
+  display:block!important;
+}
