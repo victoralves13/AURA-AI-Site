@@ -89,11 +89,68 @@ function detail(m){
 }
 function meeting(){
  const h=document.getElementById('meetingWorkspace');if(!h)return;
- const a=items();
- if(!a.length){h.innerHTML='<div class="shell-empty"><strong>Nenhuma reunião analisada ainda</strong><span>Envie um áudio ou transcrição em Nova análise para construir a memória do AURA.</span><button class="primary" data-shell-view="analysis">Nova análise →</button></div>';bind();return}
- let rows='';a.forEach((m,i)=>{const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Reunião');rows+='<button class="meeting-row" data-mi="'+i+'"><i class="'+(low(m.risk).includes('alto')?'risk':'')+'"></i><span><b>'+esc(n)+'</b><small>'+esc(m.context||m.intent||m.intelligence_type||'Outro')+' · '+esc(m.sentiment||'—')+' · '+esc(m.priority||'—')+'</small></span><time>'+fmt(m.created_at)+'</time></button>'});
- h.innerHTML='<div class="meeting-toolbar"><div><span class="eyebrow">MEETING MEMORY</span><h2>'+a.length+(a.length===1?' reunião':' reuniões')+' na memória</h2></div><div class="meeting-filter"><span class="meeting-filter-risk"><i></i>'+a.filter(x=>low(x.risk).includes('alto')).length+' riscos altos</span><span class="meeting-filter-opportunity"><i></i>'+a.filter(x=>low(x.opportunity).includes('detect')).length+' oportunidades</span></div></div><div class="meeting-workspace-grid"><div class="meeting-list">'+rows+'</div><div class="meeting-detail" id="meetingDetail"><div class="shell-empty compact"><strong>Selecione uma reunião</strong><span>A análise aprofundada fica aqui, dentro de Reuniões.</span></div></div></div>';
- h.querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>detail(a[+b.dataset.mi]));
+ const source=items().map((m,i)=>({...m,__sourceIndex:i})).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+ if(!source.length){
+  h.innerHTML='<div class="meeting-empty-screen"><div class="meeting-empty-icon">◷</div><span class="eyebrow">MEETING MEMORY</span><h2>A memória começa na primeira reunião</h2><p>Analise uma conversa real para o AURA registrar contexto, evidências, decisões, riscos, oportunidades e próximos movimentos.</p><button class="primary" data-shell-view="analysis">Nova análise →</button></div>';
+  bind();return;
+ }
+ const clientName=m=>m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Reunião sem identificação');
+ const hasOpp=m=>{const x=low(m.opportunity);return x&& !['—','-','nenhuma','nenhum','não identificada','nao identificada','não identificado','nao identificado','sem oportunidade','em avaliação','em avaliacao'].includes(x)};
+ const hasRisk=m=>['alto','médio','medio'].some(x=>low(m.risk).includes(x));
+ const highRisk=source.filter(m=>low(m.risk).includes('alto')).length;
+ const opportunities=source.filter(hasOpp).length;
+ const clients=new Set(source.map(clientName)).size;
+ const insights=source.reduce((n,m)=>n+insightRawList(m).length,0);
+ const card=(m,i)=>{
+  const riskClass=low(m.risk).includes('alto')?'high':low(m.risk).includes('médio')||low(m.risk).includes('medio')?'medium':'low';
+  const signal=m.summary||m.why_it_matters||m.next_move||m.opportunity||'Sem leitura executiva registrada.';
+  return '<button type="button" class="meeting-memory-card" data-mi="'+i+'" data-client="'+esc(low(clientName(m)))+'" data-risk="'+(hasRisk(m)?'1':'0')+'" data-opportunity="'+(hasOpp(m)?'1':'0')+'">'+
+   '<div class="meeting-card-top"><span class="meeting-card-kind">REUNIÃO · '+esc(m.context||m.intelligence_type||'OUTRO')+'</span><span class="meeting-card-arrow" aria-hidden="true">→</span></div>'+
+   '<div class="meeting-card-title"><div class="meeting-card-avatar">'+esc(clientName(m).slice(0,2).toUpperCase())+'</div><div><h3>'+esc(clientName(m))+'</h3><p>'+esc(fmt(m.created_at))+'</p></div></div>'+
+   '<div class="meeting-card-status"><span class="meeting-status '+riskClass+'">RISCO · '+esc(m.risk||'—')+'</span><span>'+esc(m.sentiment||'Sentimento não registrado')+'</span></div>'+
+   '<div class="meeting-card-reading"><span>LEITURA EXECUTIVA</span><b>'+esc(signal)+'</b></div>'+
+   '<div class="meeting-card-bottom"><span>'+insightRawList(m).length+' insight'+(insightRawList(m).length===1?'':'s')+'</span><span>'+esc(hasOpp(m)?'Oportunidade identificada':'Sem oportunidade registrada')+'</span></div>'+
+  '</button>';
+ };
+ h.innerHTML='<div class="meeting-memory-screen">'+
+  '<div class="meeting-toolbar meeting-memory-toolbar"><div><span class="eyebrow">AURA MEMORY · REUNIÕES</span><h2>'+source.length+(source.length===1?' reunião':' reuniões')+' na memória</h2><p>Cada conversa é preservada como uma unidade de inteligência, com contexto, evidências e próximos movimentos.</p></div>'+
+  '<div class="meeting-memory-kpis"><div><b>'+clients+'</b><span>clientes</span></div><div><b>'+insights+'</b><span>insights</span></div><div class="risk"><b>'+highRisk+'</b><span>riscos altos</span></div><div class="opp"><b>'+opportunities+'</b><span>oportunidades</span></div></div></div>'+
+  '<div class="meeting-memory-controls"><div class="meeting-memory-search"><span>⌕</span><input id="meetingMemorySearch" type="search" placeholder="Buscar cliente, contexto ou sinal..."></div><div class="meeting-memory-filters" role="tablist"><button type="button" class="active" data-meeting-filter="all">Todas · '+source.length+'</button><button type="button" data-meeting-filter="risk">Riscos · '+source.filter(hasRisk).length+'</button><button type="button" data-meeting-filter="opportunity">Oportunidades · '+opportunities+'</button></div></div>'+
+  '<div class="meeting-memory-layout"><div class="meeting-memory-list" id="meetingMemoryList">'+source.map(card).join('')+'</div><div class="meeting-detail meeting-memory-detail" id="meetingDetail"><div class="meeting-select-state"><div class="meeting-select-icon">◷</div><span class="eyebrow">LEITURA CONTEXTUAL</span><h3>Selecione uma reunião</h3><p>O AURA abre aqui a análise aprofundada da conversa, preservando evidências, insights e a linha do tempo do relacionamento.</p></div></div></div></div>';
+ const list=h.querySelector('#meetingMemoryList');
+ const detailHost=h.querySelector('#meetingDetail');
+ const controls=[...h.querySelectorAll('[data-meeting-filter]')];
+ let activeFilter='all';
+ const apply=()=>{
+  const q=low(h.querySelector('#meetingMemorySearch')?.value||'');
+  h.querySelectorAll('.meeting-memory-card').forEach(b=>{
+   const matchQ=!q||[b.dataset.client,b.querySelector('h3')?.textContent||'',b.querySelector('.meeting-card-reading b')?.textContent||'',b.querySelector('.meeting-card-kind')?.textContent||''].join(' ').toLowerCase().includes(q);
+   const matchF=activeFilter==='all'||(activeFilter==='risk'&&b.dataset.risk==='1')||(activeFilter==='opportunity'&&b.dataset.opportunity==='1');
+   b.hidden=!(matchQ&&matchF);
+  });
+ };
+ controls.forEach(b=>b.onclick=()=>{activeFilter=b.dataset.meetingFilter;controls.forEach(x=>x.classList.toggle('active',x===b));apply()});
+ h.querySelector('#meetingMemorySearch')?.addEventListener('input',apply);
+ h.querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>{
+  const m=source[+b.dataset.mi];
+  list.hidden=true;list.style.display='none';
+  h.querySelector('.meeting-memory-controls').hidden=true;
+  h.querySelector('.meeting-memory-toolbar').hidden=true;
+  detailHost.hidden=false;detailHost.style.display='block';
+  detailHost.dataset.tab='summary';
+  detail(m);
+  const back=document.createElement('div');back.className='meeting-detail-backbar';
+  back.innerHTML='<button type="button" class="meeting-back-button" aria-label="Voltar para reuniões" title="Voltar para reuniões"><span aria-hidden="true"></span></button>';
+  detailHost.prepend(back);
+  back.querySelector('button').onclick=()=>{
+   detailHost.hidden=false;detailHost.style.display='none';
+   list.hidden=false;list.style.display='';
+   h.querySelector('.meeting-memory-controls').hidden=false;
+   h.querySelector('.meeting-memory-toolbar').hidden=false;
+   requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
+  };
+  requestAnimationFrame(()=>detailHost.scrollIntoView({block:'start',behavior:'smooth'}));
+ });
 }
 const CLIENT_DEMO={
  'Grupo Atlas':{status:'ATENÇÃO',risk:'Alto',sentiment:'Cauteloso',opp:'Expansão',meetings:11,context:'Comercial',riskSeries:[72,65,61,54,48,44,39,35,31,28,27],commercial:'Expansão para novas unidades',financial:'Projeção de +50% no faturamento após expansão',insights:[
