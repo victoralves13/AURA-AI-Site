@@ -263,8 +263,24 @@ function actions(){
  const a=items().filter(x=>x.next_move);
  h.innerHTML='<div class="action-list-screen"><div class="action-list-head"><div><span class="eyebrow">EXECUÇÃO</span><h2>Ações recomendadas</h2><p>Próximos movimentos identificados pelo AURA e organizados para execução.</p></div><span class="action-count">'+a.length+(a.length===1?' ação':' ações')+'</span></div>'+(a.length?a.map((m,i)=>'<button type="button" class="action-shell-row" data-action-index="'+i+'"><div class="action-row-index">'+String(i+1).padStart(2,'0')+'</div><div class="action-row-main"><div class="action-row-top"><span class="action-priority">'+esc(m.priority||'AÇÃO')+'</span><span class="action-date">'+esc(actionRecommendedDate(m))+'</span></div><h3>'+esc(m.next_move)+'</h3><p>'+esc(m.client_name||m.file_name||'Reunião')+'</p><div class="action-row-meta"><span>'+esc(m.owner||'Responsável não identificado')+'</span><span>'+esc(m.impact||'Impacto a validar')+'</span></div></div><span class="action-row-chevron" aria-hidden="true"></span></button>').join(''):'<div class="shell-empty"><strong>Nenhuma ação registrada</strong><span>O AURA transformará decisões e próximos movimentos em execução.</span></div>')+'</div><div class="action-detail-screen" id="shellActionDetail" hidden></div>';
  if(!a.length)return;
- const list=h.querySelector('.action-list-screen'),detail=h.querySelector('#shellActionDetail');
- h.querySelectorAll('[data-action-index]').forEach(b=>b.onclick=()=>{list.hidden=true;detail.hidden=false;actionDetail(a[+b.dataset.actionIndex]);const back=document.createElement('div');back.className='action-detail-backbar';back.innerHTML='<button type="button" class="action-back-button" aria-label="Voltar para ações" title="Voltar para ações"><span aria-hidden="true"></span></button>';detail.prepend(back);requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));back.querySelector('button').onclick=()=>{detail.hidden=true;list.hidden=false;window.scrollTo({top:0,behavior:'smooth'})}});
+ const list=h.querySelector('.action-list-screen'),detail=h.querySelector('#shellActionDetail'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
+ h.querySelectorAll('[data-action-index]').forEach(b=>b.onclick=()=>{
+  list.hidden=true;list.style.display='none';
+  if(pageHead){pageHead.hidden=true;pageHead.style.display='none'}
+  detail.hidden=false;detail.style.display='block';
+  actionDetail(a[+b.dataset.actionIndex]);
+  const back=document.createElement('div');
+  back.className='action-detail-backbar';
+  back.innerHTML='<button type="button" class="action-back-button" aria-label="Voltar para ações" title="Voltar para ações"><span aria-hidden="true"></span></button>';
+  detail.prepend(back);
+  requestAnimationFrame(()=>{detail.scrollIntoView({block:'start',behavior:'smooth'})});
+  back.querySelector('button').onclick=()=>{
+   detail.hidden=true;detail.style.display='none';
+   list.hidden=false;list.style.display='';
+   if(pageHead){pageHead.hidden=false;pageHead.style.display=''}
+   requestAnimationFrame(()=>{h.scrollIntoView({block:'start',behavior:'smooth'})});
+  };
+ });
 }
 function evolution(){
  const h=document.getElementById('shellEvolution'),a=items();if(!h)return;
