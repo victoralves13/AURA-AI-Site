@@ -69,15 +69,13 @@ function renderOverview(){
  '<div class="aura-home">'+
    '<section class="aura-home-hero">'+
      '<div class="aura-home-hero-copy">'+
-       '<div class="aura-home-kicker"><span></span>AURA INTELLIGENCE CENTER</div>'+
-       '<h1>O que está acontecendo<br><em>agora?</em></h1>'+
-       '<p>Uma leitura executiva da memória comercial, dos sinais detectados e dos próximos movimentos da operação.</p>'+
+       '<div class="aura-home-kicker"><span></span>VISÃO OPERACIONAL · AURA</div>'+
+       '<h1>O que está acontecendo <em>agora?</em></h1>'+
+       '<p>Uma leitura executiva do estado da operação, dos sinais mais relevantes e dos próximos movimentos.</p>'+
        '<div class="aura-home-actions"><button class="aura-home-primary" data-go="analysis">Nova análise <b>→</b></button><button class="aura-home-secondary" data-shell-view="history">Explorar memória</button></div>'+
      '</div>'+
-     '<div class="aura-home-orbit" aria-hidden="true"><div class="aura-orbit-ring ring-a"></div><div class="aura-orbit-ring ring-b"></div><div class="aura-orb-core"><span>A</span></div><i></i><i></i><i></i></div>'+
-     '<div class="aura-home-context"><span>ESTADO DO SISTEMA</span><strong>ONLINE</strong><small>'+a.length+' reuniões na memória · '+clientsCount+' clientes</small></div>'+
-   '</section>'+
-   '<section class="aura-command-strip">'+
+     '<div class="aura-home-context"><span>ENGINE</span><strong>ONLINE</strong><small>'+a.length+' reuniões · '+clientsCount+' clientes</small><div class="aura-home-facts"><div><b>'+highRisk+'</b><span>riscos altos</span></div><div><b>'+opportunities.length+'</b><span>oportunidades</span></div></div></div>'+
+   '</section>'+   '<section class="aura-command-strip">'+
      '<div class="aura-command-intro"><span>LEITURA DE AGORA</span><strong>'+esc(latest[0]?'Última interação processada':'Aguardando primeira análise')+'</strong><p>'+esc(latestSignal)+'</p></div>'+
      '<div class="aura-command-metric"><span>RISCO</span><strong class="'+(riskTone==='critical'?'critical':'')+'">'+esc(latestRisk)+'</strong><small>'+highRisk+' alto'+(highRisk===1?'':'s')+' no histórico</small></div>'+
      '<div class="aura-command-metric"><span>OPORTUNIDADES</span><strong class="positive">'+opportunities.length+'</strong><small>sinais identificados</small></div>'+
