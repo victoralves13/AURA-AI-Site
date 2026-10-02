@@ -284,11 +284,74 @@ function actions(){
 }
 function evolution(){
  const h=document.getElementById('shellEvolution'),a=items();if(!h)return;
- if(a.length<2){h.innerHTML='<div class="shell-empty"><strong>Memória em construção</strong><span>O AURA precisa de pelo menos duas reuniões para mostrar mudanças reais ao longo do tempo.</span></div>';return}
- const g=new Map();a.forEach(m=>{const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');if(!g.has(n))g.set(n,[]);g.get(n).push(m)});
- let out='';
- g.forEach((v,n)=>{if(v.length<2)return;v.sort((x,y)=>new Date(x.created_at)-new Date(y.created_at));const f=v[0],l=v.at(-1),change=f.risk!==l.risk?'Risco: '+(f.risk||'—')+' → '+(l.risk||'—'):f.sentiment!==l.sentiment?'Sentimento: '+(f.sentiment||'—')+' → '+(l.sentiment||'—'):f.opportunity!==l.opportunity?'Oportunidade: '+(f.opportunity||'—')+' → '+(l.opportunity||'—'):'Sem mudança estrutural detectada';out+='<div class="evolution-client"><div class="evolution-head"><div><span class="eyebrow">CLIENTE</span><h3>'+esc(n)+'</h3></div><strong>'+esc(change)+'</strong></div><div class="evolution-track">'+v.slice(-6).map((m,i)=>'<div><span>R'+(v.length-Math.min(5,v.length-1-i))+'</span><b>'+esc(m.sentiment||'—')+'</b><small>Risco '+esc(m.risk||'—')+'</small><small>'+fmt(m.created_at)+'</small></div>').join('')+'</div><p class="evolution-note">'+esc(l.summary||l.why_it_matters||'Sem leitura registrada.')+'</p></div>'});
- h.innerHTML=out||'<div class="shell-empty"><strong>Sem histórico suficiente por cliente</strong><span>Quando o mesmo cliente aparecer em reuniões diferentes, o AURA mostrará o que mudou.</span></div>';
+ const g=new Map();
+ a.forEach(m=>{
+  const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
+  if(!g.has(n))g.set(n,[]);
+  g.get(n).push(m);
+ });
+ const riskScore=m=>{const x=low(m?.risk);return x.includes('alto')?28:x.includes('médio')||x.includes('medio')?55:x.includes('baixo')?82:50};
+ const sentimentScore=m=>{const x=low(m?.sentiment);return x.includes('positivo')||x.includes('satis')?88:x.includes('negativo')||x.includes('insatis')?30:x.includes('neutro')?58:50};
+ const opportunityScore=m=>{const x=low(m?.opportunity);return x.includes('alto')?90:x.includes('médio')||x.includes('medio')?65:x.includes('baixo')?35:(x&&x!=='—'?60:50)};
+ const trajectoryScore=m=>Math.round(riskScore(m)*.45+sentimentScore(m)*.25+opportunityScore(m)*.30);
+ const rawInsights=m=>{
+  const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
+  return raw.map(x=>{
+   if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal'};
+   return {description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',evidence_strength:x?.evidence_strength||'média',timestamp:x?.timestamp||null,type:x?.type||'sinal'};
+  }).filter(x=>x.evidence||x.description);
+ };
+ const allText=m=>[
+  m.summary,m.why_it_matters,m.opportunity,m.impact,m.next_move,m.intent,m.context,m.intelligence_type,
+  ...rawInsights(m).flatMap(x=>[x.description,x.evidence]),
+  ...arr(m,'decisions'),...arr(m,'pending_actions'),...arr(m,'important_signals')
+ ].filter(Boolean).join(' ');
+ const money=txt=>{
+  const found=String(txt||'').match(/(?:R\$\s?[\d.]+(?:,\d{1,2})?|\d+(?:,\d+)?\s?(?:mil|milhões|milhao|milhão))/gi);
+  return [...new Set(found||[])].slice(0,8);
+ };
+ const economic=m=>{
+  const t=low(allText(m)),values=money(allText(m)),potentials=[];
+  if(/faturamento|receita|venda|vendas|contrat|expans|upsell|cross.?sell/.test(t))potentials.push('Receita e expansão');
+  if(/reten|cancel|churn|perda|renova/.test(t))potentials.push('Retenção e proteção de receita');
+  if(/efici|produtiv|tempo|automat|custo|reduz/.test(t))potentials.push('Eficiência e redução de custo');
+  if(/atendimento|serviço|experi|satisfa/.test(t))potentials.push('Melhoria de serviço');
+  if(/financeir|margem|caixa|investimento|orçamento/.test(t))potentials.push('Resultado financeiro');
+  if(!potentials.length)potentials.push('Potencial a validar');
+  return {potentials,values};
+ };
+ const journeyLabel=(rows)=>{
+  if(rows.length===1)return 'Primeiro marco — ainda sem comparação histórica';
+  const first=trajectoryScore(rows[0]),last=trajectoryScore(rows.at(-1));
+  if(last-first>=10)return 'Evolução positiva dos sinais registrados';
+  if(first-last>=10)return 'Mudança com necessidade de atenção';
+  return 'Trajetória estável ou em acompanhamento';
+ };
+ const clientCards=[...g.entries()].sort((a,b)=>new Date(a[1][0]?.created_at||0)-new Date(b[1][0]?.created_at||0)).map(([name,rows])=>{
+  rows.sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0));
+  const scores=rows.map(trajectoryScore),first=rows[0],last=rows.at(-1);
+  const min=Math.min(...scores),max=Math.max(...scores),range=Math.max(1,max-min);
+  const pts=rows.map((m,i)=>{
+   const x=22+(i*(336/Math.max(1,rows.length-1)));
+   const y=118-((trajectoryScore(m)-min)/range)*82;
+   return {x,y};
+  });
+  const line=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+  const area=line+' L '+pts.at(-1).x.toFixed(1)+' 132 L '+pts[0].x.toFixed(1)+' 132 Z';
+  const markers=pts.map((p,i)=>'<circle class="evolution-line-dot" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4"><title>Reunião '+(i+1)+' · índice '+scores[i]+'</title></circle>').join('');
+  const axis=rows.map((m,i)=>'<span>R'+String(i+1).padStart(2,'0')+'<small>'+esc(fmt(m.created_at))+'</small></span>').join('');
+  const allInsights=rows.flatMap((m,i)=>rawInsights(m).map((x,j)=>({...x,meeting:i+1,insight:j+1,date:fmt(m.created_at)})));
+  const allPotential=[...new Set(rows.flatMap(economic).flatMap(x=>x.potentials))];
+  const allValues=[...new Set(rows.flatMap(economic).flatMap(x=>x.values))];
+  const totalEvidence=rows.reduce((n,m)=>n+rawInsights(m).length+arr(m,'decisions').length+arr(m,'pending_actions').length,0);
+  const latest=rows.at(-1);
+  const meetingBlocks=rows.map((m,i)=>{
+   const insights=rawInsights(m),eco=economic(m),ev=[...arr(m,'decisions'),...arr(m,'pending_actions')];
+   return '<article class="evolution-meeting-card"><div class="evolution-meeting-top"><div><span class="evolution-label">REUNIÃO '+String(i+1).padStart(2,'0')+'</span><h4>'+esc(m.context||m.intelligence_type||'Contexto não informado')+'</h4><p>'+esc(fmt(m.created_at))+' · '+esc(m.sentiment||'Sentimento não registrado')+'</p></div><div class="evolution-meeting-badges"><b>'+esc(m.risk||'Risco não registrado')+'</b><span>'+esc(m.priority||'Prioridade não registrada')+'</span></div></div><div class="evolution-meeting-overview"><div class="evolution-reading"><span class="evolution-label">O QUE ESSA REUNIÃO MOSTROU</span><strong>'+esc(m.summary||m.why_it_matters||'Sem resumo registrado.')+'</strong><p>'+esc(m.why_it_matters||m.impact||'Sem justificativa adicional registrada.')+'</p></div><div class="evolution-economic-card"><span class="evolution-label">POTENCIAL ECONÔMICO / RESULTADO</span><strong>'+esc(eco.potentials.join(' · '))+'</strong><p>Possibilidades identificadas no conteúdo da reunião. O AURA não trata potencial como lucro garantido.</p><div class="evolution-money">'+(eco.values.length?'Valores mencionados: '+esc(eco.values.join(' · ')):'Nenhum valor financeiro explícito mencionado.')+'</div></div></div><div class="evolution-meeting-metrics"><div><span>Oportunidade</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>Impacto</span><b>'+esc(m.impact||'—')+'</b></div><div><span>Intenção</span><b>'+esc(m.intent||'—')+'</b></div><div><span>Próximo movimento</span><b>'+esc(m.next_move||'—')+'</b></div><div><span>Responsável</span><b>'+esc(m.owner||'—')+'</b></div><div><span>Prazo</span><b>'+esc(m.deadline||'—')+'</b></div></div><section class="evolution-insights-section"><div class="evolution-section-head"><div><span class="evolution-label">INSIGHTS DA REUNIÃO</span><h5>'+insights.length+' insight'+(insights.length===1?'':'s')+' registrado'+(insights.length===1?'':'s')+'</h5></div><span>'+esc(m.context||m.intelligence_type||'Sinal')+'</span></div>'+(insights.length?'<div class="evolution-insight-list">'+insights.map((x,j)=>'<div class="evolution-insight-item"><span>'+String(j+1).padStart(2,'0')+'</span><div><b>'+esc(x.description)+'</b>'+(x.evidence?'<p>“'+esc(x.evidence)+'”</p>':'')+'<small>'+esc(x.timestamp||'Sem timestamp disponível')+' · '+esc(x.evidence_strength)+'</small></div></div>').join(''):'<div class="evolution-muted">Nenhum insight estruturado nesta reunião.</div>')+'</section><div class="evolution-evidence-decision"><div><span class="evolution-label">DECISÕES E AÇÕES</span><p>'+esc(ev.length?ev.join(' · '):'Nenhuma decisão ou ação pendente estruturada.')+'</p></div><div><span class="evolution-label">SINAIS IMPORTANTES</span><p>'+esc(arr(m,'important_signals').length?arr(m,'important_signals').join(' · '):(m.risk||m.opportunity||'Nenhum sinal adicional registrado.'))+'</p></div></div></article>';
+  }).join('');
+  return '<section class="evolution-client"><div class="evolution-client-head"><div><span class="eyebrow">JORNADA DO CLIENTE</span><h3>'+esc(name)+'</h3><p>'+rows.length+' reunião'+(rows.length===1?'':'ões')+' · '+esc(journeyLabel(rows))+'</p></div><div class="evolution-client-index"><b>'+scores.at(-1)+'</b><span>índice atual de trajetória</span></div></div><div class="evolution-journey-grid"><div class="evolution-curve-panel"><div class="evolution-section-head"><div><span class="evolution-label">TRAJETÓRIA</span><h4>Como os sinais evoluíram</h4></div><span>'+esc(fmt(first.created_at))+' → '+esc(fmt(last.created_at))+'</span></div><div class="evolution-line-chart"><svg viewBox="0 0 380 145" preserveAspectRatio="none"><path class="evolution-line-area" d="'+area+'"></path><path class="evolution-line" d="'+line+'"></path>'+markers+'</svg></div><div class="evolution-axis">'+axis+'</div><p class="evolution-chart-note">Índice orientativo de trajetória: combina risco, sentimento e oportunidade registrados pelo AURA. Ele mostra direção dos sinais; não é previsão financeira.</p></div><div class="evolution-current-panel"><span class="evolution-label">ONDE O CLIENTE ESTÁ AGORA</span><h4>'+esc(latest.summary||latest.why_it_matters||'Sem leitura atual registrada.')+'</h4><div class="evolution-current-grid"><div><span>Risco</span><b>'+esc(latest.risk||'—')+'</b></div><div><span>Oportunidade</span><b>'+esc(latest.opportunity||'—')+'</b></div><div><span>Sentimento</span><b>'+esc(latest.sentiment||'—')+'</b></div><div><span>Próximo passo</span><b>'+esc(latest.next_move||'—')+'</b></div></div></div></div><div class="evolution-value-strip"><div><span class="evolution-label">POTENCIAIS RESULTADOS IDENTIFICADOS NA JORNADA</span><strong>'+esc(allPotential.join(' · '))+'</strong><p>'+(allValues.length?'Valores financeiros explicitamente mencionados: '+esc(allValues.join(' · ')):'Nenhum valor financeiro explícito registrado nas reuniões até agora.')+'</p></div><div><span class="evolution-label">RASTREABILIDADE</span><strong>'+rows.length+' reuniões · '+allInsights.length+' insights · '+totalEvidence+' sinais/decisões</strong><p>Cada reunião abaixo preserva seu próprio contexto. Nada é condensado em um único resumo.</p></div></div><div class="evolution-full-history"><div class="evolution-history-head"><div><span class="eyebrow">HISTÓRICO COMPLETO</span><h4>Toda a jornada, reunião por reunião</h4><p>Inclusive quando existe apenas uma reunião para este cliente.</p></div></div>'+meetingBlocks+'</div></section>';
+ }).join('');
+ h.innerHTML='<div class="evolution-intro"><span class="eyebrow">AURA MEMORY · JORNADA</span><h2>Evolução por cliente</h2><p>Uma leitura completa da jornada comercial: cada reunião preserva seus insights, evidências, decisões, contexto e potenciais resultados.</p><div class="evolution-intro-chips"><span>Todos os insights</span><span>Trajetória por sinais</span><span>Potencial econômico</span><span>Histórico completo</span></div></div>'+(clientCards||'<div class="shell-empty"><strong>Nenhuma reunião registrada</strong><span>Assim que o AURA registrar uma reunião, o cliente aparecerá aqui com seu primeiro marco de jornada.</span></div>');
 }
 window.__auraOpenMeeting=(m)=>{activate('history',false);setTimeout(()=>{const a=items();const i=a.findIndex(x=>x&&x.id===m?.id);const b=document.querySelector('.meeting-row[data-mi="'+i+'"]');if(b)b.click()},80)};
 function bind(){
