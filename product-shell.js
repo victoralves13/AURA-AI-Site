@@ -314,9 +314,24 @@ function signals(id,type){
  const a=items().filter(x=>type==='risco'?(low(x.risk).includes('alto')||low(x.risk).includes('médio')||low(x.risk).includes('medio')):opportunityHasValue(x));
  const detailId=type==='risco'?'shellRiskDetail':'shellOpportunityDetail';
  if(!a.length){h.innerHTML='<div class="shell-empty"><strong>'+ (type==='risco'?'Nenhum risco registrado':'Nenhuma oportunidade registrada') +'</strong><span>O AURA mostrará evidências aqui conforme novas reuniões forem persistidas.</span></div>';const d=document.getElementById(detailId);if(d)d.innerHTML='';return}
- if(type==='oportunidade'){ 
- const list=h.querySelector('.opportunity-list-screen'),detail=h.querySelector('.opportunity-detail-screen'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
- h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{list.hidden=true;list.style.display='none';if(pageHead){pageHead.hidden=true;pageHead.style.display='none'}detail.hidden=false;detail.style.display='block';opportunityDetail(a[+b.dataset.signalIndex]);const back=document.createElement('div');back.className='opportunity-detail-backbar';back.innerHTML='<button type="button" class="opportunity-back-button" aria-label="Voltar para oportunidades" title="Voltar para oportunidades"><span aria-hidden="true"></span></button>';detail.prepend(back);requestAnimationFrame(()=>detail.scrollIntoView({block:'start',behavior:'smooth'}));back.querySelector('button').onclick=()=>{detail.hidden=true;detail.style.display='none';list.hidden=false;list.style.display='';if(pageHead){pageHead.hidden=false;pageHead.style.display=''}requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));};});
+ if(type==='oportunidade'){
+  h.innerHTML='<div class="opportunity-list-screen"><div class="opportunity-list-head"><div><span class="eyebrow">OPPORTUNITY INTELLIGENCE</span><h2>Mapa de oportunidades</h2><p>Potenciais movimentos comerciais identificados nas conversas e acompanhados por evidências, maturidade e próximos movimentos.</p></div><span class="opportunity-count">'+a.length+(a.length===1?' sinal':' sinais')+'</span></div><div class="opportunity-list-grid">'+a.map((m,i)=>'<button type="button" class="opportunity-list-card" data-signal-index="'+i+'"><div class="opportunity-card-top"><span class="opportunity-class">'+esc(opportunityClass(m))+'</span><span class="opportunity-card-arrow">→</span></div><h3>'+esc(m.client_name||m.file_name||'Cliente não identificado')+'</h3><strong>'+esc(m.opportunity||'Oportunidade identificada')+'</strong><p>'+esc(m.summary||m.why_it_matters||'Sinal comercial identificado na conversa.')+'</p><div class="opportunity-card-meta"><span>'+esc(m.priority||'Prioridade não registrada')+'</span><span>'+esc(opportunityMaturity(m))+'</span><span>'+esc(fmt(m.created_at))+'</span></div><div class="opportunity-card-foot"><span>'+opportunityEvidence(m).filter(x=>x.evidence).length+' evidências</span><span>'+esc(m.next_move||'Próximo movimento não definido')+'</span></div></button>').join('')+'</div></div><div class="opportunity-detail-screen" id="shellOpportunityDetail" hidden></div>';
+  const list=h.querySelector('.opportunity-list-screen'),detail=h.querySelector('.opportunity-detail-screen'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
+  h.querySelectorAll('[data-signal-index]').forEach(b=>b.onclick=()=>{
+   list.hidden=true;list.style.display='none';
+   if(pageHead){pageHead.hidden=true;pageHead.style.display='none'}
+   detail.hidden=false;detail.style.display='block';
+   opportunityDetail(a[+b.dataset.signalIndex]);
+   const back=document.createElement('div');back.className='opportunity-detail-backbar';
+   back.innerHTML='<button type="button" class="opportunity-back-button" aria-label="Voltar para oportunidades" title="Voltar para oportunidades"><span aria-hidden="true"></span></button>';
+   detail.prepend(back);
+   requestAnimationFrame(()=>detail.scrollIntoView({block:'start',behavior:'smooth'}));
+   back.querySelector('button').onclick=()=>{
+    detail.hidden=true;detail.style.display='none';list.hidden=false;list.style.display='';
+    if(pageHead){pageHead.hidden=false;pageHead.style.display=''}
+    requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
+   };
+  });
   return;
  }
  h.innerHTML='<div class="signal-list-screen"><div class="shell-list">'+a.map((m,i)=>'<button class="signal-shell-row" data-signal-index="'+i+'"><i class="'+type+'"></i><span><b class="signal-client-chip">'+esc(m.client_name||m.file_name||'Reunião')+'</b><small>'+esc(m.summary||m.why_it_matters||'Sem contexto registrado.')+'</small></span><em>'+esc(m.risk)+'</em></button>').join('')+'</div></div><div class="signal-detail-screen" id="'+detailId+'" hidden></div>';
