@@ -366,24 +366,36 @@ function evolution(){
   const clone=head.cloneNode(true);
   const item=document.createElement('button');item.type='button';item.className='evolution-client-list-card';
   item.dataset.client=card.dataset.evolutionClient;
-  item.innerHTML='<div class="evolution-list-arrow">→</div>';
+  item.innerHTML='<div class="evolution-list-arrow" aria-hidden="true">→</div>';
   item.prepend(clone);
   list.appendChild(item);
-  card.hidden=true;card.classList.add('evolution-client-detail');
+  card.hidden=true;
+  card.classList.add('evolution-client-detail','evolution-detail-screen');
+  card.style.display='none';
  });
- h.insertBefore(list,clients[0]||null);
+ const listScreen=document.createElement('div');
+ listScreen.className='evolution-list-screen';
+ if(intro)listScreen.appendChild(intro);
+ listScreen.appendChild(list);
+ h.insertBefore(listScreen,clients[0]||null);
  if(clients[0])clients.forEach(card=>{
   const open=list.querySelector('[data-client="'+CSS.escape(card.dataset.evolutionClient)+'"]');
+  if(!open)return;
   open.onclick=()=>{
-   list.hidden=true;intro.hidden=true;
-   clients.forEach(x=>x.hidden=x!==card);
+   listScreen.hidden=true;listScreen.style.display='none';
+   clients.forEach(x=>{
+    x.hidden=x!==card;
+    x.style.display=x===card?'block':'none';
+   });
    let back=card.querySelector('.evolution-detail-backbar');
    if(!back){
     back=document.createElement('div');back.className='evolution-detail-backbar';
     back.innerHTML='<button type="button" class="evolution-back-button" aria-label="Voltar para empresas" title="Voltar para empresas"><span aria-hidden="true"></span></button>';
     card.prepend(back);
     back.querySelector('button').onclick=()=>{
-     card.hidden=true;list.hidden=false;intro.hidden=false;
+     clients.forEach(x=>{x.hidden=true;x.style.display='none'});
+     card.hidden=true;card.style.display='none';
+     listScreen.hidden=false;listScreen.style.display='';
      requestAnimationFrame(()=>list.scrollIntoView({block:'start',behavior:'smooth'}));
     };
    }
