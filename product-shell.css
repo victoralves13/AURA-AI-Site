@@ -1207,16 +1207,16 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 
 
 /* Profile — enterprise account workspace */
-.profile-workspace{width:100%;padding:8px 0 44px}
+.profile-workspace{width:100%;padding:8px 0 44px;position:relative}
 .profile-hero{
   display:flex;justify-content:space-between;gap:28px;align-items:stretch;
   padding:28px 30px;border:1px solid rgba(170,220,230,.10);border-radius:14px;
   background:linear-gradient(135deg,rgba(13,22,29,.98),rgba(8,14,19,.98));
-  box-shadow:0 18px 50px rgba(0,0,0,.18);margin-bottom:14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.18);margin:48px 0 14px;
 }
 .profile-hero-main{display:flex;align-items:center;gap:18px;min-width:0}
 .profile-back{
-  width:30px;height:30px;border:1px solid rgba(170,220,230,.10);border-radius:7px;
+  position:absolute;top:0;left:0;width:30px;height:30px;border:1px solid rgba(170,220,230,.10);border-radius:7px;
   background:transparent;color:#8ea4ac;font:400 20px/1 Arial;cursor:pointer;display:grid;place-items:center;
   transition:.16s ease;flex:0 0 auto
 }
@@ -1309,4 +1309,4 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 }
 
 /* Profile workspace — same internal-page language as Customer 360 / Risk / Opportunity */
-body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profile"] .profile-workspace{padding:0 0 54px}body[data-aura-view="profile"] .profile-back{width:34px;height:34px;border:0;border-radius:8px;color:#65e7f5;background:rgba(101,231,245,.04);font-size:24px}body[data-aura-view="profile"] .profile-back:hover{background:rgba(101,231,245,.10);color:#eafcff}body[data-aura-view="profile"] .profile-hero{min-height:150px;padding:30px 32px;border-radius:15px;margin-bottom:16px}body[data-aura-view="profile"] .profile-stat-grid{margin-bottom:16px}body[data-aura-view="profile"] .profile-card{border-color:rgba(170,220,230,.10)}
+body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profile"] .profile-workspace{padding:0 0 54px}body[data-aura-view="profile"] .profile-back{width:34px;height:34px;border:0;border-radius:8px;color:#65e7f5;background:rgba(101,231,245,.04);font-size:24px}body[data-aura-view="profile"] .profile-back:hover{background:rgba(101,231,245,.10);color:#eafcff}body[data-aura-view="profile"] .profile-hero{min-height:150px;padding:30px 32px;border-radius:15px;margin:48px 0 16px}body[data-aura-view="profile"] .profile-stat-grid{margin-bottom:16px}body[data-aura-view="profile"] .profile-card{border-color:rgba(170,220,230,.10)}
