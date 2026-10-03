@@ -1191,3 +1191,9 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   width:25px!important;
   height:25px!important;
 }
+
+
+/* Final micro-adjustment — keep the collapsed control clear of the logo */
+.rail-collapsed .rail .rail-toggle{
+  top:-18px!important;
+}
