@@ -423,3 +423,25 @@ header .eyebrow{display:none!important}
 .aura-pulse-point>span{font-size:10px!important}
 .aura-pulse-point>small{font-size:10px!important}
 .aura-home-next b{font-size:10px!important}
+
+
+/* Overview profile summary */
+.aura-profile-overview{
+ margin-top:10px;display:grid;grid-template-columns:minmax(280px,1.35fr) minmax(300px,1fr) auto;align-items:center;gap:22px;
+ padding:18px 20px;border:1px solid rgba(170,220,230,.08);border-radius:11px;
+ background:linear-gradient(100deg,rgba(10,18,23,.94),rgba(8,14,19,.78));
+}
+.aura-profile-overview-main{display:flex;align-items:center;gap:13px;min-width:0}
+.aura-profile-mini-avatar{width:42px;height:42px;border-radius:9px;display:grid;place-items:center;flex:0 0 42px;background:#12232a;border:1px solid rgba(101,231,245,.18);color:#dff8fb;font:700 13px Manrope}
+.aura-profile-overview-main h3{margin:3px 0 2px;color:#eaf4f5;font:700 16px Manrope}
+.aura-profile-overview-main p{margin:0;color:#81969e;font:500 11px/1.4 Manrope}
+.aura-profile-overview .panel-label{display:block}
+.aura-profile-overview-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.aura-profile-overview-facts div{padding-left:14px;border-left:1px solid rgba(170,220,230,.08)}
+.aura-profile-overview-facts span{display:block;color:#627981;font:600 8px 'DM Mono';letter-spacing:.08em}
+.aura-profile-overview-facts b{display:block;margin-top:4px;color:#cbd9dc;font:600 12px Manrope}
+.aura-profile-open{border:1px solid rgba(101,231,245,.16);border-radius:7px;background:rgba(101,231,245,.04);color:#65e7f5;padding:9px 12px;white-space:nowrap;cursor:pointer;font:600 11px Manrope;transition:.16s}
+.aura-profile-open b{margin-left:8px;font-size:13px}
+.aura-profile-open:hover{background:rgba(101,231,245,.08);border-color:rgba(101,231,245,.28)}
+@media(max-width:900px){.aura-profile-overview{grid-template-columns:1fr}.aura-profile-open{justify-self:start}}
+@media(max-width:600px){.aura-profile-overview-facts{grid-template-columns:1fr 1fr}}
