@@ -445,3 +445,7 @@ header .eyebrow{display:none!important}
 .aura-profile-open:hover{background:rgba(101,231,245,.08);border-color:rgba(101,231,245,.28)}
 @media(max-width:900px){.aura-profile-overview{grid-template-columns:1fr}.aura-profile-open{justify-self:start}}
 @media(max-width:600px){.aura-profile-overview-facts{grid-template-columns:1fr 1fr}}
+
+/* Profile entry — primary account workspace */
+.aura-profile-overview{margin:0 0 14px!important;min-height:96px;grid-template-columns:minmax(260px,1.35fr) minmax(320px,1fr) auto!important;padding:20px 22px!important;border-radius:12px!important;border-color:rgba(101,231,245,.11)!important;background:linear-gradient(110deg,rgba(12,23,29,.98),rgba(8,15,20,.94))!important;box-shadow:0 12px 34px rgba(0,0,0,.14)}
+.aura-profile-overview-main h3{font-size:18px!important}.aura-profile-overview-main p{font-size:12px!important;color:#91a6ad!important}.aura-profile-overview-facts{gap:18px!important}.aura-profile-overview-facts div{padding-left:16px!important}.aura-profile-overview-facts span{font-size:9px!important;color:#71868e!important}.aura-profile-overview-facts b{font-size:13px!important;color:#dce9eb!important}.aura-profile-open{font-size:12px!important;padding:10px 14px!important}@media(max-width:900px){.aura-profile-overview{grid-template-columns:1fr!important}}
