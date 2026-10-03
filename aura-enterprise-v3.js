@@ -75,8 +75,7 @@ function renderOverview(){
        '<div class="aura-home-actions"><button class="aura-home-primary" data-go="analysis">Nova análise <b>→</b></button><button class="aura-home-secondary" data-shell-view="history">Explorar memória</button></div>'+
      '</div>'+
      '<div class="aura-home-context"><span>ENGINE</span><strong>ONLINE</strong><small>'+a.length+' reuniões · '+clientsCount+' clientes</small><div class="aura-home-facts"><div><b>'+highRisk+'</b><span>riscos altos</span></div><div><b>'+opportunities.length+'</b><span>oportunidades</span></div></div></div>'+
-   '</section>
-'+   '<section class="aura-command-strip">'+
+   '</section>'+   '<section class="aura-command-strip">'+
      '<div class="aura-command-intro"><span>ÚLTIMA INTERAÇÃO PROCESSADA</span><strong>'+esc(latest[0]?client(latest[0]):'Aguardando primeira análise')+'</strong><p>'+esc(latest[0]?(fmt(latest[0].created_at)+' · '+latestSignal):'Novos dados aparecerão aqui após a primeira análise.')+'</p></div>'+
      '<div class="aura-command-metric"><span>RISCO</span><strong class="'+(riskTone==='critical'?'critical':'')+'">'+esc(latestRisk)+'</strong><small>'+highRisk+' alto'+(highRisk===1?'':'s')+' no histórico</small></div>'+
      '<div class="aura-command-metric"><span>OPORTUNIDADES</span><strong class="positive">'+opportunities.length+'</strong><small>sinais identificados</small></div>'+
