@@ -103,6 +103,11 @@ function renderOverview(){
      '<button class="aura-home-next" data-shell-view="actions"><span class="panel-label">EXECUÇÃO</span><strong>Próximos movimentos</strong><b>'+actions.length+' acompanhamentos →</b></button>'+
      '<button class="aura-home-next" data-shell-view="clients"><span class="panel-label">RELACIONAMENTO</span><strong>Customer 360</strong><b>'+clientsCount+' clientes →</b></button>'+
    '</section>'+
+   '<section class="aura-profile-overview">'+
+     '<div class="aura-profile-overview-main"><div class="aura-profile-mini-avatar">VA</div><div><span class="panel-label">PERFIL · CONTA ATIVA</span><h3>Victor Alves</h3><p>Administrador do workspace · AURA Intelligence</p></div></div>'+
+     '<div class="aura-profile-overview-facts"><div><span>WORKSPACE</span><b>AURA Intelligence</b></div><div><span>REUNIÕES</span><b>'+a.length+'</b></div><div><span>CLIENTES</span><b>'+clientsCount+'</b></div></div>'+
+     '<button type="button" class="aura-profile-open" data-shell-view="profile">Abrir perfil completo <b>→</b></button>'+
+   '</section>'+
  '</div>';
  host.querySelectorAll('[data-shell-view]').forEach(b=>b.onclick=e=>{e.preventDefault();document.querySelector('.shell-nav[data-shell-view="'+b.dataset.shellView+'"]')?.click()});
  host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>document.querySelector('.shell-nav[data-shell-view="analysis"]')?.click());
