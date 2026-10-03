@@ -1313,3 +1313,10 @@ body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profil
 
 /* Profile back control sits outside the hero card */
 .profile-workspace>.profile-back{display:flex;align-items:center;justify-content:center;margin:0 0 10px 0}.profile-workspace>.profile-back{background:transparent!important;border:1px solid rgba(101,231,245,.14)!important;box-shadow:none}.profile-workspace>.profile-back:hover{background:rgba(101,231,245,.07)!important}
+
+/* Analysis context picker — ensure options remain directly interactive above decorative layers */
+.context-picker{position:relative;z-index:5;isolation:isolate}
+.context-options{position:relative;z-index:6}
+.context-option{position:relative;z-index:7;pointer-events:auto;user-select:none;-webkit-tap-highlight-color:transparent}
+.context-option:active{transform:translateY(1px)}
+.context-option.selected{box-shadow:0 0 0 1px rgba(101,231,245,.08),0 8px 22px rgba(101,231,245,.05)}
