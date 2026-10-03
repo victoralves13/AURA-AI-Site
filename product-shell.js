@@ -36,6 +36,7 @@ function activate(id,scroll=true){
  if(id==='opportunities')signals('shellOpportunities','oportunidade');
  if(id==='actions')actions();
  if(id==='evolution')evolution();
+ if(id==='profile')profile();
 }
 function add(id,title,eyebrow,desc,host){
  if(document.getElementById(id))return;
@@ -708,6 +709,28 @@ function evolution(){
  });
 
 }
+function profile(){
+ const h=document.getElementById('shellProfile');if(!h)return;
+ const a=items();
+ const clients=new Set(a.map(m=>m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado'))).size;
+ const insights=a.reduce((n,m)=>n+insightRawList(m).length,0);
+ const actions=a.reduce((n,m)=>n+arr(m,'pending_actions').length,0);
+ const stored=k=>localStorage.getItem(k)==='1';
+ const pref=(key,label,desc,checked)=>'<label class="profile-setting"><span><b>'+label+'</b><small>'+desc+'</small></span><input type="checkbox" data-profile-pref="'+key+'" '+(checked?'checked':'')+'><i></i></label>';
+ h.innerHTML='<div class="profile-workspace">'+
+ '<div class="profile-hero"><div class="profile-hero-main"><button type="button" class="profile-back" data-shell-view="overview" aria-label="Voltar para visão geral">←</button><div class="profile-avatar">VA</div><div><span class="eyebrow">AURA ACCOUNT · PERFIL</span><h2>Victor Alves</h2><p>Administrador do workspace · AURA Intelligence</p><div class="profile-state"><i></i> Conta ativa no ambiente atual</div></div></div><div class="profile-hero-side"><span>WORKSPACE</span><strong>AURA Intelligence</strong><small>Ambiente principal</small></div></div>'+
+ '<div class="profile-stat-grid"><div><span>REUNIÕES ANALISADAS</span><b>'+a.length+'</b><small>memória disponível</small></div><div><span>CLIENTES ACOMPANHADOS</span><b>'+clients+'</b><small>relacionamentos conhecidos</small></div><div><span>INSIGHTS REGISTRADOS</span><b>'+insights+'</b><small>evidências estruturadas</small></div><div><span>AÇÕES PENDENTES</span><b>'+actions+'</b><small>movimentos identificados</small></div></div>'+
+ '<div class="profile-grid">'+
+ '<section class="profile-card profile-identity"><div class="profile-section-head"><div><span class="eyebrow">01 · IDENTIDADE</span><h3>Informações da conta</h3><p>Identidade utilizada neste workspace.</p></div><span class="profile-live">ATIVA</span></div><div class="profile-fields"><div><span>NOME</span><strong>Victor Alves</strong></div><div><span>FUNÇÃO</span><strong>Administrador do workspace</strong></div><div><span>ORGANIZAÇÃO</span><strong>AURA Intelligence</strong></div><div><span>AMBIENTE</span><strong>Principal</strong></div></div></section>'+
+ '<section class="profile-card"><div class="profile-section-head"><div><span class="eyebrow">02 · PREFERÊNCIAS</span><h3>Experiência no AURA</h3><p>Preferências salvas neste dispositivo.</p></div></div><div class="profile-settings">'+pref('notify-risk','Alertas de risco','Destacar novos sinais de risco no workspace.',stored('aura-pref-notify-risk')!==false)+pref('notify-opportunity','Alertas de oportunidade','Destacar novas oportunidades identificadas.',stored('aura-pref-notify-opportunity')!==false)+pref('compact-profile','Interface compacta','Reduzir espaçamento em áreas secundárias.',stored('aura-pref-compact-profile'))+'</div></section>'+
+ '<section class="profile-card"><div class="profile-section-head"><div><span class="eyebrow">03 · SEGURANÇA E ACESSO</span><h3>Estado da sessão</h3><p>Informações do ambiente atual, sem expor credenciais.</p></div><span class="profile-secure">SEGURO</span></div><div class="profile-access"><div><span>SESSÃO</span><strong>Ativa neste dispositivo</strong></div><div><span>AUTENTICAÇÃO</span><strong>Gerenciada pelo ambiente</strong></div><div><span>DADOS</span><strong>Memória comercial preservada</strong></div><div><span>PERMISSÕES</span><strong>Workspace atual</strong></div></div></section>'+
+ '<section class="profile-card"><div class="profile-section-head"><div><span class="eyebrow">04 · WORKSPACE</span><h3>Contexto operacional</h3><p>Como este ambiente está organizado.</p></div></div><div class="profile-workspace-list"><div><i>◉</i><span><b>Memória AURA</b><small>Reuniões e sinais persistidos neste ambiente.</small></span><em>ONLINE</em></div><div><i>◇</i><span><b>Engine de inteligência</b><small>Processamento e estruturação de análises.</small></span><em>ONLINE</em></div><div><i>□</i><span><b>Modo demonstração</b><small>Dados demonstrativos permanecem separados da memória real.</small></span><em>CONTROLADO</em></div></div></section>'+
+ '</div><section class="profile-card profile-activity"><div class="profile-section-head"><div><span class="eyebrow">05 · ATIVIDADE</span><h3>Memória recente</h3><p>Os últimos eventos registrados pelo AURA.</p></div><button type="button" class="profile-link" data-shell-view="history">Abrir reuniões →</button></div><div class="profile-activity-list">'+(a.slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0)).slice(0,5).map((m,i)=>'<div><span class="profile-activity-index">'+String(i+1).padStart(2,'0')+'</span><span><b>'+esc(m.client_name||m.file_name||'Reunião')+'</b><small>'+esc(fmt(m.created_at))+' · '+esc(m.context||m.intelligence_type||'Análise')+'</small></span><em>'+esc(m.risk||'—')+'</em></div>').join('')||'<div class="profile-no-activity"><b>Nenhuma análise registrada ainda.</b><span>A memória aparecerá aqui após a primeira análise.</span></div>')+'</div></section>'+
+ '<footer class="profile-footer"><span>AURA INTELLIGENCE</span><span>Conta e workspace</span><span>Engine '+(window.AURA_ENGINE_READY?'ONLINE':'DISPONÍVEL')+'</span></footer></div>';
+ bind();
+ h.querySelectorAll('[data-profile-pref]').forEach(input=>input.onchange=()=>localStorage.setItem('aura-pref-'+input.dataset.profilePref,input.checked?'1':'0'));
+ h.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
+}
 window.__auraOpenMeeting=(m)=>{activate('history',false);setTimeout(()=>{const a=items();const i=a.findIndex(x=>x&&x.id===m?.id);const b=document.querySelector('.meeting-row[data-mi="'+i+'"]');if(b)b.click()},80)};
 function bind(){
  document.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
@@ -737,12 +760,13 @@ function setup(){
  const primary=[['analysis','plus','Nova análise'],['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes']];
  const intelligence=[['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']];
  const item=(x)=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>';
- n.innerHTML='<div class="shell-nav-primary">'+item(primary[0])+'</div>'+primary.slice(1).map(item).join('')+'<div class="shell-nav-divider"></div><div class="shell-nav-label">INTELIGÊNCIA</div>'+intelligence.map(item).join('');
+ n.innerHTML='<div class="shell-nav-primary">'+item(primary[0])+'</div>'+primary.slice(1).map(item).join('')+'<div class="shell-nav-divider"></div><div class="shell-nav-label">INTELIGÊNCIA</div>'+intelligence.map(item).join('')+'<div class="shell-nav-divider profile-nav-divider"></div><div class="shell-nav-profile">'+item(['profile','client','Perfil'])+'</div>';
  add('clients','Clientes','CUSTOMER 360','Entenda a história de cada relacionamento a partir das reuniões que o AURA conhece.','shellClients');
  add('risks','Riscos','RISK CENTER','Sinais que merecem atenção, sempre ligados às evidências das reuniões.','shellRisks');
  add('opportunities','Oportunidades','OPPORTUNITY CENTER','Potenciais movimentos identificados pelo AURA a partir de conversas reais.','shellOpportunities');
  add('actions','Ações','ACTION CENTER','Decisões e próximos movimentos organizados para execução.','shellActions');
  add('evolution','O que mudou?','AURA MEMORY','Compare reuniões ao longo do tempo para entender evolução, recorrência e sinais persistentes.','shellEvolution');
+  add('profile','Perfil','AURA ACCOUNT · CENTRO DE CONTROLE','Identidade, preferências, acesso e contexto do workspace em um único lugar.','shellProfile');
  const hist=document.getElementById('history');['.table','.client-grid','.action-center','.customer360-card'].forEach(s=>hist&&hist.querySelector(s)?.classList.add('shell-legacy-hidden'));
  if(hist){const w=document.createElement('div');w.id='meetingWorkspace';hist.appendChild(w)}
  const an=document.getElementById('analysis'),head=an&&an.querySelector('.analysis-head');
