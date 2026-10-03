@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const V={overview:['Visão geral','AURA INTELLIGENCE CENTER'],analysis:['Nova análise','AURA INTELLIGENCE · INGESTÃO'],history:['Reuniões','AURA MEMORY · REUNIÕES'],clients:['Clientes','AURA MEMORY · CUSTOMER 360'],risks:['Riscos','AURA SIGNALS · RISCO'],opportunities:['Oportunidades','AURA SIGNALS · OPORTUNIDADES'],actions:['Ações','AURA EXECUTION · PRÓXIMOS MOVIMENTOS'],evolution:['Evolução','AURA MEMORY · O QUE MUDOU']};
+const V={overview:['Visão geral','AURA INTELLIGENCE CENTER'],analysis:['Nova análise','AURA INTELLIGENCE · INGESTÃO'],history:['Reuniões','AURA MEMORY · REUNIÕES'],clients:['Clientes','AURA MEMORY · CUSTOMER 360'],risks:['Riscos','AURA SIGNALS · RISCO'],opportunities:['Oportunidades','AURA SIGNALS · OPORTUNIDADES'],actions:['Ações','AURA EXECUTION · PRÓXIMOS MOVIMENTOS'],evolution:['Evolução','AURA MEMORY · O QUE MUDOU'],profile:['Perfil','AURA ACCOUNT · PERFIL']};
 const C=['Comercial','Financeiro','Operacional','Gestão','Estratégico','Risco & Compliance','Relacionamento','Outro'];
 const S='viewBox="0 0 24 24"';
 const I={
@@ -27,7 +27,7 @@ function activate(id,scroll=true){
  document.querySelectorAll('.shell-nav').forEach(x=>x.classList.toggle('active',x.dataset.shellView===id));
  const t=document.getElementById('pageTitle'),e=document.querySelector('header .eyebrow');
  if(t)t.textContent=V[id][0]; if(e)e.textContent=V[id][1];
- document.body.dataset.auraView=id;document.body.classList.toggle('shell-generated-active',['history','clients','risks','opportunities','actions','evolution'].includes(id));
+ document.body.dataset.auraView=id;document.body.classList.toggle('shell-generated-active',['history','clients','risks','opportunities','actions','evolution','profile'].includes(id));
  if(scroll)window.scrollTo({top:0,behavior:'smooth'});
  if(id==='history')meeting();
  if(id==='insights')intelligence();
@@ -767,6 +767,7 @@ function setup(){
  add('opportunities','Oportunidades','OPPORTUNITY CENTER','Potenciais movimentos identificados pelo AURA a partir de conversas reais.','shellOpportunities');
  add('actions','Ações','ACTION CENTER','Decisões e próximos movimentos organizados para execução.','shellActions');
  add('evolution','O que mudou?','AURA MEMORY','Compare reuniões ao longo do tempo para entender evolução, recorrência e sinais persistentes.','shellEvolution');
+ add('profile','Perfil','AURA ACCOUNT · CENTRO DE CONTROLE','Identidade, preferências, acesso e contexto do workspace em um único lugar.','shellProfile');
   
  const hist=document.getElementById('history');['.table','.client-grid','.action-center','.customer360-card'].forEach(s=>hist&&hist.querySelector(s)?.classList.add('shell-legacy-hidden'));
  if(hist){const w=document.createElement('div');w.id='meetingWorkspace';hist.appendChild(w)}
