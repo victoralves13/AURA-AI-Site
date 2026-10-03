@@ -2,11 +2,11 @@
 (()=> {
 'use strict';
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-const esc=v=>String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const aesc=v=>String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const meetings=()=>Array.isArray(window.AURA_SERVER_MEETINGS)&&window.AURA_SERVER_MEETINGS.length?window.AURA_SERVER_MEETINGS:(()=>{try{return JSON.parse(localStorage.getItem('aura-meeting-history-v1')||'[]')}catch{return[]}})();
 const norm=v=>String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const demo=m=>m?.is_demo===true||norm(m?.source_type)==='demo';
-const fmt=v=>{try{return new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(v)).replace('.','')}catch{return'—'}};
+const afmt=v=>{try{return new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(v)).replace('.','')}catch{return'—'}};
 const client=m=>m?.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m?.file_name||'Reunião');
 const risk=m=>norm(m?.risk);
 const opp=m=>norm(m?.opportunity);
@@ -57,9 +57,9 @@ function renderOverview(){
  const trend=a.slice().sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0)).slice(-7);
  const trendRows=trend.map(m=>{
    const score=Math.max(0,Math.min(100,Number(m.risk_score)||0));
-   return '<div class="aura-pulse-point" title="'+esc(client(m))+' · risco '+score+'%">'+
+   return '<div class="aura-pulse-point" title="'+aesc(client(m))+' · risco '+score+'%">'+
      '<div class="aura-pulse-bar"><i style="height:'+Math.max(7,score)+'%"></i></div>'+
-     '<span>'+esc(client(m))+'</span><small>'+score+'%</small>'+
+     '<span>'+aesc(client(m))+'</span><small>'+score+'%</small>'+
    '</div>';
  }).join('');
  const trendValid=trend.filter(m=>Number.isFinite(Number(m.risk_score))).length;
@@ -76,8 +76,8 @@ function renderOverview(){
      '</div>'+
      '<div class="aura-home-context"><span>ENGINE</span><strong>ONLINE</strong><small>'+a.length+' reuniões · '+clientsCount+' clientes</small><div class="aura-home-facts"><div><b>'+highRisk+'</b><span>riscos altos</span></div><div><b>'+opportunities.length+'</b><span>oportunidades</span></div></div></div>'+
    '</section>'+   '<section class="aura-command-strip">'+
-     '<div class="aura-command-intro"><span>ÚLTIMA INTERAÇÃO PROCESSADA</span><strong>'+esc(latest[0]?client(latest[0]):'Aguardando primeira análise')+'</strong><p>'+esc(latest[0]?(fmt(latest[0].created_at)+' · '+latestSignal):'Novos dados aparecerão aqui após a primeira análise.')+'</p></div>'+
-     '<div class="aura-command-metric"><span>RISCO</span><strong class="'+(riskTone==='critical'?'critical':'')+'">'+esc(latestRisk)+'</strong><small>'+highRisk+' alto'+(highRisk===1?'':'s')+' no histórico</small></div>'+
+     '<div class="aura-command-intro"><span>ÚLTIMA INTERAÇÃO PROCESSADA</span><strong>'+aesc(latest[0]?client(latest[0]):'Aguardando primeira análise')+'</strong><p>'+aesc(latest[0]?(afmt(latest[0].created_at)+' · '+latestSignal):'Novos dados aparecerão aqui após a primeira análise.')+'</p></div>'+
+     '<div class="aura-command-metric"><span>RISCO</span><strong class="'+(riskTone==='critical'?'critical':'')+'">'+aesc(latestRisk)+'</strong><small>'+highRisk+' alto'+(highRisk===1?'':'s')+' no histórico</small></div>'+
      '<div class="aura-command-metric"><span>OPORTUNIDADES</span><strong class="positive">'+opportunities.length+'</strong><small>sinais identificados</small></div>'+
      '<div class="aura-command-metric"><span>EXECUÇÃO</span><strong>'+actions.length+'</strong><small>próximos movimentos</small></div>'+
    '</section>'+
@@ -85,12 +85,12 @@ function renderOverview(){
    '<section class="aura-home-grid">'+
      '<article class="aura-home-panel aura-attention-panel">'+
        '<div class="aura-home-panel-head"><div><span class="panel-label">ATENÇÃO</span><h3>Sinais que pedem leitura</h3></div><span class="panel-count">'+risks.length+'</span></div>'+
-       (risks.slice(0,3).map(m=>'<button class="aura-home-row" data-shell-view="risks"><span class="aura-row-marker red"></span><div><strong>'+esc(client(m))+'</strong><p>'+esc(m.risk||'Risco identificado')+'</p><small>'+esc((m.summary||m.why_it_matters||'Sinal registrado.').slice(0,150))+'</small></div><b>→</b></button>').join('')||
+       (risks.slice(0,3).map(m=>'<button class="aura-home-row" data-shell-view="risks"><span class="aura-row-marker red"></span><div><strong>'+aesc(client(m))+'</strong><p>'+aesc(m.risk||'Risco identificado')+'</p><small>'+aesc((m.summary||m.why_it_matters||'Sinal registrado.').slice(0,150))+'</small></div><b>→</b></button>').join('')||
        '<div class="aura-home-empty"><strong>Operação sem alertas críticos</strong><span>Novos sinais aparecerão aqui conforme as reuniões forem analisadas.</span></div>')+
      '</article>'+
      '<article class="aura-home-panel aura-memory-panel">'+
        '<div class="aura-home-panel-head"><div><span class="panel-label">ATIVIDADE RECENTE</span><h3>Memória da operação</h3></div><button class="aura-home-link" data-shell-view="history">Abrir →</button></div>'+
-       (latest.map(m=>'<button class="aura-home-row compact" data-shell-view="history"><span class="aura-row-date">'+esc(fmt(m.created_at))+'</span><div><strong>'+esc(client(m))+'</strong><small>'+esc(m.context||m.intelligence_type||'Reunião analisada')+'</small></div><em>'+esc(m.sentiment||'—')+'</em></button>').join('')||
+       (latest.map(m=>'<button class="aura-home-row compact" data-shell-view="history"><span class="aura-row-date">'+aesc(afmt(m.created_at))+'</span><div><strong>'+aesc(client(m))+'</strong><small>'+aesc(m.context||m.intelligence_type||'Reunião analisada')+'</small></div><em>'+aesc(m.sentiment||'—')+'</em></button>').join('')||
        '<div class="aura-home-empty"><strong>A memória ainda está vazia</strong><span>A primeira análise cria o histórico que alimenta o AURA.</span></div>')+
      '</article>'+
    '</section>'+
@@ -114,7 +114,7 @@ function renderHistoryClean(){
  if(!host){host=document.createElement('div');host.id='auraHistoryClean';h.appendChild(host)}
  const a=meetings().slice().sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0));
  host.innerHTML='<div class="aura-clean-head"><div><span class="aura-section-label">REUNIÕES</span><h2>Histórico de reuniões</h2></div></div>'+
- (a.length?'<div class="aura-history-list">'+a.map((m,i)=>'<button class="aura-history-row" data-history="'+i+'"><span class="aura-history-status '+(risk(m).includes('alto')?'danger':'')+'"></span><div><b>'+esc(client(m))+(demo(m)?' <small class="aura-demo">DEMO</small>':'')+'</b><small>'+esc(m.context||m.intelligence_type||'Outro')+' · '+esc(m.sentiment||'—')+' · risco '+esc(m.risk||'—')+'</small></div><time>'+esc(fmt(m.created_at))+'</time></button>').join('')+'</div>':'<div class="aura-empty-row aura-history-empty"><b>Nenhuma reunião registrada</b><small>As reuniões analisadas aparecerão aqui automaticamente.</small></div>');
+ (a.length?'<div class="aura-history-list">'+a.map((m,i)=>'<button class="aura-history-row" data-history="'+i+'"><span class="aura-history-status '+(risk(m).includes('alto')?'danger':'')+'"></span><div><b>'+aesc(client(m))+(demo(m)?' <small class="aura-demo">DEMO</small>':'')+'</b><small>'+aesc(m.context||m.intelligence_type||'Outro')+' · '+aesc(m.sentiment||'—')+' · risco '+aesc(m.risk||'—')+'</small></div><time>'+aesc(afmt(m.created_at))+'</time></button>').join('')+'</div>':'<div class="aura-empty-row aura-history-empty"><b>Nenhuma reunião registrada</b><small>As reuniões analisadas aparecerão aqui automaticamente.</small></div>');
  host.querySelectorAll('[data-history]').forEach(b=>b.onclick=()=>{
    const m=a[Number(b.dataset.history)];
    document.querySelector('.shell-nav[data-shell-view="history"]')?.click();
