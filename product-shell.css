@@ -1197,3 +1197,10 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 .rail-collapsed .rail .rail-toggle{
   top:-18px!important;
 }
+
+
+/* Final micro-position — move collapsed navigation control higher and slightly left */
+.rail-collapsed .rail .rail-toggle{
+  top:-25px!important;
+  right:9px!important;
+}
