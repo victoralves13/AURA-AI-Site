@@ -75,6 +75,11 @@ function renderOverview(){
        '<div class="aura-home-actions"><button class="aura-home-primary" data-go="analysis">Nova análise <b>→</b></button><button class="aura-home-secondary" data-shell-view="history">Explorar memória</button></div>'+
      '</div>'+
      '<div class="aura-home-context"><span>ENGINE</span><strong>ONLINE</strong><small>'+a.length+' reuniões · '+clientsCount+' clientes</small><div class="aura-home-facts"><div><b>'+highRisk+'</b><span>riscos altos</span></div><div><b>'+opportunities.length+'</b><span>oportunidades</span></div></div></div>'+
+   '</section>
+<section class="aura-profile-overview">'+
+     '<div class="aura-profile-overview-main"><div class="aura-profile-mini-avatar">VA</div><div><span class="panel-label">PERFIL · CONTA ATIVA</span><h3>Victor Alves</h3><p>Administrador do workspace · AURA Intelligence</p></div></div>'+
+     '<div class="aura-profile-overview-facts"><div><span>WORKSPACE</span><b>AURA Intelligence</b></div><div><span>REUNIÕES</span><b>'+a.length+'</b></div><div><span>CLIENTES</span><b>'+clientsCount+'</b></div></div>'+
+     '<button type="button" class="aura-profile-open" data-shell-view="profile">Abrir perfil completo <b>→</b></button>'+
    '</section>'+   '<section class="aura-command-strip">'+
      '<div class="aura-command-intro"><span>ÚLTIMA INTERAÇÃO PROCESSADA</span><strong>'+esc(latest[0]?client(latest[0]):'Aguardando primeira análise')+'</strong><p>'+esc(latest[0]?(fmt(latest[0].created_at)+' · '+latestSignal):'Novos dados aparecerão aqui após a primeira análise.')+'</p></div>'+
      '<div class="aura-command-metric"><span>RISCO</span><strong class="'+(riskTone==='critical'?'critical':'')+'">'+esc(latestRisk)+'</strong><small>'+highRisk+' alto'+(highRisk===1?'':'s')+' no histórico</small></div>'+
@@ -103,11 +108,7 @@ function renderOverview(){
      '<button class="aura-home-next" data-shell-view="actions"><span class="panel-label">EXECUÇÃO</span><strong>Próximos movimentos</strong><b>'+actions.length+' acompanhamentos →</b></button>'+
      '<button class="aura-home-next" data-shell-view="clients"><span class="panel-label">RELACIONAMENTO</span><strong>Customer 360</strong><b>'+clientsCount+' clientes →</b></button>'+
    '</section>'+
-   '<section class="aura-profile-overview">'+
-     '<div class="aura-profile-overview-main"><div class="aura-profile-mini-avatar">VA</div><div><span class="panel-label">PERFIL · CONTA ATIVA</span><h3>Victor Alves</h3><p>Administrador do workspace · AURA Intelligence</p></div></div>'+
-     '<div class="aura-profile-overview-facts"><div><span>WORKSPACE</span><b>AURA Intelligence</b></div><div><span>REUNIÕES</span><b>'+a.length+'</b></div><div><span>CLIENTES</span><b>'+clientsCount+'</b></div></div>'+
-     '<button type="button" class="aura-profile-open" data-shell-view="profile">Abrir perfil completo <b>→</b></button>'+
-   '</section>'+
+   ''+
  '</div>';
  host.querySelectorAll('[data-shell-view]').forEach(b=>b.onclick=e=>{e.preventDefault();document.querySelector('.shell-nav[data-shell-view="'+b.dataset.shellView+'"]')?.click()});
  host.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>document.querySelector('.shell-nav[data-shell-view="analysis"]')?.click());
