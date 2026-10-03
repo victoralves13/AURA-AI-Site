@@ -1216,7 +1216,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 }
 .profile-hero-main{display:flex;align-items:center;gap:18px;min-width:0}
 .profile-back{
-  position:absolute;top:0;left:0;width:30px;height:30px;border:1px solid rgba(170,220,230,.10);border-radius:7px;
+  position:absolute;top:-42px;left:0;width:32px;height:32px;border:1px solid rgba(170,220,230,.10);border-radius:7px;
   background:transparent;color:#8ea4ac;font:400 20px/1 Arial;cursor:pointer;display:grid;place-items:center;
   transition:.16s ease;flex:0 0 auto
 }
@@ -1312,4 +1312,4 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profile"] .profile-workspace{padding:0 0 54px}body[data-aura-view="profile"] .profile-back{width:34px;height:34px;border:0;border-radius:8px;color:#65e7f5;background:rgba(101,231,245,.04);font-size:24px}body[data-aura-view="profile"] .profile-back:hover{background:rgba(101,231,245,.10);color:#eafcff}body[data-aura-view="profile"] .profile-hero{min-height:150px;padding:30px 32px;border-radius:15px;margin:48px 0 16px}body[data-aura-view="profile"] .profile-stat-grid{margin-bottom:16px}body[data-aura-view="profile"] .profile-card{border-color:rgba(170,220,230,.10)}
 
 /* Profile back control sits outside the hero card */
-.profile-workspace>.profile-back{display:flex;align-items:center;justify-content:center;margin:0 0 10px 2px}.profile-workspace>.profile-back{background:transparent!important;border:1px solid rgba(101,231,245,.14)!important;box-shadow:none}.profile-workspace>.profile-back:hover{background:rgba(101,231,245,.07)!important}
+.profile-workspace>.profile-back{display:flex;align-items:center;justify-content:center;margin:0 0 10px 0}.profile-workspace>.profile-back{background:transparent!important;border:1px solid rgba(101,231,245,.14)!important;box-shadow:none}.profile-workspace>.profile-back:hover{background:rgba(101,231,245,.07)!important}
