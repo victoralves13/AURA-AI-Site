@@ -31,7 +31,7 @@ class InsightItem(BaseModel):
     evidence_strength: EvidenceStrength
     timestamp: str | None = None
     category: Literal["risco", "oportunidade", "sinal", "relacionamento", "comercial", "operacional", "financeiro", "decisão", "objeção", "ação"]
-    impact_score: int
+    impact_score: int = 50
 
 
 class AURAAnalysis(BaseModel):
