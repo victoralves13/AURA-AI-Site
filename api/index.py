@@ -69,7 +69,7 @@ def _supabase_request(method: str, path: str, payload=None):
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
 def _save_meeting(data: dict):
-    fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","participants","next_move","owner","deadline","model"]
+    fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","topics","participants","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
     result = _supabase_request("POST", "meetings", payload)
@@ -108,7 +108,10 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     analysis = analyze_transcript(analysis_transcript or transcript, context=context)
     fields = build_product_fields(analysis)
     resolved_client = _clean(client_name) or _clean(fields.get("client_name")) or "Cliente não identificado"
-    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": meeting_title or file_name, "client_name": resolved_client, "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
+    resolved_title = _clean(meeting_title)
+    if not resolved_title or resolved_title == "Análise por transcrição":
+        resolved_title = resolved_client + " · " + (context or "Outro")
+    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": resolved_title, "client_name": resolved_client, "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
     if transcription_meta:
         result["transcription"] = transcription_meta
     result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
