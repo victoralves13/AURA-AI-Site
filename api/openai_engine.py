@@ -31,6 +31,7 @@ class InsightItem(BaseModel):
     evidence_strength: EvidenceStrength
     timestamp: str | None = None
     category: Literal["risco", "oportunidade", "sinal", "relacionamento", "comercial", "operacional", "financeiro", "decisão", "objeção", "ação"]
+    impact_score: int
 
 
 class AURAAnalysis(BaseModel):
@@ -86,6 +87,9 @@ REGRAS:
 - Quando a transcrição trouxer timestamps no formato [MM:SS] ou [HH:MM:SS], associe o timestamp mais próximo da evidência e retorne-o no campo timestamp.
 - Nunca invente timestamp. Se não houver timestamp disponível para aquele trecho, deixe timestamp como null.
 - A força da evidência deve ser alta, média ou baixa.
+- Para cada insight, atribua impact_score de 0 a 100. Esse score mede o impacto empresarial daquele achado dentro da reunião: capacidade de mudar uma decisão, alterar uma oportunidade, elevar um risco, destravar uma ação ou mudar a relação com o cliente. Considere também urgência, especificidade e consequência explícita.
+- Não use impact_score apenas como sinônimo de força da evidência: um fato muito bem evidenciado pode ter baixo impacto, e um sinal explícito com consequência grande pode ter alto impacto.
+- Use a escala de forma discriminativa: 90–100 para momentos críticos/decisivos, 75–89 para achados muito relevantes, 55–74 para relevância intermediária e abaixo de 55 para sinais contextuais.
 - Preserve nomes e informações relevantes para executar ações.
 - Não faça diagnóstico médico nem aconselhamento médico.
 - Uma inferência deve ser tratada como inferência, nunca como fato.
@@ -304,6 +308,7 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
                 "evidence_strength": x.evidence_strength,
                 "timestamp": x.timestamp,
                 "type": x.category,
+                "impact_score": max(0, min(100, int(x.impact_score))),
             }
             for x in analysis.insights
             if x.evidence
