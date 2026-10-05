@@ -69,7 +69,7 @@ def _supabase_request(method: str, path: str, payload=None):
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
 def _save_meeting(data: dict):
-    fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","participants","next_move","owner","deadline","model"]
+    fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","participants","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
     result = _supabase_request("POST", "meetings", payload)
@@ -107,11 +107,16 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     from openai_engine import analyze_transcript, build_product_fields
     analysis = analyze_transcript(analysis_transcript or transcript, context=context)
     fields = build_product_fields(analysis)
-    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": meeting_title or file_name, "client_name": client_name or "Cliente não identificado", "context": context or "Outro", "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
+    resolved_client = _clean(client_name) or _clean(fields.get("client_name")) or "Cliente não identificado"
+    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": meeting_title or file_name, "client_name": resolved_client, "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
     if transcription_meta:
         result["transcription"] = transcription_meta
     result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
-    result.update(_save_meeting({**result, "source_type": source_type}))
+    saved = _save_meeting({**result, "source_type": source_type})
+    if saved.get("meeting"):
+        result["id"] = saved["meeting"].get("id")
+        result["created_at"] = saved["meeting"].get("created_at")
+    result.update(saved)
     return result
 
 @app.get("/api/health")
