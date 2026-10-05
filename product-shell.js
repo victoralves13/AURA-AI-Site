@@ -732,7 +732,7 @@ function profile(){
  h.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
 }
 window.__AURAActivateView=activate;
-window.__auraOpenMeeting=(m)=>{activate('history',false);setTimeout(()=>{const a=items();const i=a.findIndex(x=>x&&x.id===m?.id);const b=document.querySelector('.meeting-row[data-mi="'+i+'"]');if(b)b.click()},80)};
+window.__auraOpenMeeting=(m)=>{activate('history',false);setTimeout(()=>{const a=items();const i=a.findIndex(x=>x&&x.id===m?.id);const b=document.querySelector('.meeting-memory-card[data-mi="'+i+'"]');if(b)b.click()},80)};
 function bind(){
  document.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
 }
