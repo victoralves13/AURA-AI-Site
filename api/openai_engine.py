@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import Literal
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 from pydantic import BaseModel
 
 
@@ -96,7 +96,7 @@ REGRAS:
 def _client() -> OpenAI:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY não configurada no ambiente.")
-    return OpenAI()
+    return OpenAI(max_retries=0)
 
 
 def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
@@ -104,14 +104,23 @@ def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
     if len(text) < 4:
         raise ValueError("Transcrição vazia.")
 
-    response = _client().responses.parse(
-        model=ANALYSIS_MODEL,
-        input=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"CONTEXTO DA ANÁLISE: {context or 'Outro'}\n\nTRANSCRIÇÃO:\n{text}"},
-        ],
-        text_format=AURAAnalysis,
-    )
+    try:
+        response = _client().responses.parse(
+            model=ANALYSIS_MODEL,
+            input=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"CONTEXTO DA ANÁLISE: {context or 'Outro'}\\n\\nTRANSCRIÇÃO:\\n{text}"},
+            ],
+            text_format=AURAAnalysis,
+        )
+    except RateLimitError as exc:
+        message = str(exc)
+        if "credit_balance_exhausted" in message or "no credits remaining" in message.lower():
+            raise RuntimeError(
+                "Créditos da OpenAI API esgotados. Adicione créditos ao saldo da API "
+                "para o AURA continuar processando análises."
+            ) from exc
+        raise
 
     parsed = response.output_parsed
     if parsed is None:
