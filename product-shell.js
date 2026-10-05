@@ -54,18 +54,27 @@ function insightRawList(m){
 }
 function normalizeInsights(m){
  return insightRawList(m).map((x,i)=>{
-   if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal',is_quote:false};
-   return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal',is_quote:true};
+   if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal',impact_score:50,is_quote:false};
+   const fallback={alta:78,'média':55,baixa:32};
+   return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal',impact_score:Number.isFinite(Number(x.impact_score))?Math.max(0,Math.min(100,Number(x.impact_score))):(fallback[x.evidence_strength]||55),is_quote:true};
  }).filter(x=>x.evidence);
 }
 function renderInsights(m){
  const allCount=insightRawList(m).length;
- const insights=normalizeInsights(m);
- const typeLabel={risco:'Risco',oportunidade:'Oportunidade',sinal:'Sinal importante',objeção:'Objeção',decisão:'Decisão'};
- if(!insights.length)return '<div class="detail-panel insight-empty"><span class="eyebrow">INSIGHTS DA CONVERSA</span><strong>Nenhum insight rastreável disponível.</strong><p class="detail-muted">Quando a análise tiver evidências estruturadas, o AURA destacará os trechos mais relevantes aqui.</p></div>';
+ const base=normalizeInsights(m);
+ const typeLabel={risco:'Risco',oportunidade:'Oportunidade',sinal:'Sinal importante',relacionamento:'Relacionamento',comercial:'Comercial',operacional:'Operacional',financeiro:'Financeiro',objeção:'Objeção',decisão:'Decisão',ação:'Ação'};
+ if(!base.length)return '<div class="detail-panel insight-empty"><span class="eyebrow">INTELIGÊNCIA DA CONVERSA</span><strong>Nenhum insight rastreável disponível.</strong><p class="detail-muted">Quando a análise tiver evidências estruturadas, o AURA destacará os trechos mais relevantes aqui.</p></div>';
+ const insights=[...base].sort((a,b)=>b.impact_score-a.impact_score);
+ const maxImpact=Math.max(...insights.map(x=>x.impact_score),0);
+ const avgImpact=Math.round(insights.reduce((n,x)=>n+x.impact_score,0)/insights.length);
  const registeredLabel=allCount===1?'1 insight registrado':allCount+' insights registrados';
- const priorityLabel=insights.length===1?'1 prioritário':insights.length+' prioritários';
- return '<div class="detail-panel meeting-insights-panel"><div class="insight-head"><div><span class="eyebrow">INSIGHTS DA CONVERSA</span><h3>Os momentos que mais importam</h3><p>O AURA preserva todos os insights registrados e destaca os sinais mais relevantes para leitura executiva.</p></div><span class="insight-count">'+registeredLabel+' · '+priorityLabel+'</span></div><div class="meeting-insights-list">'+insights.map((x,i)=>'<article class="meeting-insight '+esc(x.type)+'"><div class="meeting-insight-top"><span class="insight-index">INSIGHT '+String(i+1).padStart(2,'0')+'</span><span class="insight-type">'+esc(typeLabel[x.type]||'Sinal importante')+'</span>'+(x.timestamp?'<button type="button" class="insight-time" title="Timestamp da evidência">'+esc(x.timestamp)+'</button>':'<span class="insight-time muted">timestamp não disponível</span>')+'</div><h4>'+esc(x.description)+'</h4><blockquote>“'+esc(x.evidence)+'”</blockquote><div class="insight-meta"><span>Evidência '+esc(x.evidence_strength)+'</span>'+(x.timestamp?'<span>Momento rastreado na reunião</span>':'<span>Sem marcação temporal na fonte</span>')+'</div></article>').join('')+'</div></div>';
+ const sortId='insight-sort-'+String(m.id||'meeting').replace(/[^a-z0-9_-]/gi,'');
+ const renderList=(list)=>list.map((x,i)=>{
+   const impact=Math.round(x.impact_score);
+   const level=impact>=90?'Crítico':impact>=75?'Alto':impact>=55?'Relevante':'Contextual';
+   return '<article class="meeting-insight '+esc(x.type)+'" data-impact="'+impact+'"><div class="meeting-insight-top"><span class="insight-index">INSIGHT '+String(i+1).padStart(2,'0')+'</span><span class="insight-type">'+esc(typeLabel[x.type]||'Sinal importante')+'</span><span class="insight-impact-badge '+(impact>=90?'critical':impact>=75?'high':impact>=55?'medium':'context')+'"><b>'+impact+'</b>/100 · '+level+'</span>'+(x.timestamp?'<button type="button" class="insight-time" title="Timestamp da evidência">'+esc(x.timestamp)+'</button>':'<span class="insight-time muted">timestamp não disponível</span>')+'</div><div class="insight-impact-track" aria-hidden="true"><i style="width:'+impact+'%"></i></div><h4>'+esc(x.description)+'</h4><blockquote>“'+esc(x.evidence)+'”</blockquote><div class="insight-meta"><span>Evidência '+esc(x.evidence_strength)+'</span><span>Impacto '+impact+'/100</span>'+(x.timestamp?'<span>Momento rastreado na reunião</span>':'<span>Sem marcação temporal na fonte</span>')+'</div></article>';
+ }).join('');
+ return '<div class="detail-panel meeting-insights-panel"><div class="insight-head"><div><span class="eyebrow">INTELIGÊNCIA DA CONVERSA</span><h3>Momentos de maior impacto</h3><p>O AURA percorre a reunião inteira, preserva todos os achados e atribui um impacto relativo para priorizar o que pode mudar uma decisão, risco, oportunidade ou ação.</p></div><span class="insight-count">'+registeredLabel+' · impacto médio '+avgImpact+'</span></div><div class="impact-overview"><div><span>MAIOR IMPACTO</span><b>'+maxImpact+'/100</b></div><div><span>INSIGHTS ANALISADOS</span><b>'+insights.length+'</b></div><div><span>CRÍTICOS</span><b>'+insights.filter(x=>x.impact_score>=90).length+'</b></div><label for="'+sortId+'"><span>ORDENAR</span><select id="'+sortId+'" class="insight-sort"><option value="desc" selected>Maior impacto → menor</option><option value="asc">Menor impacto → maior</option></select></label></div><div class="meeting-insights-list" data-insight-list>'+renderList(insights)+'</div></div>';
 }
 function renderMeetingPanel(m,tab){
  const ev=[...arr(m,'evidence'),...arr(m,'risk_signals'),...arr(m,'opportunity_signals')];
