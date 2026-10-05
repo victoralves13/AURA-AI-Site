@@ -277,7 +277,7 @@ function clientDetail(name,sourceRows){
  const deadline=source.length?(latest.deadline||'Prazo não definido'):'Contexto demonstrativo';
  const insightsHtml=isDemo
   ?demo.insights.map((x,i)=>'<article class="client-insight '+esc(x[0])+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(x[2])+'</span></div><p>'+esc(x[1])+'</p><small>'+esc(x[0])+'</small></article>').join('')
-  :allInsights.slice(0,10).map((x,i)=>{
+  :allInsights.map((x,i)=>{
     const o=typeof x==='string'?{description:'Sinal registrado',evidence:x}:x;
     return '<article class="client-insight '+esc(o.type||'sinal')+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(o.timestamp||'sem timestamp')+'</span></div><p>'+esc(o.description||o.evidence||'Insight registrado')+'</p>'+(o.evidence?'<blockquote>“'+esc(o.evidence)+'”</blockquote>':'')+'<small>'+esc(o.type||'sinal')+'</small></article>';
   }).join('')||'<div class="detail-muted">Nenhum insight estruturado registrado.</div>';
