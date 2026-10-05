@@ -65,6 +65,13 @@ def _supabase_request(method: str, path: str, payload=None):
     try:
         with urllib.request.urlopen(req, timeout=15) as response:
             return json.loads(response.read().decode() or "[]")
+    except urllib.error.HTTPError as exc:
+        try:
+            body = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            body = ""
+        detail = body or str(exc)
+        raise RuntimeError(f"Supabase error: HTTP {exc.code}: {detail}") from exc
     except Exception as exc:
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
@@ -72,7 +79,40 @@ def _save_meeting(data: dict):
     fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","topics","participants","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
-    result = _supabase_request("POST", "meetings", payload)
+
+    try:
+        result = _supabase_request("POST", "meetings", payload)
+    except RuntimeError as exc:
+        # PostgREST can briefly serve a stale schema cache immediately after a
+        # migration. If that happens for the newly-added JSONB columns, keep
+        # the meeting usable by persisting the complete insight set through
+        # the existing evidence JSONB column and retrying with the stable schema.
+        message = str(exc).lower()
+        if "400" not in message or not any(x in message for x in ("insights", "topics", "schema cache", "pgrst204", "pgrst")):
+            raise
+
+        fallback = dict(payload)
+        full_insights = fallback.pop("insights", None) or []
+        fallback.pop("topics", None)
+
+        existing_evidence = fallback.get("evidence") or []
+        if not isinstance(existing_evidence, list):
+            existing_evidence = []
+        merged_evidence = list(existing_evidence)
+        for item in full_insights:
+            if item not in merged_evidence:
+                merged_evidence.append(item)
+        fallback["evidence"] = merged_evidence
+
+        result = _supabase_request("POST", "meetings", fallback)
+
+        # The response may not expose the newly-added columns during a stale
+        # cache window. Rehydrate them in the API response so the frontend can
+        # immediately render the full analysis from this request.
+        if result and isinstance(result[0], dict):
+            result[0].setdefault("insights", full_insights)
+            result[0].setdefault("topics", data.get("topics") or [])
+
     if result is None:
         return {"persisted": False, "storage": "local-only"}
     return {"persisted": True, "storage": "supabase", "meeting": result[0] if result else None}
