@@ -34,6 +34,7 @@ class InsightItem(BaseModel):
 
 
 class AURAAnalysis(BaseModel):
+    client_name: str | None = None
     summary: str
     main_topics: list[str]
     decisions: list[str]
@@ -56,6 +57,8 @@ MAX_OPENAI_AUDIO_BYTES = 25 * 1024 * 1024
 
 SYSTEM_PROMPT = """
 Você é o motor de inteligência do AURA AI.
+
+Se a conversa mencionar explicitamente o nome de uma empresa, conta ou cliente, retorne esse nome em client_name. Não invente nomes; se não houver identificação explícita, use null.
 
 O contexto selecionado pelo usuário é fornecido na mensagem de análise. Use-o como lente prioritária, sem inventar fatos.
 
@@ -262,6 +265,7 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
         why = analysis.opportunities[0].description
 
     return {
+        "client_name": analysis.client_name,
         "summary": analysis.summary,
         "opportunity": opportunity,
         "opportunity_score": opportunity_score,
