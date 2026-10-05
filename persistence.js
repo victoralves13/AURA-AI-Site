@@ -3,6 +3,7 @@
   'use strict';
   const API_BASE=window.AURA_API_BASE||((location.hostname==='localhost'||location.hostname==='127.0.0.1')?'':'http://127.0.0.1:8000');
   const API=API_BASE+'/api/meetings';
+  const MAX_MEMORY=500;
   const KEY='aura-meeting-history-v1';
   const DEMO_SEED_VERSION='2026-09-26-v1';
 const DEMO_SEED=[
@@ -20,11 +21,41 @@ const DEMO_SEED=[
 ];
   const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}};
   function ensureDemoData(){try{const key='aura-meeting-history-v1';const current=JSON.parse(localStorage.getItem(key)||'[]');const version=localStorage.getItem('aura-demo-seed-version');const has=current.some(x=>x&&x.is_demo===true);if(!has||version!==DEMO_SEED_VERSION){const real=current.filter(x=>!x?.is_demo);localStorage.setItem(key,JSON.stringify([...DEMO_SEED,...real]));localStorage.setItem('aura-demo-seed-version',DEMO_SEED_VERSION);}}catch{}}
-  const write=v=>{try{localStorage.setItem(KEY,JSON.stringify(v.slice(0,50)))}catch{}};
-  window.AURA_HISTORY={all:read,save(item){const items=read();items.unshift({...item,created_at:item.created_at||new Date().toISOString()});write(items);return items[0]}};
+  const write=v=>{try{localStorage.setItem(KEY,JSON.stringify(v.slice(0,MAX_MEMORY)))}catch{}};
+  window.AURA_HISTORY={
+    all:read,
+    save(item){
+      const current=read();
+      const normalized={...item,created_at:item.created_at||new Date().toISOString()};
+      const next=[normalized,...current.filter(x=>x?.id!==normalized.id)];
+      write(next);
+      window.AURA_SERVER_MEETINGS=next;
+      window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:next}}));
+      return normalized;
+    }
+  };
   ensureDemoData();
+  window.AURA_SERVER_MEETINGS=read();
   async function loadServer(){
-    try{const r=await fetch(API+'?limit=50');if(!r.ok)return;const data=await r.json();if(data.persisted&&Array.isArray(data.meetings)){const local=read().filter(x=>x&&x.is_demo===true);const merged=[...data.meetings,...local.filter(d=>!data.meetings.some(m=>m.id===d.id))];write(merged);render(merged)}}catch{}
+    try{
+      const r=await fetch(API+'?limit=200');
+      if(!r.ok)return;
+      const data=await r.json();
+      if(data.persisted&&Array.isArray(data.meetings)){
+        const local=read();
+        const byId=new Map();
+        [...local,...data.meetings].forEach(m=>{
+          if(!m)return;
+          const key=m.id||((m.file_name||'')+'|'+(m.created_at||'')+'|'+(m.client_name||''));
+          if(!byId.has(key)||!byId.get(key)?.is_demo)byId.set(key,m);
+        });
+        const merged=[...byId.values()].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+        window.AURA_SERVER_MEETINGS=merged;
+        write(merged);
+        render(merged);
+        window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:merged}}));
+      }
+    }catch{}
   }
   function render(items){
     const host=document.querySelector('[data-aura-history-list]');if(!host)return;
@@ -34,6 +65,14 @@ const DEMO_SEED=[
   }
   function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   function formatDate(v){try{return new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(v))}catch{return'—'}}
-  window.addEventListener('aura:meeting-saved',e=>{if(e.detail)render([e.detail,...read().filter(x=>x.id!==e.detail.id)])});
+  window.addEventListener('aura:meeting-saved',e=>{
+    if(!e.detail)return;
+    const current=read();
+    const next=[e.detail,...current.filter(x=>x?.id!==e.detail.id)];
+    write(next);
+    window.AURA_SERVER_MEETINGS=next;
+    render(next);
+    window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:next}}));
+  });
   loadServer();
 })();
