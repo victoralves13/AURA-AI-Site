@@ -1362,3 +1362,11 @@ body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profil
 .client-inline-back,.meeting-back-button{width:38px;height:38px;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(255,255,255,.025);display:grid;place-items:center;cursor:pointer}
 .client-inline-back span,.meeting-back-button span{width:9px;height:9px;border-left:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);display:block}
 .client-inline-meeting-card{margin-top:8px}
+
+.evolution-line-chart{display:grid;grid-template-columns:30px 1fr;gap:10px;min-height:230px;padding:18px 18px 8px;border-top:1px solid rgba(255,255,255,.07)}
+.evolution-line-chart svg{width:100%;height:190px;overflow:visible}
+.evolution-line-y{height:190px;display:flex;flex-direction:column;justify-content:space-between;font:500 9px "DM Mono",monospace;opacity:.42}
+.evolution-chart-grid path{stroke:currentColor;stroke-width:1;opacity:.12;fill:none}
+.evolution-line-area{fill:currentColor;opacity:.06}
+.evolution-line{fill:none;stroke:currentColor;stroke-width:2.2;vector-effect:non-scaling-stroke}
+.evolution-line-dot{fill:currentColor;stroke:var(--aura-bg,#101820);stroke-width:2;vector-effect:non-scaling-stroke}
