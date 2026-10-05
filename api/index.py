@@ -151,7 +151,7 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     resolved_title = _clean(meeting_title)
     if not resolved_title or resolved_title == "Análise por transcrição":
         resolved_title = resolved_client + " · " + (context or "Outro")
-    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": resolved_title, "client_name": resolved_client, "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
+    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": resolved_title, "client_name": resolved_client, "context": _clean(context) or "Outro", "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
     if transcription_meta:
         result["transcription"] = transcription_meta
     result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
