@@ -115,8 +115,11 @@ def health():
 @app.get("/api/meetings")
 def meetings(limit: int = 50):
     limit = max(1, min(limit, 100))
-    result = _supabase_request("GET", f"meetings?select=*&order=created_at.desc&limit={limit}")
-    return {"ok": True, "persisted": result is not None, "meetings": result or []}
+    try:
+        result = _supabase_request("GET", f"meetings?select=*&order=created_at.desc&limit={limit}")
+        return {"ok": True, "persisted": result is not None, "meetings": result or []}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 @app.post("/api/meetings")
 def create_meeting(payload: dict):
