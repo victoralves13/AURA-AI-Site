@@ -267,6 +267,7 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
     return {
         "client_name": analysis.client_name,
         "summary": analysis.summary,
+        "topics": analysis.main_topics[:10],
         "opportunity": opportunity,
         "opportunity_score": opportunity_score,
         "opportunity_signals": [x.description for x in analysis.opportunities[:4]],
