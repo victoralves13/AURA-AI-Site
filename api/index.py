@@ -17,7 +17,14 @@ except Exception:
     Client = Any
     create_client = None
 
-ROOT = Path(__file__).resolve().parents[1]\n# Vercel can load api/index.py as a standalone function module, so the api/\n# directory is not guaranteed to be on sys.path. Keep the existing module\n# layout and make the sibling engine import explicit and reliable.\nAPI_DIR = ROOT / "api"\nif str(API_DIR) not in os.sys.path:\n    os.sys.path.insert(0, str(API_DIR))\napp = FastAPI(title="AURA AI API", version="1.0.0-cloud")
+ROOT = Path(__file__).resolve().parents[1]
+# Vercel can load api/index.py as a standalone function module, so the api/
+# directory is not guaranteed to be on sys.path. Keep the existing module
+# layout and make the sibling engine import explicit and reliable.
+API_DIR = ROOT / "api"
+if str(API_DIR) not in os.sys.path:
+    os.sys.path.insert(0, str(API_DIR))
+app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
 handler = app
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
