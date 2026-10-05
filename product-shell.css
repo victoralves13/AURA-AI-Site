@@ -1342,3 +1342,23 @@ body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profil
 .context-option{position:relative;z-index:7;pointer-events:auto;user-select:none;-webkit-tap-highlight-color:transparent}
 .context-option:active{transform:translateY(1px)}
 .context-option.selected{box-shadow:0 0 0 1px rgba(101,231,245,.08),0 8px 22px rgba(101,231,245,.05)}
+
+/* AURA CHARTS V2 */
+.aura-line-chart,.opportunity-line-chart{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:stretch;min-height:230px;padding:18px 18px 8px;border-top:1px solid rgba(255,255,255,.07)}
+.aura-line-chart svg,.opportunity-line-chart svg{width:100%;height:190px;overflow:visible}
+.aura-line-y,.opportunity-line-y{height:190px;display:flex;flex-direction:column;justify-content:space-between;padding:0 0 4px;font:500 9px "DM Mono",monospace;letter-spacing:.06em;opacity:.42}
+.aura-chart-grid path,.opportunity-chart-grid path{stroke:currentColor;stroke-width:1;opacity:.12;fill:none}
+.aura-line-area,.opportunity-line-area{fill:currentColor;opacity:.06}
+.aura-line-path,.opportunity-line-path{fill:none;stroke:currentColor;stroke-width:2.2;vector-effect:non-scaling-stroke}
+.aura-line-point line,.opportunity-line-point line{stroke:currentColor;stroke-width:1;opacity:.12;vector-effect:non-scaling-stroke}
+.aura-line-point circle,.opportunity-line-point circle{fill:currentColor;stroke:var(--aura-bg,#101820);stroke-width:2;vector-effect:non-scaling-stroke}
+.aura-line-axis,.opportunity-line-axis{grid-column:2;display:grid;grid-template-columns:repeat(auto-fit,minmax(55px,1fr));gap:8px;margin:0 0 10px}
+.aura-line-axis span,.opportunity-line-axis span{display:flex;flex-direction:column;gap:3px;text-align:center;font:500 9px "DM Mono",monospace;opacity:.52}
+.aura-line-axis b,.opportunity-line-axis b{font-weight:600;opacity:.85}
+.aura-line-axis small,.opportunity-line-axis small{font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opportunity-signal-chart{padding-top:8px}
+.client-inline-meeting-detail{margin-top:28px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px}
+.client-inline-backbar,.meeting-detail-backbar{display:flex;align-items:center;min-height:44px}
+.client-inline-back,.meeting-back-button{width:38px;height:38px;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(255,255,255,.025);display:grid;place-items:center;cursor:pointer}
+.client-inline-back span,.meeting-back-button span{width:9px;height:9px;border-left:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);display:block}
+.client-inline-meeting-card{margin-top:8px}
