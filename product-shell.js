@@ -18,6 +18,7 @@ right:'<svg '+S+'><path d="m10 6 6 6-6 6"/></svg>'
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const low=v=>String(v||'').toLowerCase();
 const items=()=>{const a=Array.isArray(window.AURA_SERVER_MEETINGS)?window.AURA_SERVER_MEETINGS:[];if(a.length)return a;try{return JSON.parse(localStorage.getItem('aura-meeting-history-v1')||'[]')}catch{return[]}};
+const meetingType=m=>m?.intelligence_type||m?.intent||((low(m?.context).includes('comercial')?'Comercial':low(m?.context).includes('finance')?'Financeiro':low(m?.context).includes('operacional')?'Operacional':low(m?.context).includes('gest')?'Gestão':low(m?.context).includes('estrat')?'Estratégico':low(m?.context).includes('risco')||low(m?.context).includes('compliance')?'Risco & Compliance':low(m?.context).includes('relacion')?'Relacionamento':'Outro'));
 const fmt=v=>{try{return new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(v)).replace('.','')}catch{return'—'}};
 const arr=(m,k)=>Array.isArray(m?.[k])?m[k]:[];
 
@@ -94,10 +95,10 @@ function renderMeetingPanel(m,tab){
 function detail(m){
  const d=document.getElementById('meetingDetail');if(!d)return;
  const tab=d.dataset.tab||'summary';
- const back=d.querySelector('.meeting-detail-backbar');
- d.innerHTML='<div class="meeting-detail-head"><div><span class="eyebrow">ANÁLISE APROFUNDADA</span><h2>'+esc(m.client_name||'Cliente não identificado')+'</h2><p>'+fmt(m.created_at)+' · '+esc(m.context||m.intelligence_type||'Outro')+'</p></div><span class="detail-badge '+(low(m.risk).includes('alto')?'danger':'')+'">'+esc(m.priority||'—')+'</span></div><div class="detail-metrics"><div><span>SENTIMENTO</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>RISCO</span><b>'+esc(m.risk||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>TIPO</span><b>'+esc(m.intelligence_type||'—')+'</b></div></div>'+localTabs(tab,[['summary','Resumo'],['evidence','Insights & evidências'],['actions','Decisões & ações'],['timeline','Linha do tempo']])+'<div class="meeting-local-content">'+renderMeetingPanel(m,tab)+'</div>';
+ d.innerHTML='<div class="meeting-detail-head"><div><span class="eyebrow">ANÁLISE APROFUNDADA</span><h2>'+esc(m.client_name||'Cliente não identificado')+'</h2><p>'+esc(m.meeting_title||meetingType(m))+' · '+fmt(m.created_at)+' · '+esc(m.context||'Outro')+'</p></div><span class="detail-badge '+(low(m.risk).includes('alto')?'danger':'')+'">'+esc(m.priority||'—')+'</span></div><div class="detail-metrics"><div><span>SENTIMENTO</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>RISCO</span><b>'+esc(m.risk||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>TIPO</span><b>'+esc(m.intelligence_type||'—')+'</b></div></div>'+localTabs(tab,[['summary','Resumo'],['evidence','Insights & evidências'],['actions','Decisões & ações'],['timeline','Linha do tempo']])+'<div class="meeting-local-content">'+renderMeetingPanel(m,tab)+'</div>';
  d.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>{d.dataset.tab=b.dataset.localTab;detail(m)});
- if(back)d.prepend(back);
+ const back=d.querySelector('.meeting-back-button');
+ if(back)back.onclick=()=>d.dispatchEvent(new CustomEvent('aura:meeting-detail-back',{bubbles:true}));
 }
 function meeting(){
  const h=document.getElementById('meetingWorkspace');if(!h)return;
@@ -117,7 +118,7 @@ function meeting(){
   const riskClass=low(m.risk).includes('alto')?'high':low(m.risk).includes('médio')||low(m.risk).includes('medio')?'medium':'low';
   const signal=m.summary||m.why_it_matters||m.next_move||m.opportunity||'Sem leitura executiva registrada.';
   return '<button type="button" class="meeting-memory-card" data-mi="'+i+'" data-client="'+esc(low(clientName(m)))+'" data-risk="'+(hasRisk(m)?'1':'0')+'" data-opportunity="'+(hasOpp(m)?'1':'0')+'" data-search="'+esc(low([clientName(m),m.context,m.intelligence_type,m.summary,m.why_it_matters,m.risk,m.opportunity,m.next_move,m.intent,...arr(m,'important_signals'),...arr(m,'decisions'),...arr(m,'pending_actions')].filter(Boolean).join(' ')))+'">'+
-   '<div class="meeting-card-top"><span class="meeting-card-kind">REUNIÃO · '+esc(m.context||m.intelligence_type||'OUTRO')+'</span><span class="meeting-card-arrow" aria-hidden="true">→</span></div>'+
+   '<div class="meeting-card-top"><span class="meeting-card-kind">REUNIÃO · '+esc(meetingType(m))+'</span><span class="meeting-card-arrow" aria-hidden="true">→</span></div>'+
    '<div class="meeting-card-title"><div class="meeting-card-avatar">'+esc(clientName(m).slice(0,2).toUpperCase())+'</div><div><h3>'+esc(clientName(m))+'</h3><p>'+esc(fmt(m.created_at))+'</p></div></div>'+
    '<div class="meeting-card-status"><span class="meeting-status '+riskClass+'">RISCO · '+esc(m.risk||'—')+'</span><span>'+esc(m.sentiment||'Sentimento não registrado')+'</span></div>'+
    '<div class="meeting-card-reading"><span>LEITURA EXECUTIVA</span><b>'+esc(signal)+'</b></div>'+
@@ -163,20 +164,19 @@ function meeting(){
   detailHost.hidden=false;detailHost.style.display='block';
   detailHost.dataset.tab='summary';
   detail(m);
-  const back=document.createElement('div');back.className='meeting-detail-backbar';
-  back.innerHTML='<button type="button" class="meeting-back-button" aria-label="Voltar para reuniões" title="Voltar para reuniões"><span aria-hidden="true"></span></button>';
-  detailHost.prepend(back);
-  back.querySelector('button').onclick=()=>{
-   h.classList.remove('meeting-detail-open');
-   h.closest('.view')?.classList.remove('meeting-focus-mode');
-   detailHost.hidden=false;detailHost.style.display='none';
-   list.hidden=false;list.style.display='';
-   h.querySelector('.meeting-memory-controls').hidden=false;
-   h.querySelector('.meeting-memory-toolbar').hidden=false;
-   requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
-  };
   requestAnimationFrame(()=>detailHost.scrollIntoView({block:'start',behavior:'smooth'}));
- });
+ }); });
+ const exitMeetingDetail=()=>{
+  h.classList.remove('meeting-detail-open');
+  h.closest('.view')?.classList.remove('meeting-focus-mode');
+  detailHost.hidden=false;detailHost.style.display='none';
+  list.hidden=false;list.style.display='';
+  h.querySelector('.meeting-memory-controls').hidden=false;
+  h.querySelector('.meeting-memory-toolbar').hidden=false;
+  requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
+ };
+ detailHost.addEventListener('aura:meeting-detail-back',exitMeetingDetail);
+
 }
 const CLIENT_DEMO={
  'Grupo Atlas':{status:'ATENÇÃO',risk:'Alto',sentiment:'Cauteloso',opp:'Expansão',meetings:11,context:'Comercial',riskSeries:[72,65,61,54,48,44,39,35,31,28,27],commercial:'Expansão para novas unidades',financial:'Projeção de +50% no faturamento após expansão',insights:[
@@ -254,7 +254,7 @@ function clientDetail(name,sourceRows){
  const riskNow=source.length?(latest.risk||'Não identificado'):(demo?.risk||'—');
  const sentimentNow=source.length?(latest.sentiment||'Não identificado'):(demo?.sentiment||'—');
  const oppNow=source.length?(latest.opportunity||'Nenhuma identificada'):(demo?.opp||'—');
- const contextNow=source.length?(latest.context||latest.intelligence_type||'Não informado'):(demo?.context||'—');
+ const contextNow=source.length?(meetingType(latest)):(demo?.context||'—');
  const relationship=low(sentimentNow).includes('positivo')||low(sentimentNow).includes('muito positivo')?'Positivo':low(sentimentNow).includes('negativo')?'Em atenção':low(sentimentNow).includes('cauteloso')?'Cauteloso':'Em acompanhamento';
  const changes=[];
  if(previous){
@@ -292,18 +292,18 @@ function clientDetail(name,sourceRows){
   }).join('')||'<div class="detail-muted">Nenhum insight estruturado registrado.</div>';
  const riskHtml=isDemo
   ?'<div class="client-context-row"><b>'+esc(demo.risk)+'</b><span>estado atual</span></div><div class="client-context-row"><b>'+esc(demo.insights.find(x=>x[0]==='risco')?.[1]||'Nenhum risco destacado')+'</b><span>evidência</span></div>'
-  :risks.slice(0,6).map((m,i)=>'<div class="client-dossier-row risk"><div><b>'+esc(m.risk||'Risco identificado')+'</b><p>'+esc(m.why_it_matters||m.summary||'Sem leitura adicional registrada.')+'</p></div><span>'+esc(fmt(m.created_at))+'</span></div>').join('')||'<div class="detail-muted">Nenhum risco relevante registrado.</div>';
+  :risks.map((m,i)=>'<div class="client-dossier-row risk"><div><b>'+esc(m.risk||'Risco identificado')+'</b><p>'+esc(m.why_it_matters||m.summary||'Sem leitura adicional registrada.')+'</p></div><span>'+esc(fmt(m.created_at))+'</span></div>').join('')||'<div class="detail-muted">Nenhum risco relevante registrado.</div>';
  const oppHtml=isDemo
   ?'<div class="client-context-row"><b>'+esc(demo.opp)+'</b><span>principal</span></div><div class="client-context-row"><b>'+esc(demo.commercial)+'</b><span>próximo potencial</span></div>'
-  :opportunities.slice(0,6).map((m,i)=>'<div class="client-dossier-row opportunity"><div><b>'+esc(m.opportunity)+'</b><p>'+esc(m.why_it_matters||m.summary||'Oportunidade identificada na conversa.')+'</p></div><span>'+esc(fmt(m.created_at))+'</span></div>').join('')||'<div class="detail-muted">Nenhuma oportunidade registrada.</div>';
+  :opportunities.map((m,i)=>'<div class="client-dossier-row opportunity"><div><b>'+esc(m.opportunity)+'</b><p>'+esc(m.why_it_matters||m.summary||'Oportunidade identificada na conversa.')+'</p></div><span>'+esc(fmt(m.created_at))+'</span></div>').join('')||'<div class="detail-muted">Nenhuma oportunidade registrada.</div>';
  const actionsHtml=isDemo
   ?'<div class="client-context-row"><b>'+esc(demo.commercial)+'</b><span>próximo foco</span></div>'
-  :actions.slice(0,8).map((x,i)=>'<div class="client-action-row"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma ação pendente registrada.</div>';
+  :actions.map((x,i)=>'<div class="client-action-row"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma ação pendente registrada.</div>';
  const decisionsHtml=isDemo
   ?'<div class="client-context-row"><b>Próxima etapa comercial</b><span>demonstrativo</span></div>'
-  :decisions.slice(0,8).map((x,i)=>'<div class="client-action-row"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma decisão registrada.</div>';
+  :decisions.map((x,i)=>'<div class="client-action-row"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('')||'<div class="detail-muted">Nenhuma decisão registrada.</div>';
  const timelineRows=source.length
-  ?source.slice(0,12).map((m,i)=>'<article class="client-history-row '+(i===0?'current':'')+'"><div class="client-history-date"><b>'+esc(fmt(m.created_at))+'</b><span>REUNIÃO '+String(source.length-i).padStart(2,'0')+'</span></div><div><b>'+esc(m.context||m.intelligence_type||'Interação')+'</b><p>'+esc((m.summary||m.why_it_matters||m.next_move||'Sem resumo registrado.').slice(0,280))+'</p><div><span>'+esc(m.sentiment||'—')+'</span><span>risco '+esc(m.risk||'—')+'</span><span>'+esc(m.opportunity||'sem oportunidade')+'</span></div></div><button type="button" class="client-open-meeting" data-client-meeting-id="'+esc(m.id||'')+'">Abrir análise →</button></article>').join('')
+  ?source.map((m,i)=>'<article class="client-history-row '+(i===0?'current':'')+'"><div class="client-history-date"><b>'+esc(fmt(m.created_at))+'</b><span>REUNIÃO '+String(source.length-i).padStart(2,'0')+'</span></div><div><b>'+esc(meetingType(m))+'</b><p>'+esc((m.summary||m.why_it_matters||m.next_move||'Sem resumo registrado.').slice(0,280))+'</p><div><span>'+esc(m.sentiment||'—')+'</span><span>risco '+esc(m.risk||'—')+'</span><span>'+esc(m.opportunity||'sem oportunidade')+'</span></div></div><button type="button" class="client-open-meeting" data-client-meeting-id="'+esc(m.id||'')+'">Abrir análise →</button></article>').join('')
   :demo.riskSeries.map((v,i)=>'<article class="client-history-row current"><div class="client-history-date"><b>R'+String(i+1).padStart(2,'0')+'</b><span>MEMÓRIA DEMO</span></div><div><b>'+esc(demo.context)+'</b><p>Trajetória demonstrativa do relacionamento, preservando contexto, risco e sinais para apresentação.</p><div><span>'+esc(demo.sentiment)+'</span><span>risco '+(v<40?'Baixo':v<60?'Médio':'Alto')+'</span><span>'+esc(demo.opp)+'</span></div></div></article>').join('');
  const chart=source.length
   ?source.slice().reverse().slice(-12).map((m,i)=>'<div class="client-risk-bar"><b>'+esc(m.risk||'—')+'</b><i class="'+(low(m.risk).includes('alto')?'risk':low(m.risk).includes('médio')||low(m.risk).includes('medio')?'medium':'low')+'"></i><small>R'+String(i+1).padStart(2,'0')+'</small></div>').join('')
@@ -333,8 +333,22 @@ function clientDetail(name,sourceRows){
   const id=btn.dataset.clientMeetingId;
   const m=source.find(x=>String(x.id||'')===String(id));
   if(!m)return;
-  activate('history',false);
-  setTimeout(()=>detail(m),0);
+  const shell=h.querySelector('.client-detail-shell');
+  if(!shell)return;
+  let panel=shell.querySelector('.client-inline-meeting-detail');
+  if(!panel){
+    panel=document.createElement('section');
+    panel.className='client-inline-meeting-detail';
+    shell.appendChild(panel);
+  }
+  panel.hidden=false;
+  panel.innerHTML='<div class="client-inline-backbar"><button type="button" class="client-inline-back" aria-label="Voltar ao cadastro do cliente" title="Voltar ao cadastro do cliente"><span aria-hidden="true"></span></button></div><div class="detail-panel client-inline-meeting-card"><div class="eyebrow">REUNIÃO DENTRO DO CUSTOMER 360</div><h2>'+esc(m.meeting_title||m.client_name||'Reunião')+'</h2><p class="detail-muted">'+esc(m.client_name||name)+' · '+esc(fmt(m.created_at))+' · '+esc(meetingType(m))+'</p><div class="detail-metrics"><div><span>SENTIMENTO</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>RISCO</span><b>'+esc(m.risk||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>TIPO</span><b>'+esc(meetingType(m))+'</b></div></div>'+localTabs('summary',[['summary','Resumo'],['evidence','Insights & evidências'],['actions','Decisões & ações'],['timeline','Linha do tempo']])+'<div class="client-inline-content">'+renderMeetingPanel(m,'summary')+'</div></div>';
+  const card=panel.querySelector('.client-inline-meeting-card');
+  const content=panel.querySelector('.client-inline-content');
+  const refresh=tab=>{content.innerHTML=renderMeetingPanel(m,tab);panel.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>refresh(b.dataset.localTab));};
+  panel.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>refresh(b.dataset.localTab));
+  panel.querySelector('.client-inline-back')?.addEventListener('click',()=>{panel.hidden=true;window.scrollTo({top:0,behavior:'smooth'});});
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
  });
 }
 function clients(){
@@ -399,7 +413,7 @@ function opportunityDetail(m){
  const client=m.client_name||m.file_name||'Cliente não identificado';
  const opportunity=m.opportunity||'Oportunidade identificada';
  const context=m.context||m.intelligence_type||'Contexto não informado';
- const evidence=opportunityEvidence(m).filter(x=>x.evidence).slice(0,8);
+ const evidence=opportunityEvidence(m).filter(x=>x.evidence);
  const related=items().filter(x=>{
   const a=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
   const b=x.client_name&&x.client_name!=='Cliente não identificado'?x.client_name:(x.file_name||'Cliente não identificado');
@@ -580,8 +594,12 @@ function actionDetail(m){
 }
 function actions(){
  const h=document.getElementById('shellActions');if(!h)return;
- const a=items().filter(x=>x.next_move);
- h.innerHTML='<div class="action-list-screen"><div class="action-list-head"><div><span class="eyebrow">EXECUÇÃO</span><h2>Ações recomendadas</h2><p>Próximos movimentos identificados pelo AURA e organizados para execução.</p></div><span class="action-count">'+a.length+(a.length===1?' ação':' ações')+'</span></div>'+(a.length?a.map((m,i)=>'<button type="button" class="action-shell-row" data-action-index="'+i+'"><div class="action-row-index">'+String(i+1).padStart(2,'0')+'</div><div class="action-row-main"><div class="action-row-top"><span class="action-priority">'+esc(m.priority||'AÇÃO')+'</span><span class="action-date">'+esc(actionRecommendedDate(m))+'</span></div><h3>'+esc(m.next_move)+'</h3><p>'+esc(m.client_name||m.file_name||'Reunião')+'</p><div class="action-row-meta"><span>'+esc(m.owner||'Responsável não identificado')+'</span><span>'+esc(m.impact||'Impacto a validar')+'</span></div></div><span class="action-row-chevron" aria-hidden="true"></span></button>').join(''):'<div class="shell-empty"><strong>Nenhuma ação registrada</strong><span>O AURA transformará decisões e próximos movimentos em execução.</span></div>')+'</div><div class="action-detail-screen" id="shellActionDetail" hidden></div>';
+ const base=items(), a=[];
+ base.forEach(m=>{
+  const candidates=[...arr(m,'pending_actions'),...(m.next_move?[m.next_move]:[])].filter(Boolean);
+  [...new Set(candidates.map(String))].forEach(action=>a.push({...m,next_move:action,__action_source_id:m.id}));
+ });
+ h.innerHTML='<div class="action-list-screen"><div class="action-list-head"><div><span class="eyebrow">EXECUÇÃO</span><h2>Ações recomendadas</h2><p>Cada ação nasce de uma decisão, pendência ou próximo movimento e permanece ligada à reunião e ao cliente que a originou.</p></div><span class="action-count">'+a.length+(a.length===1?' ação':' ações')+'</span></div>'+(a.length?a.map((m,i)=>'<button type="button" class="action-shell-row" data-action-index="'+i+'"><div class="action-row-index">'+String(i+1).padStart(2,'0')+'</div><div class="action-row-main"><div class="action-row-top"><span class="action-priority">'+esc(m.priority||'AÇÃO')+'</span><span class="action-date">'+esc(actionRecommendedDate(m))+'</span></div><h3>'+esc(m.next_move)+'</h3><p>'+esc(m.client_name||m.file_name||'Reunião')+' · '+esc(m.meeting_title||meetingType(m))+'</p><div class="action-row-meta"><span>'+esc(m.owner||'Responsável não identificado')+'</span><span>'+esc(m.impact||'Impacto a validar')+'</span></div></div><span class="action-row-chevron" aria-hidden="true"></span></button>').join(''):'<div class="shell-empty"><strong>Nenhuma ação registrada</strong><span>O AURA transformará decisões e próximos movimentos em execução.</span></div>')+'</div><div class="action-detail-screen" id="shellActionDetail" hidden></div>';
  if(!a.length)return;
  const list=h.querySelector('.action-list-screen'),detail=h.querySelector('#shellActionDetail'),pageHead=h.closest('.shell-page')?.querySelector('.shell-page-head');
  h.querySelectorAll('[data-action-index]').forEach(b=>b.onclick=()=>{
@@ -593,12 +611,12 @@ function actions(){
   back.className='action-detail-backbar';
   back.innerHTML='<button type="button" class="action-back-button" aria-label="Voltar para ações" title="Voltar para ações"><span aria-hidden="true"></span></button>';
   detail.prepend(back);
-  requestAnimationFrame(()=>{detail.scrollIntoView({block:'start',behavior:'smooth'})});
+  requestAnimationFrame(()=>detail.scrollIntoView({block:'start',behavior:'smooth'}));
   back.querySelector('button').onclick=()=>{
    detail.hidden=true;detail.style.display='none';
    list.hidden=false;list.style.display='';
    if(pageHead){pageHead.hidden=false;pageHead.style.display=''}
-   requestAnimationFrame(()=>{h.scrollIntoView({block:'start',behavior:'smooth'})});
+   requestAnimationFrame(()=>h.scrollIntoView({block:'start',behavior:'smooth'}));
   };
  });
 }
@@ -788,7 +806,9 @@ function setup(){
   const selectContext=(x)=>{if(!x)return;p.querySelectorAll('[data-context]').forEach(y=>y.classList.remove('selected'));x.classList.add('selected');window.AURA_SELECTED_CONTEXT=x.dataset.context};p.addEventListener('click',e=>{const x=e.target.closest('[data-context]');if(!x||!p.contains(x))return;e.preventDefault();e.stopPropagation();selectContext(x)});p.addEventListener('pointerdown',e=>{const x=e.target.closest('[data-context]');if(!x||!p.contains(x))return;e.stopPropagation();selectContext(x)});
  }
  bind();activate('overview',false);
- window.addEventListener('aura:meeting-saved',()=>setTimeout(()=>{meeting();clients();signals('shellRisks','risco');signals('shellOpportunities','oportunidade');actions();evolution()},100));
+ const refreshMemory=()=>setTimeout(()=>{meeting();clients();signals('shellRisks','risco');signals('shellOpportunities','oportunidade');actions();evolution();if(document.body.dataset.auraView==='overview')window.dispatchEvent(new CustomEvent('aura:overview-refresh'));},100);
+ window.addEventListener('aura:meeting-saved',refreshMemory);
+ window.addEventListener('aura:meetings-synced',refreshMemory);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
