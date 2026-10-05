@@ -132,8 +132,10 @@ function cleanProfile(){
   // Keep the real profile control. Only the obsolete static header avatar was removed from index.html.
 }
 function removeLegacyAnalysis(){
- const old=$('#analysis .analysis-layout');if(old)old.classList.add('aura-hide');
- const legacy=$$('#analysis .suggestions,#analysis .input-panel,#analysis .result-panel');legacy.forEach(x=>x.classList.add('aura-hide'));
+ const analysis=$('#analysis');
+ if(!analysis)return;
+ const old=$('#analysis .analysis-layout');if(old)old.classList.remove('aura-hide');
+ const legacy=$('#analysis .suggestions,#analysis .input-panel,#analysis .result-panel');legacy.forEach(x=>x.classList.remove('aura-hide'));
 }
 function removeDuplicateAnalysisButtons(){
  const buttons=$$('button').filter(b=>norm(b.textContent).includes('nova analise')||norm(b.textContent).includes('nova análise'));
