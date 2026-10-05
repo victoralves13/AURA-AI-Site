@@ -55,14 +55,15 @@ function renderOverview(){
  const latestRisk=latest[0]?.risk||'Sem leitura';
  const latestSignal=latest[0]?.summary||latest[0]?.why_it_matters||'Aguardando a próxima reunião analisada.';
  const trend=a.slice().sort((x,y)=>new Date(x.created_at||0)-new Date(y.created_at||0)).slice(-7);
- const trendRows=trend.map(m=>{
+ const trendPoints=trend.map((m,i)=>{
    const score=Math.max(0,Math.min(100,Number(m.risk_score)||0));
-   return '<div class="aura-pulse-point" title="'+aesc(client(m))+' · risco '+score+'%">'+
-     '<div class="aura-pulse-bar"><i style="height:'+Math.max(7,score)+'%"></i></div>'+
-     '<span>'+aesc(client(m))+'</span><small>'+score+'%</small>'+
-   '</div>';
- }).join('');
- const trendValid=trend.filter(m=>Number.isFinite(Number(m.risk_score))).length;
+   const x=18+(i*(364/Math.max(1,trend.length-1)));
+   const y=124-(score/100)*96;
+   return {m,score,x,y};
+ });
+ const trendPath=trendPoints.length===1?'M '+trendPoints[0].x.toFixed(1)+' '+trendPoints[0].y.toFixed(1):trendPoints.map((p,i)=>i?' L '+p.x.toFixed(1)+' '+p.y.toFixed(1):'M '+p.x.toFixed(1)+' '+p.y.toFixed(1)).join('');
+ const trendArea=trendPath+' L '+trendPoints.at(-1).x.toFixed(1)+' 132 L '+trendPoints[0].x.toFixed(1)+' 132 Z';
+ const trendRows='<div class="aura-line-chart"><div class="aura-line-y"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div><svg viewBox="0 0 400 145" preserveAspectRatio="none" aria-label="Trajetória do risco nas reuniões"><g class="aura-chart-grid"><path d="M18 28H382"></path><path d="M18 52H382"></path><path d="M18 76H382"></path><path d="M18 100H382"></path><path d="M18 124H382"></path></g><path class="aura-line-area" d="'+trendArea+'"></path><path class="aura-line-path" d="'+trendPath+'"></path>'+trendPoints.map((p,i)=>'<g class="aura-line-point"><line x1="'+p.x.toFixed(1)+'" y1="132" x2="'+p.x.toFixed(1)+'" y2="'+p.y.toFixed(1)+'"></line><circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4"></circle><title>'+aesc(client(p.m))+' · risco '+p.score+'%</title></g>').join('')+'</svg></div><div class="aura-line-axis">'+trendPoints.map((p,i)=>'<span><b>R'+String(i+1).padStart(2,'0')+'</b><small>'+aesc(afmt(p.m.created_at))+'</small></span>').join('')+'</div>'; const trendValid=trend.filter(m=>Number.isFinite(Number(m.risk_score))).length;
  const trendAvg=trendValid?Math.round(trend.reduce((s,m)=>s+(Number(m.risk_score)||0),0)/trendValid):0;
  const riskTone=highRisk?'critical':'stable';
  host.innerHTML=
@@ -153,6 +154,8 @@ function run(){
 }
 let timer;
 function boot(){run();new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(run,120)}).observe($('main')||document.body,{childList:true,subtree:true});window.addEventListener('aura:meeting-saved',()=>setTimeout(run,300));
+  window.addEventListener('aura:meetings-synced',()=>setTimeout(run,120));
+  window.addEventListener('aura:overview-refresh',()=>setTimeout(renderOverview,80));
   window.addEventListener('aura:meeting-selected',e=>{const m=e.detail;if(m&&window.__auraOpenMeeting)window.__auraOpenMeeting(m)});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
