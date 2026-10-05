@@ -449,3 +449,23 @@ header .eyebrow{display:none!important}
 /* Profile entry — primary account workspace */
 .aura-profile-overview{margin:0 0 14px!important;min-height:96px;grid-template-columns:minmax(260px,1.35fr) minmax(320px,1fr) auto!important;padding:20px 22px!important;border-radius:12px!important;border-color:rgba(101,231,245,.11)!important;background:linear-gradient(110deg,rgba(12,23,29,.98),rgba(8,15,20,.94))!important;box-shadow:0 12px 34px rgba(0,0,0,.14)}
 .aura-profile-overview-main h3{font-size:18px!important}.aura-profile-overview-main p{font-size:12px!important;color:#91a6ad!important}.aura-profile-overview-facts{gap:18px!important}.aura-profile-overview-facts div{padding-left:16px!important}.aura-profile-overview-facts span{font-size:9px!important;color:#71868e!important}.aura-profile-overview-facts b{font-size:13px!important;color:#dce9eb!important}.aura-profile-open{font-size:12px!important;padding:10px 14px!important}@media(max-width:900px){.aura-profile-overview{grid-template-columns:1fr!important}}
+
+/* AURA CHARTS V2 */
+.aura-line-chart,.opportunity-line-chart{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:stretch;min-height:230px;padding:18px 18px 8px;border-top:1px solid rgba(255,255,255,.07)}
+.aura-line-chart svg,.opportunity-line-chart svg{width:100%;height:190px;overflow:visible}
+.aura-line-y,.opportunity-line-y{height:190px;display:flex;flex-direction:column;justify-content:space-between;padding:0 0 4px;font:500 9px "DM Mono",monospace;letter-spacing:.06em;opacity:.42}
+.aura-chart-grid path,.opportunity-chart-grid path{stroke:currentColor;stroke-width:1;opacity:.12;fill:none}
+.aura-line-area,.opportunity-line-area{fill:currentColor;opacity:.06}
+.aura-line-path,.opportunity-line-path{fill:none;stroke:currentColor;stroke-width:2.2;vector-effect:non-scaling-stroke}
+.aura-line-point line,.opportunity-line-point line{stroke:currentColor;stroke-width:1;opacity:.12;vector-effect:non-scaling-stroke}
+.aura-line-point circle,.opportunity-line-point circle{fill:currentColor;stroke:var(--aura-bg,#101820);stroke-width:2;vector-effect:non-scaling-stroke}
+.aura-line-axis,.opportunity-line-axis{grid-column:2;display:grid;grid-template-columns:repeat(auto-fit,minmax(55px,1fr));gap:8px;margin:0 0 10px}
+.aura-line-axis span,.opportunity-line-axis span{display:flex;flex-direction:column;gap:3px;text-align:center;font:500 9px "DM Mono",monospace;opacity:.52}
+.aura-line-axis b,.opportunity-line-axis b{font-weight:600;opacity:.85}
+.aura-line-axis small,.opportunity-line-axis small{font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opportunity-signal-chart{padding-top:8px}
+.client-inline-meeting-detail{margin-top:28px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px}
+.client-inline-backbar,.meeting-detail-backbar{display:flex;align-items:center;min-height:44px}
+.client-inline-back,.meeting-back-button{width:38px;height:38px;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(255,255,255,.025);display:grid;place-items:center;cursor:pointer}
+.client-inline-back span,.meeting-back-button span{width:9px;height:9px;border-left:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);display:block}
+.client-inline-meeting-card{margin-top:8px}
