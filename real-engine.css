@@ -5,3 +5,6 @@
 /* Audio upload: keep the drop icon static before a file is selected. */
 #realAudioDrop:hover .real-audio-icon{animation:none!important;transform:none!important}
 #realAudioDrop.dragging .real-audio-icon{animation:none!important;transform:none!important}
+
+/* Audio analyze button: disabled state must not show the browser's spinning wait cursor. */
+#realAudioAnalyze:disabled{cursor:default!important}
