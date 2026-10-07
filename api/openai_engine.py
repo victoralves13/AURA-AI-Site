@@ -34,6 +34,17 @@ class InsightItem(BaseModel):
     impact_score: int = 50
 
 
+class FinancialItem(BaseModel):
+    amount: float
+    currency: str = "BRL"
+    financial_type: Literal["receita","lucro","custo","economia","investimento","contrato","oportunidade","perda","meta","orçamento","outro"]
+    nature: Literal["realizado","potencial","estimado","risco","mencionado"]
+    description: str
+    evidence: str
+    evidence_strength: EvidenceStrength
+    timestamp: str | None = None
+    period: str | None = None
+
 class AURAAnalysis(BaseModel):
     client_name: str | None = None
     summary: str
