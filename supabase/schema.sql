@@ -30,6 +30,7 @@ create table if not exists public.meetings (
   important_signals jsonb not null default '[]'::jsonb,
   insights jsonb not null default '[]'::jsonb,
   topics jsonb not null default '[]'::jsonb,
+  financial_data jsonb not null default '[]'::jsonb,
   participants jsonb not null default '[]'::jsonb,
   intent text,
   objections jsonb not null default '[]'::jsonb,
@@ -64,6 +65,7 @@ alter table public.meetings add column if not exists pending_actions jsonb not n
 alter table public.meetings add column if not exists important_signals jsonb not null default '[]'::jsonb;
 alter table public.meetings add column if not exists insights jsonb not null default '[]'::jsonb;
 alter table public.meetings add column if not exists topics jsonb not null default '[]'::jsonb;
+alter table public.meetings add column if not exists financial_data jsonb not null default '[]'::jsonb;
 alter table public.meetings add column if not exists participants jsonb not null default '[]'::jsonb;
 
 alter table public.meetings enable row level security;
