@@ -45,6 +45,7 @@ class AURAAnalysis(BaseModel):
     objections: list[str]
     important_signals: list[EvidenceItem]
     insights: list[InsightItem]
+    financial_data: list[FinancialItem]
     next_actions: list[NextAction]
     participants: list[str]
     intelligence_type: str
@@ -83,6 +84,11 @@ REGRAS:
 - Evite condensar vários fatos diferentes em um único insight. Se houver mudanças, preocupações, oportunidades, objeções, decisões ou sinais comerciais distintos, preserve-os separadamente.
 - Use as categorias de insights para permitir posterior filtragem e leitura executiva: risco, oportunidade, sinal, relacionamento, comercial, operacional, financeiro, decisão, objeção ou ação.
 - Os campos risks, opportunities, important_signals, decisions e next_actions continuam existindo como visões estruturadas derivadas dos achados; não devem substituir nem limitar a lista completa de insights.
+- Identifique TODOS os valores financeiros explicitamente mencionados na reunião quando houver contexto suficiente para entender o que o número representa.
+- Para cada valor financeiro, registre o número em amount como valor absoluto (por exemplo, R$ 2 milhões = 2000000), a moeda, o financial_type, a natureza (realizado, potencial, estimado, risco ou apenas mencionado), uma descrição curta, a evidência textual e o timestamp mais próximo.
+- Nunca transforme um contrato em lucro ou receita realizada sem que isso tenha sido dito. Um valor de oportunidade, contrato, investimento ou meta deve manter seu próprio tipo e natureza.
+- Se um número aparecer sem contexto financeiro suficiente, não o registre como financial_data. Não invente cálculos, totais ou variações.
+- Preserve períodos quando forem explicitamente mencionados (por exemplo, mensal, anual, próximo trimestre), sem inferir períodos ausentes.
 - A lista completa deve refletir a reunião inteira, e não apenas os momentos mais dramáticos ou mais importantes.
 - Quando a transcrição trouxer timestamps no formato [MM:SS] ou [HH:MM:SS], associe o timestamp mais próximo da evidência e retorne-o no campo timestamp.
 - Nunca invente timestamp. Se não houver timestamp disponível para aquele trecho, deixe timestamp como null.
@@ -312,6 +318,21 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
             }
             for x in analysis.insights
             if x.evidence
+        ],
+        "financial_data": [
+            {
+                "amount": float(x.amount),
+                "currency": x.currency or "BRL",
+                "financial_type": x.financial_type,
+                "nature": x.nature,
+                "description": x.description,
+                "evidence": x.evidence,
+                "evidence_strength": x.evidence_strength,
+                "timestamp": x.timestamp,
+                "period": x.period,
+            }
+            for x in analysis.financial_data
+            if x.evidence and x.amount >= 0
         ],
         "participants": analysis.participants,
         "sentiment": analysis.sentiment,
