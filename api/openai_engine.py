@@ -197,7 +197,8 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
 
     with tempfile.TemporaryDirectory() as tmp:
         normalized = Path(tmp) / "normalized.mp3"
-        # Decode through the configured ffmpeg binary; no standalone ffprobe is required.\n        audio = AudioSegment.from_file(str(source))
+        # Decode through the configured ffmpeg binary; no standalone ffprobe is required.
+        audio = AudioSegment.from_file(str(source), codec="pcm_s16le")
         audio = audio.set_channels(1).set_frame_rate(16000)
         audio.export(normalized, format="mp3", bitrate="64k")
 
