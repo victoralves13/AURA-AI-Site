@@ -197,7 +197,7 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
 
     with tempfile.TemporaryDirectory() as tmp:
         normalized = Path(tmp) / "normalized.mp3"
-        # Force PCM output so pydub does not invoke ffprobe for media metadata.\n        # imageio-ffmpeg provides ffmpeg in Vercel, but not a standalone ffprobe binary.\n        audio = AudioSegment.from_file(source, codec="pcm_s16le")
+        # Decode through the configured ffmpeg binary; no standalone ffprobe is required.\n        audio = AudioSegment.from_file(str(source))
         audio = audio.set_channels(1).set_frame_rate(16000)
         audio.export(normalized, format="mp3", bitrate="64k")
 
