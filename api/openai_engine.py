@@ -64,7 +64,7 @@ class AURAAnalysis(BaseModel):
 
 
 ANALYSIS_MODEL = os.getenv("AURA_OPENAI_ANALYSIS_MODEL", "gpt-6-sol")
-TRANSCRIPTION_MODEL = os.getenv("AURA_OPENAI_TRANSCRIPTION_MODEL", "gpt-transcribe")
+TRANSCRIPTION_MODEL = os.getenv("AURA_OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-transcribe-diarize")
 MAX_OPENAI_AUDIO_BYTES = 25 * 1024 * 1024
 
 
@@ -113,6 +113,7 @@ REGRAS:
 - Identifique o tipo dominante de inteligência da conversa: comercial, operacional,
   gestão, risco, compliance/auditoria, estratégico, relacionamento ou outro.
 - O sentimento deve refletir a conversa como um todo, sem usar uma única frase isolada.
+- Quando a transcrição de áudio trouxer marcações de locutor como [A], [B] ou [Participante A], preserve a atribuição ao avaliar evidências e preencha participants com os identificadores disponíveis, sem inventar nomes.
 - Responda exclusivamente no formato estruturado solicitado.
 """
 
@@ -154,32 +155,58 @@ def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
 
 def _transcribe_one(path: str, prompt: str = "", offset_seconds: float = 0) -> tuple[str, list[dict]]:
     with open(path, "rb") as audio:
-        result = _client().audio.transcriptions.create(
-            model=TRANSCRIPTION_MODEL,
-            file=audio,
-            languages=["pt"],
-            prompt=prompt or (
-                "Reunião de trabalho em português do Brasil. "
-                "Preserve nomes, siglas, sistemas, números, decisões e termos técnicos."
-            ),
-            response_format="verbose_json",
-            timestamp_granularities=["segment"],
-        )
+        if TRANSCRIPTION_MODEL == "gpt-4o-transcribe-diarize":
+            # Diarized JSON already carries start/end timestamps and speaker
+            # labels. Do not send prompt/timestamp_granularities here: the
+            # diarization endpoint has a different request contract.
+            result = _client().audio.transcriptions.create(
+                model=TRANSCRIPTION_MODEL,
+                file=audio,
+                language="pt",
+                response_format="diarized_json",
+                chunking_strategy="auto",
+            )
+        elif TRANSCRIPTION_MODEL == "gpt-transcribe":
+            # gpt-transcribe is the general transcription path. It does not
+            # provide segment timestamps, so keep this fallback intentionally
+            # simple instead of sending unsupported timestamp parameters.
+            result = _client().audio.transcriptions.create(
+                model=TRANSCRIPTION_MODEL,
+                file=audio,
+                languages=["pt"],
+                prompt=prompt or (
+                    "Reunião de trabalho em português do Brasil. "
+                    "Preserve nomes, siglas, sistemas, números, decisões e termos técnicos."
+                ),
+            )
+        else:
+            raise RuntimeError(
+                f"Modelo de transcrição não suportado pelo AURA: {TRANSCRIPTION_MODEL}. "
+                "Use gpt-4o-transcribe-diarize para transcrição com locutores e timestamps."
+            )
+
     segments = []
     for segment in (getattr(result, "segments", None) or []):
         start = float(getattr(segment, "start", 0) or 0) + offset_seconds
         end = float(getattr(segment, "end", start) or start) + offset_seconds
         text = (getattr(segment, "text", "") or "").strip()
+        speaker = getattr(segment, "speaker", None)
+        if isinstance(segment, dict):
+            speaker = segment.get("speaker")
+        item = {"start": round(start, 2), "end": round(end, 2), "text": text}
+        if speaker:
+            item["speaker"] = str(speaker)
         if text:
-            segments.append({"start": round(start, 2), "end": round(end, 2), "text": text})
-    return (result.text or "").strip(), segments
+            segments.append(item)
+
+    return (getattr(result, "text", "") or "").strip(), segments
 
 
 def transcribe_audio(path: str) -> tuple[str, dict]:
     source = Path(path)
     if source.stat().st_size <= MAX_OPENAI_AUDIO_BYTES:
         text, segments = _transcribe_one(str(source))
-        return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "segments": segments}
+        return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "speaker_labels": TRANSCRIPTION_MODEL == "gpt-4o-transcribe-diarize", "segments": segments}
 
     # OpenAI file transcription accepts up to 25 MB per request.
     # Normalize/compress locally first, then split only when the compressed
@@ -204,7 +231,7 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
 
         if normalized.stat().st_size <= MAX_OPENAI_AUDIO_BYTES:
             text, segments = _transcribe_one(str(normalized))
-            return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "normalized": True, "segments": segments}
+            return text, {"chunks": 1, "model": TRANSCRIPTION_MODEL, "normalized": True, "speaker_labels": TRANSCRIPTION_MODEL == "gpt-4o-transcribe-diarize", "segments": segments}
 
         chunks: list[str] = []
         all_segments: list[dict] = []
@@ -235,6 +262,8 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
             "chunks": len(chunks),
             "model": TRANSCRIPTION_MODEL,
             "normalized": True,
+            "speaker_labels": TRANSCRIPTION_MODEL == "gpt-4o-transcribe-diarize",
+            "speaker_scope": "per_chunk" if TRANSCRIPTION_MODEL == "gpt-4o-transcribe-diarize" else None,
             "overlap_seconds": 2,
             "segments": all_segments,
         }
