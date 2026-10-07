@@ -25,7 +25,7 @@ const financialItems=m=>Array.isArray(m?.financial_data)?m.financial_data.filter
 const financialMoney=x=>{const n=Number(x?.amount);if(!Number.isFinite(n))return '—';try{return new Intl.NumberFormat('pt-BR',{style:'currency',currency:x?.currency||'BRL',maximumFractionDigits:0}).format(n)}catch{return 'R$ '+Math.round(n).toLocaleString('pt-BR')}};
 const financialLabel=x=>({receita:'Receita',lucro:'Lucro',custo:'Custo',economia:'Economia',investimento:'Investimento',contrato:'Contrato',oportunidade:'Oportunidade',perda:'Perda',meta:'Meta',orçamento:'Orçamento',outro:'Valor financeiro'})[x?.financial_type]||'Valor financeiro';
 const financialNature=x=>({realizado:'Realizado',potencial:'Potencial',estimado:'Estimado',risco:'Risco financeiro',mencionado:'Mencionado'})[x?.nature]||'Mencionado';
-const renderFinancialData=m=>{const data=financialItems(m);if(!data.length)return '';return '<section class="detail-panel financial-intelligence-panel"><div class="financial-panel-head"><div><span class="eyebrow">INTELIGÊNCIA FINANCEIRA</span><h3>Valores identificados na reunião</h3><p>O AURA mostra somente valores explicitamente sustentados pela conversa e preserva a origem de cada número.</p></div><span>'+data.length+' registro'+(data.length===1?'':'s')+'</span></div><div class="financial-item-list">'+data.map(x=>'<article class="financial-item"><div class="financial-item-main"><strong>'+esc(financialMoney(x))+'</strong><span>'+esc(financialLabel(x))+' · '+esc(financialNature(x))+(x.period?' · '+esc(x.period):'')+'</span></div><div class="financial-item-context"><b>'+esc(x.description||'Valor mencionado na conversa.')+'</b><p>“'+esc(x.evidence||'Evidência não registrada.')+'”</p><small>'+esc(x.timestamp||'Sem minuto disponível')+' · Evidência '+esc(x.evidence_strength||'não classificada')+'</small></div></article>').join('')+'</div></section>'};
+const renderFinancialData=m=>{const data=financialItems(m);if(!data.length)return '';return '<section class="detail-panel financial-intelligence-panel"><div class="financial-panel-head"><div><span class="eyebrow">INTELIGÊNCIA FINANCEIRA</span><h3>Valores identificados na reunião</h3><p>O AURA mostra somente valores explicitamente sustentados pela conversa e preserva a origem de cada número.</p></div><span>'+data.length+' registro'+(data.length===1?'':'s')+'</span></div><div class="financial-item-list">'+data.map(x=>'<article class="financial-item financial-'+esc(x.financial_type||'outro')+'"><div class="financial-item-main"><strong>'+esc(financialMoney(x))+'</strong><span>'+esc(financialLabel(x))+' · '+esc(financialNature(x))+(x.period?' · '+esc(x.period):'')+'</span></div><div class="financial-item-context"><b>'+esc(x.description||'Valor mencionado na conversa.')+'</b><p>“'+esc(x.evidence||'Evidência não registrada.')+'”</p><small>'+esc(x.timestamp||'Sem minuto disponível')+' · Evidência '+esc(x.evidence_strength||'não classificada')+'</small></div></article>').join('')+'</div></section>'};
 
 function activate(id,scroll=true){
  if(!V[id])id='overview';
@@ -104,6 +104,23 @@ function detail(m){
  d.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>{d.dataset.tab=b.dataset.localTab;detail(m)});
  const back=d.querySelector('.meeting-back-button');
  if(back)back.onclick=()=>d.dispatchEvent(new CustomEvent('aura:meeting-detail-back',{bubbles:true}));
+ const insightSort=d.querySelector('.insight-sort');
+ if(insightSort){
+  insightSort.onchange=()=>{
+   const list=d.querySelector('[data-insight-list]');
+   if(!list)return;
+   const cards=[...list.querySelectorAll('.meeting-insight')];
+   cards.sort((a,b)=>{
+    const av=Number(a.dataset.impact||0),bv=Number(b.dataset.impact||0);
+    return insightSort.value==='asc'?av-bv:bv-av;
+   });
+   cards.forEach((card,i)=>{
+    const index=card.querySelector('.insight-index');
+    if(index)index.textContent='INSIGHT '+String(i+1).padStart(2,'0');
+    list.appendChild(card);
+   });
+  };
+ }
 }
 function meeting(){
  const h=document.getElementById('meetingWorkspace');if(!h)return;
