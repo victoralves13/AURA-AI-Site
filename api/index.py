@@ -119,7 +119,7 @@ def _save_meeting(data: dict):
     return {"persisted": True, "storage": "supabase", "meeting": result[0] if result else None}
 
 def _create_upload_url(path: str):
-    response = _supabase().storage.from_(AUDIO_BUCKET).create_signed_upload_url(path, options={"upsert": "false"})
+    response = _supabase().storage.from_(AUDIO_BUCKET).create_signed_upload_url(path)
     data = getattr(response, "data", response)
     if isinstance(data, dict):
         token = data.get("token")
