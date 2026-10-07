@@ -76,7 +76,7 @@ def _supabase_request(method: str, path: str, payload=None):
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
 def _save_meeting(data: dict):
-    fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","topics","participants","next_move","owner","deadline","model"]
+    fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","topics","financial_data","participants","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
 
@@ -112,6 +112,7 @@ def _save_meeting(data: dict):
         if result and isinstance(result[0], dict):
             result[0].setdefault("insights", full_insights)
             result[0].setdefault("topics", data.get("topics") or [])
+            result[0].setdefault("financial_data", data.get("financial_data") or [])
 
     if result is None:
         return {"persisted": False, "storage": "local-only"}
