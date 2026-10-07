@@ -11,6 +11,8 @@ const client=m=>m?.client_name&&m.client_name!=='Cliente não identificado'?m.cl
 const risk=m=>norm(m?.risk);
 const opp=m=>norm(m?.opportunity);
 
+function ensureOverviewMemoryStyles(){if(document.getElementById('auraOverviewMemoryStyles'))return;const style=document.createElement('style');style.id='auraOverviewMemoryStyles';style.textContent="#auraOverviewClean .aura-memory-panel .aura-home-row.compact{display:grid!important;grid-template-columns:112px minmax(0,1fr) minmax(110px,180px);align-items:center;column-gap:18px;min-height:72px;padding:13px 18px;text-align:left;overflow:hidden}#auraOverviewClean .aura-memory-panel .aura-row-date{display:block;min-width:0;color:#718991;font:700 9px/1.45 'DM Mono',monospace;white-space:nowrap}#auraOverviewClean .aura-memory-panel .aura-home-row.compact>div{min-width:0;overflow:hidden}#auraOverviewClean .aura-memory-panel .aura-home-row.compact strong{display:block;color:#e2f1f3;font:700 13px/1.25 Manrope;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#auraOverviewClean .aura-memory-panel .aura-home-row.compact small{display:block;margin-top:5px;color:#718890;font:8px/1.35 'DM Mono',monospace;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#auraOverviewClean .aura-memory-panel .aura-home-row.compact em{display:block;min-width:0;color:#a9c1c6;font:600 9px/1.4 Manrope;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}@media(max-width:900px){#auraOverviewClean .aura-memory-panel .aura-home-row.compact{grid-template-columns:92px minmax(0,1fr) 105px;column-gap:12px;padding-left:13px;padding-right:13px}}@media(max-width:620px){#auraOverviewClean .aura-memory-panel .aura-home-row.compact{grid-template-columns:1fr auto;row-gap:5px}#auraOverviewClean .aura-memory-panel .aura-row-date{grid-column:1}#auraOverviewClean .aura-memory-panel .aura-home-row.compact>div{grid-column:1}#auraOverviewClean .aura-memory-panel .aura-home-row.compact em{grid-column:2;grid-row:1 / span 2}}";document.head.appendChild(style)}
+
 function cleanShell(){
   const overview=$('#overview');
   if(overview){
@@ -45,6 +47,7 @@ function cleanShell(){
 
 function renderOverview(){
  const host=$('#auraOverviewClean');if(!host)return;
+ ensureOverviewMemoryStyles();
  const a=meetings(), real=a.filter(x=>!demo(x)), demos=a.filter(demo);
  const risks=a.filter(x=>risk(x).includes('alto')||risk(x).includes('médio')||risk(x).includes('medio'));
  const opportunities=a.filter(x=>opp(x).includes('detect')||opp(x).includes('oportun'));
