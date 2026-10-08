@@ -36,11 +36,21 @@ const DEMO_SEED=[
   };
   ensureDemoData();
   window.AURA_SERVER_MEETINGS=read();
+  let serverSyncPromise=null;
   async function loadServer(){
-    try{
-      const r=await fetch(API+'?limit=200');
-      if(!r.ok)return;
-      const data=await r.json();
+    if(serverSyncPromise)return serverSyncPromise;
+    serverSyncPromise=(async()=>{
+      try{
+        let response=null;
+        for(let attempt=0;attempt<3;attempt++){
+          try{
+            const r=await fetch(API+'?limit=100',{cache:'no-store'});
+            if(r.ok){response=r;break}
+          }catch{}
+          if(attempt<2)await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)));
+        }
+        if(!response)return;
+        const data=await response.json();
       if(data.persisted&&Array.isArray(data.meetings)){
         const local=read();
         const byId=new Map();
@@ -54,8 +64,9 @@ const DEMO_SEED=[
         write(merged);
         render(merged);
         window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:merged}}));
-      }
-    }catch{}
+      }catch{}
+    })();
+    try{await serverSyncPromise}finally{serverSyncPromise=null}
   }
   function render(items){
     const host=document.querySelector('[data-aura-history-list]');if(!host)return;
@@ -75,4 +86,6 @@ const DEMO_SEED=[
     window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:next}}));
   });
   loadServer();
+  window.addEventListener('pageshow',()=>loadServer());
+  window.addEventListener('online',()=>loadServer());
 })();
