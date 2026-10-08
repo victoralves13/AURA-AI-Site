@@ -124,6 +124,7 @@ function detail(m){
 }
 function meeting(){
  const h=document.getElementById('meetingWorkspace');if(!h)return;
+ window.AURA_SYNC_MEETINGS?.();
  const source=items().map((m,i)=>({...m,__sourceIndex:i})).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
  if(!source.length){
   h.innerHTML='<div class="meeting-empty-screen"><div class="meeting-empty-icon">◷</div><span class="eyebrow">MEETING MEMORY</span><h2>A memória começa na primeira reunião</h2><p>Analise uma conversa real para o AURA registrar contexto, evidências, decisões, riscos, oportunidades e próximos movimentos.</p><button class="primary" data-shell-view="analysis">Nova análise →</button></div>';
