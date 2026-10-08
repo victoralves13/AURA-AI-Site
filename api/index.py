@@ -229,8 +229,17 @@ def analyze_stored_audio(payload: StoredAudioRequest):
             hours, rem = divmod(total, 3600)
             minutes, secs = divmod(rem, 60)
             return f"{hours:02d}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
-        timed_transcript = "\n".join(f"[{stamp(s.get('start', 0))}] {s.get('text', '').strip()}" for s in segments if s.get('text'))
-        return _build_result(transcript, _clean(payload.client_name), payload.file_name, "audio", _clean(payload.context) or "Outro", meta, meeting_title=payload.file_name, analysis_transcript=timed_transcript or transcript)
+        timed_transcript = "\n".join(
+            f"[{stamp(s.get('start', 0))}] [{s.get('speaker')}] {s.get('text', '').strip()}"
+            if s.get('speaker')
+            else f"[{stamp(s.get('start', 0))}] {s.get('text', '').strip()}"
+            for s in segments
+            if s.get('text')
+        )
+        if timed_transcript:
+            meta = {**meta, "plain_text": transcript}
+        display_transcript = timed_transcript or transcript
+        return _build_result(display_transcript, _clean(payload.client_name), payload.file_name, "audio", _clean(payload.context) or "Outro", meta, meeting_title=payload.file_name, analysis_transcript=timed_transcript or transcript)
     except HTTPException:
         raise
     except Exception as exc:
