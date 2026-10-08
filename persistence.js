@@ -86,7 +86,9 @@ const DEMO_SEED=[
     render(next);
     window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:next}}));
   });
+  window.AURA_SYNC_MEETINGS=loadServer;
   loadServer();
+  window.addEventListener('DOMContentLoaded',()=>loadServer());
   window.addEventListener('pageshow',()=>loadServer());
   window.addEventListener('online',()=>loadServer());
 })();
