@@ -51,19 +51,20 @@ const DEMO_SEED=[
         }
         if(!response)return;
         const data=await response.json();
-      if(data.persisted&&Array.isArray(data.meetings)){
-        const local=read();
-        const byId=new Map();
-        [...local,...data.meetings].forEach(m=>{
-          if(!m)return;
-          const key=m.id||((m.file_name||'')+'|'+(m.created_at||'')+'|'+(m.client_name||''));
-          if(!byId.has(key)||!byId.get(key)?.is_demo)byId.set(key,m);
-        });
-        const merged=[...byId.values()].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
-        window.AURA_SERVER_MEETINGS=merged;
-        write(merged);
-        render(merged);
-        window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:merged}}));
+        if(data.persisted&&Array.isArray(data.meetings)){
+          const local=read();
+          const byId=new Map();
+          [...local,...data.meetings].forEach(m=>{
+            if(!m)return;
+            const key=m.id||((m.file_name||'')+'|'+(m.created_at||'')+'|'+(m.client_name||''));
+            if(!byId.has(key)||!byId.get(key)?.is_demo)byId.set(key,m);
+          });
+          const merged=[...byId.values()].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+          window.AURA_SERVER_MEETINGS=merged;
+          write(merged);
+          render(merged);
+          window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:merged}}));
+        }
       }catch{}
     })();
     try{await serverSyncPromise}finally{serverSyncPromise=null}
