@@ -35,7 +35,7 @@ function activate(id,scroll=true){
  if(t)t.textContent=V[id][0]; if(e)e.textContent=V[id][1];
  document.body.dataset.auraView=id;document.body.classList.toggle('shell-generated-active',['history','clients','risks','opportunities','actions','evolution','profile'].includes(id));
  if(scroll)window.scrollTo({top:0,behavior:'smooth'});
- if(id==='history')meeting();
+ if(id==='history'){window.AURA_SYNC_MEETINGS?.();meeting();}
  if(id==='insights')intelligence();
  if(id==='clients')clients();
  if(id==='risks')signals('shellRisks','risco');
@@ -124,7 +124,6 @@ function detail(m){
 }
 function meeting(){
  const h=document.getElementById('meetingWorkspace');if(!h)return;
- window.AURA_SYNC_MEETINGS?.();
  const source=items().map((m,i)=>({...m,__sourceIndex:i})).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
  if(!source.length){
   h.innerHTML='<div class="meeting-empty-screen"><div class="meeting-empty-icon">◷</div><span class="eyebrow">MEETING MEMORY</span><h2>A memória começa na primeira reunião</h2><p>Analise uma conversa real para o AURA registrar contexto, evidências, decisões, riscos, oportunidades e próximos movimentos.</p><button class="primary" data-shell-view="analysis">Nova análise →</button></div>';
@@ -843,7 +842,7 @@ function setup(){
   const selectContext=(x)=>{if(!x)return;p.querySelectorAll('[data-context]').forEach(y=>y.classList.remove('selected'));x.classList.add('selected');window.AURA_SELECTED_CONTEXT=x.dataset.context};p.addEventListener('click',e=>{const x=e.target.closest('[data-context]');if(!x||!p.contains(x))return;e.preventDefault();e.stopPropagation();selectContext(x)});p.addEventListener('pointerdown',e=>{const x=e.target.closest('[data-context]');if(!x||!p.contains(x))return;e.stopPropagation();selectContext(x)});
  }
  bind();activate('overview',false);
- const refreshMemory=()=>setTimeout(()=>{meeting();clients();signals('shellRisks','risco');signals('shellOpportunities','oportunidade');actions();evolution();if(document.body.dataset.auraView==='overview')window.dispatchEvent(new CustomEvent('aura:overview-refresh'));},100);
+ const refreshMemory=()=>setTimeout(()=>{if(!document.getElementById('meetingWorkspace')?.classList.contains('meeting-detail-open'))meeting();clients();signals('shellRisks','risco');signals('shellOpportunities','oportunidade');actions();evolution();if(document.body.dataset.auraView==='overview')window.dispatchEvent(new CustomEvent('aura:overview-refresh'));},100);
  window.addEventListener('aura:meeting-saved',refreshMemory);
  window.addEventListener('aura:meetings-synced',refreshMemory);
 }

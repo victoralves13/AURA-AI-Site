@@ -46,6 +46,13 @@ class StoredAudioRequest(BaseModel):
 def _clean(value: str | None) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
 
+def _clean_transcript(value: str | None) -> str:
+    # Pasted transcripts keep their line breaks (speaker turns, [MM:SS] stamps);
+    # only runs of spaces/tabs and excess blank lines are normalised.
+    text = (value or "").replace("\r\n", "\n").replace("\r", "\n")
+    text = "\n".join(re.sub(r"[ \t\f\v]+", " ", line).strip() for line in text.split("\n"))
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
 def _supabase() -> Client:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -187,7 +194,7 @@ def create_meeting(payload: dict):
 
 @app.post("/api/analyze-transcript")
 def analyze_transcript_endpoint(payload: dict):
-    transcript = _clean(payload.get("transcript"))
+    transcript = _clean_transcript(payload.get("transcript"))
     if len(transcript) < 4:
         raise HTTPException(status_code=400, detail="transcript é obrigatório")
     try:

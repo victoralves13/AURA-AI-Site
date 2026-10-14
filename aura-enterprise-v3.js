@@ -123,8 +123,8 @@ function renderHistoryClean(){
    document.querySelector('.shell-nav[data-shell-view="history"]')?.click();
    setTimeout(()=>window.dispatchEvent(new CustomEvent('aura:meeting-selected',{detail:m})),60);
  });
- $('.section-head',h).forEach(x=>x.classList.add('aura-hide'));
- $('.table,.client-grid,.action-center,.customer360-card',h).forEach(x=>x.classList.add('aura-hide'));
+ $$('.section-head',h).forEach(x=>x.classList.add('aura-hide'));
+ $$('.table,.client-grid,.action-center,.customer360-card',h).forEach(x=>x.classList.add('aura-hide'));
 }
 function addStatus(){
  const actions=$('.top-actions');if(!actions||$('#auraTopStatus'))return;

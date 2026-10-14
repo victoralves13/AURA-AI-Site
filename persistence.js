@@ -1,7 +1,7 @@
 /* AURA AI — persistent meeting history */
 (()=>{
   'use strict';
-  const API_BASE=window.AURA_API_BASE||((location.hostname==='localhost'||location.hostname==='127.0.0.1')?'':'http://127.0.0.1:8000');
+  const API_BASE=window.AURA_API_BASE||'';
   const API=API_BASE+'/api/meetings';
   const MAX_MEMORY=500;
   const KEY='aura-meeting-history-v1';
