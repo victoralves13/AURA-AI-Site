@@ -254,7 +254,7 @@ class Publico(Base):
 
     def test_serve_o_front_end(self):
         for p in ["/", "/index.html", "/app.js", "/product-shell.css", "/aura-logo.svg", "/aura-logo-real.jpeg",
-                  "/auth.js", "/auth.css", "/orgs.js", "/orgs.css", "/supabase-js-2.117.2.umd.js"]:
+                  "/auth.js", "/auth.css", "/orgs.js", "/orgs.css", "/evidence.css","/supabase-js-2.117.2.umd.js"]:
             self.assertEqual(self.client.get(p).status_code, 200, p)
 
 

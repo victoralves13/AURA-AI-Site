@@ -55,6 +55,28 @@ function add(id,title,eyebrow,desc,host){
 function localTabs(active,items){
  return '<div class="shell-local-tabs">'+items.map(x=>'<button type="button" class="'+(x[0]===active?'active':'')+'" data-local-tab="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
 }
+const basisBadge=b=>b==='inferido'?'<span class="ev-badge inferred" title="Conclusão do AURA a partir de trechos da conversa">Inferido</span>':b==='dito'?'<span class="ev-badge said" title="Afirmado na conversa">Dito</span>':'';
+const checkBadge=c=>c==='nao_localizada'?'<span class="ev-badge missing" title="O trecho citado não foi encontrado na transcrição">Evidência não localizada</span>':c==='parcial'?'<span class="ev-badge partial" title="Parte do trecho foi encontrada, ou é uma paráfrase próxima">Evidência parcial</span>':c==='localizada'?'<span class="ev-badge ok" title="O trecho citado existe na transcrição">Conferida</span>':'';
+function insightExtras(x){
+ return (x.speaker?'<small class="ev-speaker">Interlocutor: '+esc(x.speaker)+'</small>':'')+
+  (x.basis==='inferido'&&x.rationale?'<p class="ev-rationale"><b>Por que o AURA concluiu isso:</b> '+esc(x.rationale)+'</p>':'')+
+  (x.confidence?'<small class="ev-confidence">Confiança '+esc(x.confidence)+(x.confidence_reason?' — '+esc(x.confidence_reason):'')+'</small>':'')+
+  (x.check==='nao_localizada'?'<p class="ev-warning">Este trecho não aparece na transcrição. Ele continua registrado, mas não entra na pontuação de risco ou oportunidade.</p>':'');
+}
+function evidenceBanner(m){
+ const s=m&&m.evidence_summary;
+ if(!s||!s.total)return m&&Number(m.analysis_version)===1?'<p class="ev-banner muted">Análise anterior: não separa o que foi dito do que foi inferido e não confere as citações com a transcrição.</p>':'';
+ const ok=(s.localizada||0)+(s.parcial||0),miss=s.nao_localizada||0;
+ return '<p class="ev-banner'+(miss?' warn':'')+'"><b>'+ok+' de '+s.total+'</b> evidências conferidas na transcrição'+(miss?' · <b>'+miss+' não localizada'+(miss===1?'':'s')+'</b> (não pesam na pontuação)':'')+(s.inferido?' · '+s.inferido+' inferência'+(s.inferido===1?'':'s'):'')+'.</p>';
+}
+function detailLines(detail,legacy){
+ const d=Array.isArray(detail)?detail.filter(x=>x&&x.description):[];
+ if(!d.length)return legacy.map(x=>'<div class="detail-line">'+esc(x)+'</div>').join('');
+ return d.map(x=>'<div class="detail-line ev-line"><div>'+esc(x.description)+' '+basisBadge(x.basis)+checkBadge(x.evidence_check)+'</div>'+(x.evidence?'<blockquote class="ev-quote">“'+esc(x.evidence)+'”</blockquote>':'')+
+  '<small class="ev-meta">'+[x.speaker?'Interlocutor: '+esc(x.speaker):'',x.timestamp?esc(x.timestamp):'',x.owner?'Responsável: '+esc(x.owner):'',x.deadline?'Prazo: '+esc(x.deadline):''].filter(Boolean).join(' · ')+'</small>'+
+  (x.basis==='inferido'&&x.inference_rationale?'<p class="ev-rationale">'+esc(x.inference_rationale)+'</p>':'')+
+  (x.evidence_check==='nao_localizada'?'<p class="ev-warning">Trecho não encontrado na transcrição.</p>':'')+'</div>').join('');
+}
 function insightRawList(m){
  const raw=Array.isArray(m.insights)&&m.insights.length?m.insights:(Array.isArray(m.evidence)?m.evidence:[]);
  return raw.filter(x=>typeof x==='string'||(x&&typeof x==='object'&&(x.evidence||x.quote||x.text)));
@@ -63,7 +85,7 @@ function normalizeInsights(m){
  return insightRawList(m).map((x,i)=>{
    if(typeof x==='string')return {description:'Sinal registrado',evidence:x,evidence_strength:'média',timestamp:null,type:'sinal',impact_score:50,is_quote:false};
    const fallback={alta:78,'média':55,baixa:32};
-   return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,type:x.type||'sinal',impact_score:Number.isFinite(Number(x.impact_score))?Math.max(0,Math.min(100,Number(x.impact_score))):(fallback[x.evidence_strength]||55),is_quote:true};
+   return {description:x.description||x.title||'Insight identificado',evidence:x.evidence||x.quote||x.text||'',evidence_strength:x.evidence_strength||'média',timestamp:x.timestamp||null,speaker:x.speaker||null,basis:x.basis||null,rationale:x.inference_rationale||null,confidence:x.confidence||null,confidence_reason:x.confidence_reason||null,check:x.evidence_check||null,type:x.type||'sinal',impact_score:Number.isFinite(Number(x.impact_score))?Math.max(0,Math.min(100,Number(x.impact_score))):(fallback[x.evidence_strength]||55),is_quote:true};
  }).filter(x=>x.evidence);
 }
 function renderInsights(m){
@@ -79,15 +101,15 @@ function renderInsights(m){
  const renderList=(list)=>list.map((x,i)=>{
    const impact=Math.round(x.impact_score);
    const level=impact>=90?'Crítico':impact>=75?'Alto':impact>=55?'Relevante':'Contextual';
-   return '<article class="meeting-insight '+esc(x.type)+'" data-impact="'+impact+'"><div class="meeting-insight-top"><span class="insight-index">INSIGHT '+String(i+1).padStart(2,'0')+'</span><span class="insight-type">'+esc(typeLabel[x.type]||'Sinal importante')+'</span><span class="insight-impact-badge '+(impact>=90?'critical':impact>=75?'high':impact>=55?'medium':'context')+'"><b>'+impact+'</b>/100 · '+level+'</span>'+(x.timestamp?'<button type="button" class="insight-time" title="Timestamp da evidência">'+esc(x.timestamp)+'</button>':'<span class="insight-time muted">timestamp não disponível</span>')+'</div><div class="insight-impact-track" aria-hidden="true"><i style="width:'+impact+'%"></i></div><h4>'+esc(x.description)+'</h4><blockquote>“'+esc(x.evidence)+'”</blockquote><div class="insight-meta"><span>Evidência '+esc(x.evidence_strength)+'</span><span>Impacto '+impact+'/100</span>'+(x.timestamp?'<span>Momento rastreado na reunião</span>':'<span>Sem marcação temporal na fonte</span>')+'</div></article>';
+   return '<article class="meeting-insight '+esc(x.type)+'" data-impact="'+impact+'" data-basis="'+esc(x.basis||'')+'" data-check="'+esc(x.check||'')+'"><div class="meeting-insight-top"><span class="insight-index">INSIGHT '+String(i+1).padStart(2,'0')+'</span><span class="insight-type">'+esc(typeLabel[x.type]||'Sinal importante')+'</span>'+basisBadge(x.basis)+checkBadge(x.check)+'<span class="insight-impact-badge '+(impact>=90?'critical':impact>=75?'high':impact>=55?'medium':'context')+'"><b>'+impact+'</b>/100 · '+level+'</span>'+(x.timestamp?'<button type="button" class="insight-time" title="Timestamp da evidência">'+esc(x.timestamp)+'</button>':'<span class="insight-time muted">timestamp não disponível</span>')+'</div><div class="insight-impact-track" aria-hidden="true"><i style="width:'+impact+'%"></i></div><h4>'+esc(x.description)+'</h4><blockquote>“'+esc(x.evidence)+'”</blockquote>'+insightExtras(x)+'<div class="insight-meta"><span>Evidência '+esc(x.evidence_strength)+'</span><span>Impacto '+impact+'/100</span>'+(x.timestamp?'<span>Momento rastreado na reunião</span>':'<span>Sem marcação temporal na fonte</span>')+'</div></article>';
  }).join('');
- return '<div class="detail-panel meeting-insights-panel"><div class="insight-head"><div><span class="eyebrow">INTELIGÊNCIA DA CONVERSA</span><h3>Momentos de maior impacto</h3><p>O AURA percorre a reunião inteira, preserva todos os achados e atribui um impacto relativo para priorizar o que pode mudar uma decisão, risco, oportunidade ou ação.</p></div><span class="insight-count">'+registeredLabel+' · impacto médio '+avgImpact+'</span></div><div class="impact-overview"><div><span>MAIOR IMPACTO</span><b>'+maxImpact+'/100</b></div><div><span>INSIGHTS ANALISADOS</span><b>'+insights.length+'</b></div><div><span>CRÍTICOS</span><b>'+insights.filter(x=>x.impact_score>=90).length+'</b></div><label for="'+sortId+'"><span>ORDENAR</span><select id="'+sortId+'" class="insight-sort"><option value="desc" selected>Maior impacto → menor</option><option value="asc">Menor impacto → maior</option></select></label></div><div class="meeting-insights-list" data-insight-list>'+renderList(insights)+'</div></div>';
+ return '<div class="detail-panel meeting-insights-panel"><div class="insight-head"><div><span class="eyebrow">INTELIGÊNCIA DA CONVERSA</span><h3>Momentos de maior impacto</h3><p>O AURA percorre a reunião inteira, preserva todos os achados e atribui um impacto relativo para priorizar o que pode mudar uma decisão, risco, oportunidade ou ação.</p></div><span class="insight-count">'+registeredLabel+' · impacto médio '+avgImpact+'</span></div><div class="impact-overview"><div><span>MAIOR IMPACTO</span><b>'+maxImpact+'/100</b></div><div><span>INSIGHTS ANALISADOS</span><b>'+insights.length+'</b></div><div><span>CRÍTICOS</span><b>'+insights.filter(x=>x.impact_score>=90).length+'</b></div><label for="'+sortId+'"><span>ORDENAR</span><select id="'+sortId+'" class="insight-sort"><option value="desc" selected>Maior impacto → menor</option><option value="asc">Menor impacto → maior</option></select></label><label><span>FILTRAR</span><select class="insight-filter" aria-label="Filtrar achados"><option value="all">Todos</option><option value="dito">Só o que foi dito</option><option value="inferido">Só inferências</option><option value="nao_localizada">Evidência não localizada</option></select></label></div>'+evidenceBanner(m)+'<div class="meeting-insights-list" data-insight-list>'+renderList(insights)+'</div></div>';
 }
 function renderMeetingPanel(m,tab){
  const ev=[...arr(m,'evidence'),...arr(m,'risk_signals'),...arr(m,'opportunity_signals')];
  const decisions=arr(m,'decisions'),pending=arr(m,'pending_actions');
  if(tab==='evidence')return renderInsights(m)+'<div class="detail-columns"><div class="detail-panel"><span class="eyebrow">SINAIS ESTRUTURADOS</span><div class="detail-micro-grid"><div><span>RISCO</span><b>'+esc(m.risk||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>INTENÇÃO</span><b>'+esc(m.intent||'—')+'</b></div><div><span>IMPACTO</span><b>'+esc(m.impact||'—')+'</b></div></div><p class="detail-muted">'+esc(m.why_it_matters||'Sem justificativa registrada.')+'</p></div></div>';
- if(tab==='actions')return '<div class="detail-columns"><div class="detail-panel"><span class="eyebrow">DECISÕES</span>'+(decisions.map(x=>'<div class="detail-line">'+esc(x)+'</div>').join('')||'<div class="detail-muted">Nenhuma decisão registrada.</div>')+'</div><div class="detail-panel"><span class="eyebrow">AÇÕES PENDENTES</span>'+(pending.map(x=>'<div class="detail-line">'+esc(x)+'</div>').join('')||'<div class="detail-muted">Nenhuma ação pendente registrada.</div>')+'</div><div class="detail-panel"><span class="eyebrow">PRÓXIMO MOVIMENTO</span><strong class="detail-next">'+esc(m.next_move||'Nenhum próximo movimento registrado.')+'</strong><p class="detail-muted">'+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não definido')+'</p></div></div>';
+ if(tab==='actions')return '<div class="detail-columns"><div class="detail-panel"><span class="eyebrow">DECISÕES</span>'+(detailLines(m.decisions_detail,decisions)||'<div class="detail-muted">Nenhuma decisão registrada.</div>')+'</div><div class="detail-panel"><span class="eyebrow">AÇÕES PENDENTES</span>'+(detailLines(m.actions_detail,pending)||'<div class="detail-muted">Nenhuma ação pendente registrada.</div>')+'</div><div class="detail-panel"><span class="eyebrow">PRÓXIMO MOVIMENTO</span><strong class="detail-next">'+esc(m.next_move||'Nenhum próximo movimento registrado.')+'</strong><p class="detail-muted">'+esc(m.owner||'Responsável não identificado')+' · '+esc(m.deadline||'Prazo não definido')+'</p></div></div>';
  if(tab==='timeline'){
   const related=items().filter(x=>{
    const a=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
@@ -105,6 +127,8 @@ function detail(m){
  d.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>{d.dataset.tab=b.dataset.localTab;detail(m)});
  const back=d.querySelector('.meeting-back-button');
  if(back)back.onclick=()=>d.dispatchEvent(new CustomEvent('aura:meeting-detail-back',{bubbles:true}));
+ const insightFilter=d.querySelector('.insight-filter');
+ if(insightFilter)insightFilter.onchange=()=>{const v=insightFilter.value;d.querySelectorAll('.meeting-insight').forEach(c=>{c.hidden=!(v==='all'||(v==='nao_localizada'?c.dataset.check==='nao_localizada':c.dataset.basis===v))})};
  const insightSort=d.querySelector('.insight-sort');
  if(insightSort){
   insightSort.onchange=()=>{
@@ -264,7 +288,7 @@ function clientDetail(name,sourceRows){
  const textOf=m=>[m?.summary,m?.why_it_matters,m?.risk,m?.opportunity,m?.intent,m?.impact,m?.next_move,m?.context,m?.intelligence_type,...arr(m,'important_signals'),...arr(m,'decisions'),...arr(m,'pending_actions')].filter(Boolean).join(' ');
  const evidenceOf=m=>{
   const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
-  return raw.map(x=>typeof x==='string'?{description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'}:{description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média'}).filter(x=>x.evidence||x.description);
+  return raw.map(x=>typeof x==='string'?{description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'}:{description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média',check:x?.evidence_check||null,basis:x?.basis||null}).filter(x=>x.evidence||x.description);
  };
  const allEvidence=source.flatMap(evidenceOf);
  const allInsights=source.flatMap(m=>Array.isArray(m.insights)?m.insights:[]).filter(Boolean);
@@ -311,7 +335,7 @@ function clientDetail(name,sourceRows){
   ?demo.insights.map((x,i)=>'<article class="client-insight '+esc(x[0])+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(x[2])+'</span></div><p>'+esc(x[1])+'</p><small>'+esc(x[0])+'</small></article>').join('')
   :allInsights.map((x,i)=>{
     const o=typeof x==='string'?{description:'Sinal registrado',evidence:x}:x;
-    return '<article class="client-insight '+esc(o.type||'sinal')+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(o.timestamp||'sem timestamp')+'</span></div><p>'+esc(o.description||o.evidence||'Insight registrado')+'</p>'+(o.evidence?'<blockquote>“'+esc(o.evidence)+'”</blockquote>':'')+'<small>'+esc(o.type||'sinal')+'</small></article>';
+    return '<article class="client-insight '+esc(o.type||'sinal')+'"><div><b>INSIGHT '+String(i+1).padStart(2,'0')+'</b><span>'+esc(o.timestamp||'sem timestamp')+'</span></div><p>'+esc(o.description||o.evidence||'Insight registrado')+'</p>'+(o.evidence?'<blockquote>“'+esc(o.evidence)+'”</blockquote>':'')+'<small>'+esc(o.type||'sinal')+'</small>'+basisBadge(o.basis)+checkBadge(o.evidence_check)+'</article>';
   }).join('')||'<div class="detail-muted">Nenhum insight estruturado registrado.</div>';
  const riskHtml=isDemo
   ?'<div class="client-context-row"><b>'+esc(demo.risk)+'</b><span>estado atual</span></div><div class="client-context-row"><b>'+esc(demo.insights.find(x=>x[0]==='risco')?.[1]||'Nenhum risco destacado')+'</b><span>evidência</span></div>'
@@ -400,7 +424,7 @@ function opportunityEvidence(m){
  const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
  return raw.map(x=>{
   if(typeof x==='string')return {description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'};
-  return {description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média'};
+  return {description:x?.description||x?.title||'Insight identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média',check:x?.evidence_check||null,basis:x?.basis||null};
  }).filter(x=>x.evidence||x.description);
 }
 function opportunityText(m){
@@ -462,7 +486,7 @@ function opportunityDetail(m){
  });
  const oppPath=oppPoints.length===1?'M '+oppPoints[0].x.toFixed(1)+' '+oppPoints[0].y.toFixed(1):oppPoints.map((p,i)=>i?' L '+p.x.toFixed(1)+' '+p.y.toFixed(1):'M '+p.x.toFixed(1)+' '+p.y.toFixed(1)).join('');
  const oppArea=oppPath+' L '+oppPoints.at(-1).x.toFixed(1)+' 132 L '+oppPoints[0].x.toFixed(1)+' 132 Z';
- const evidenceHtml=evidence.map((x,i)=>'<article class="opportunity-evidence-item"><div><span>'+String(i+1).padStart(2,'0')+'</span><b>'+esc(x.type||'sinal')+'</b>'+(x.timestamp?'<button type="button">'+esc(x.timestamp)+'</button>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p><small>Evidência '+esc(x.strength)+'</small></article>').join('');
+ const evidenceHtml=evidence.map((x,i)=>'<article class="opportunity-evidence-item"><div><span>'+String(i+1).padStart(2,'0')+'</span><b>'+esc(x.type||'sinal')+'</b>'+basisBadge(x.basis)+checkBadge(x.check)+(x.timestamp?'<button type="button">'+esc(x.timestamp)+'</button>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p><small>Evidência '+esc(x.strength)+'</small></article>').join('');
  const maturitySteps=['SINAL IDENTIFICADO','INTERESSE','VALIDAÇÃO','PROPOSTA','NEGOCIAÇÃO','EXPANSÃO'];
  const maturityIndex=Math.max(0,maturitySteps.indexOf(maturity));
  const maturityHtml=maturitySteps.map((x,i)=>'<div class="opportunity-stage '+(i<maturityIndex?'done ':'')+(i===maturityIndex?'current':'')+'"><span>'+String(i+1).padStart(2,'0')+'</span><b>'+x+'</b></div>').join('');
@@ -483,7 +507,7 @@ function opportunityDetail(m){
 }
 function riskEvidence(m){
  const raw=Array.isArray(m?.insights)&&m.insights.length?m.insights:(Array.isArray(m?.evidence)?m.evidence:[]);
- return raw.map(x=>typeof x==='string'?{description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'}:{description:x?.description||'Sinal identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média'}).filter(x=>x.evidence||x.description);
+ return raw.map(x=>typeof x==='string'?{description:'Sinal registrado',evidence:x,timestamp:null,type:'sinal',strength:'média'}:{description:x?.description||'Sinal identificado',evidence:x?.evidence||x?.quote||x?.text||'',timestamp:x?.timestamp||null,type:x?.type||'sinal',strength:x?.evidence_strength||'média',check:x?.evidence_check||null,basis:x?.basis||null}).filter(x=>x.evidence||x.description);
 }
 function riskKind(m){
  const t=low([m.risk,m.summary,m.why_it_matters,m.impact,m.context,m.intelligence_type,...riskEvidence(m).flatMap(x=>[x.description,x.evidence])].filter(Boolean).join(' '));
@@ -529,7 +553,7 @@ function riskDetail(m){
  const riskPath=riskPoints.length===1?'M '+riskPoints[0].x.toFixed(1)+' '+riskPoints[0].y.toFixed(1):riskPoints.map((p,i)=>(i?' L ':'M ')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join('');
  const riskArea=riskPoints.length?(riskPath+' L '+riskPoints.at(-1).x.toFixed(1)+' 132 L '+riskPoints[0].x.toFixed(1)+' 132 Z'):'';
  const timeline=riskHistory.slice().reverse().map(x=>'<div class="risk-timeline-row '+(x===m?'current':'')+'"><span>'+esc(fmt(x.created_at))+'</span><div><b>'+esc(riskSeverity(x))+'</b><p>'+esc(x.summary||x.why_it_matters||'Sem leitura registrada.')+'</p></div></div>').join('');
- const evHtml=evidence.map((x,i)=>'<article class="risk-evidence-item"><div><span>'+String(i+1).padStart(2,'0')+'</span><b>'+esc(x.type)+'</b>'+(x.timestamp?'<button type="button">'+esc(x.timestamp)+'</button>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p><small>Evidência '+esc(x.strength)+'</small></article>').join('');
+ const evHtml=evidence.map((x,i)=>'<article class="risk-evidence-item"><div><span>'+String(i+1).padStart(2,'0')+'</span><b>'+esc(x.type)+'</b>'+basisBadge(x.basis)+checkBadge(x.check)+(x.timestamp?'<button type="button">'+esc(x.timestamp)+'</button>':'')+'</div><strong>'+esc(x.description)+'</strong><p>“'+esc(x.evidence)+'”</p><small>Evidência '+esc(x.strength)+'</small></article>').join('');
  const actionHtml=actions.slice(0,6).map((x,i)=>'<div class="risk-action-item"><span>'+String(i+1).padStart(2,'0')+'</span><p>'+esc(x)+'</p></div>').join('');
  const matrix=[['Comercial',/receita|contrato|venda|expans|oportun/i.test(low(text))],['Operacional',/integra|prazo|process|implanta|técnic|tecnic/i.test(low(text))],['Financeiro',/r\$|finance|faturamento|receita|custo|pagamento/i.test(low(text))],['Relacionamento',/cliente|insatis|confiança|confianca|relacionamento/i.test(low(text))]].filter(x=>x[1]);
  h.innerHTML='<div class="risk-center-shell"><div class="risk-hero"><div><span class="eyebrow">RISK INTELLIGENCE · DOSSIÊ</span><h2>'+esc(m.client_name||m.file_name||'Cliente não identificado')+'</h2><p>'+esc(m.context||m.intelligence_type||'Contexto não informado')+' · '+fmt(m.created_at)+'</p></div><div class="risk-hero-badge"><b>'+esc(sev)+'</b><span>'+esc(kind)+' · '+esc(state)+'</span></div></div>'+
