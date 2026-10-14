@@ -53,6 +53,7 @@ async function seed() {
 await bootstrap();
 await db.exec(read('migrations/20261014120000_etapa2_identidade_organizacoes.sql'));
 await db.exec(read('migrations/20261014120100_etapa2_reunioes_isolamento.sql'));
+await db.exec(read('migrations/20261014130000_etapa2_acesso_exige_membro.sql'));
 console.log('migrações aplicadas sem erro');
 await seed();
 
@@ -119,7 +120,26 @@ check('admin (audit.read) lê auditoria da org; colaborador lê só a própria',
 check('auditoria é anexar-apenas (sem update/delete para usuários)', !(await tryq(A, "delete from public.audit_log")).ok);
 check('role_permissions inacessível ao usuário', !(await tryq(A, 'select * from aura_private.role_permissions')).ok);
 
+console.log('\n== saída da organização (migração 3) ==');
+await db.exec(`insert into public.meetings(id,transcript,owner_id,org_id,visibility) values ('${M(9)}','pessoal C','${C}',null,'private')`);
+const ownOrg = async () => Number((await db.query(`select count(*) c from public.meetings where owner_id='${C}' and org_id is not null`)).rows[0].c);
+const seenAsC = async () => as(C, async () => Number((await db.query(`select count(*) c from public.meetings where org_id='${X}'`)).rows[0].c));
+check('antes de sair: colaborador vê reuniões da org', (await seenAsC()) >= 1);
+await db.exec(`delete from public.memberships where org_id='${X}' and user_id='${C}'`);
+check('ex-membro não vê mais reuniões da org (nem as próprias nem as compartilhadas)', await ids(C) === '9', await ids(C));
+check('ex-membro: a reunião pessoal continua dele', (await ids(C)).includes('9'));
+check('as reuniões dele continuam no banco (nada foi apagado)', (await ownOrg()) >= 1);
+const upd = await tryq(C, "update public.meetings set summary='x' where org_id=$1", [X]);
+check('ex-membro NÃO edita reuniões da org', upd.ok && upd.n === 0, JSON.stringify(upd));
+const del = await tryq(C, 'delete from public.meetings where org_id=$1', [X]);
+check('ex-membro NÃO apaga reuniões da org', del.ok && del.n === 0, JSON.stringify(del));
+check('ex-membro NÃO insere na org', !(await ins(C, C, X)).ok);
+check('gestor continua vendo as reuniões do ex-membro (conteúdo da empresa)', (await ids(B)).length > 0);
+await db.exec(`insert into public.memberships(org_id,user_id,role) values ('${X}','${C}','member')`);
+check('ao voltar à org, recupera o acesso às próprias reuniões', (await seenAsC()) >= 1);
+
 console.log('\n== rollback e reaplicação ==');
+await db.exec(read('rollbacks/20261014130000_etapa2_acesso_exige_membro.down.sql'));
 await db.exec(read('rollbacks/20261014120100_etapa2_reunioes_isolamento.down.sql'));
 await db.exec(read('rollbacks/20261014120000_etapa2_identidade_organizacoes.down.sql'));
 const left = (await db.query(`select (select count(*) from information_schema.tables where table_schema='public' and table_name<>'meetings') as t, (select count(*) from information_schema.columns where table_name='meetings' and column_name in ('owner_id','org_id','client_id','team_id','visibility')) as c, (select count(*) from pg_namespace where nspname='aura_private') as s, (select count(*) from public.meetings) as m`)).rows[0];
@@ -127,6 +147,7 @@ check('rollback remove tabelas, colunas e schema novos', Number(left.t) === 0 &&
 check('rollback preserva as reuniões existentes', Number(left.m) >= 7, JSON.stringify(left));
 await db.exec(read('migrations/20261014120000_etapa2_identidade_organizacoes.sql'));
 await db.exec(read('migrations/20261014120100_etapa2_reunioes_isolamento.sql'));
+await db.exec(read('migrations/20261014130000_etapa2_acesso_exige_membro.sql'));
 check('migrações reaplicam após rollback', true);
 console.log(`\n${pass} aprovados, ${fail} reprovados`);
 process.exit(fail ? 1 : 0);

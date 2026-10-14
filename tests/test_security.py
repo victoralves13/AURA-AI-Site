@@ -11,11 +11,13 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
 import index  # noqa: E402
 import security as sec  # noqa: E402
+from fake_supabase import FakeSupabase  # noqa: E402
 
 UA = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 UB = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
@@ -23,51 +25,6 @@ ORG1 = "11111111-1111-1111-1111-111111111111"
 ORG2 = "22222222-2222-2222-2222-222222222222"
 NEWORG = "33333333-3333-3333-3333-333333333333"
 HEX = "0123456789abcdef0123456789abcdef"
-
-
-class FakeSupabase:
-    """Substitui sec.http_json: Auth + PostgREST mínimos."""
-
-    def __init__(self):
-        self.users = {"tok-a": {"id": UA, "email": "a@x.com"}, "tok-b": {"id": UB, "email": "b@x.com"}}
-        self.memberships = {UA: [{"org_id": ORG1, "role": "member"}], UB: [{"org_id": ORG1, "role": "manager"}]}
-        self.overrides = {}
-        self.audit_rows = []
-        self.audit_recent = []
-        self.fail_membership = False
-        self.calls = []
-
-    def _user(self, headers):
-        return self.users.get(headers.get("Authorization", "").split(" ")[-1])
-
-    def __call__(self, method, url, headers, payload=None, timeout=15):
-        self.calls.append((method, url, payload))
-        if "/auth/v1/user" in url:
-            u = self._user(headers)
-            return (200, u) if u else (401, {"msg": "invalid"})
-        path = url.split("/rest/v1/")[1]
-        table = path.split("?")[0]
-        if method == "GET" and table == "memberships":
-            u = self._user(headers)
-            rows = self.memberships.get(u["id"], []) if u else []
-            if "organizations" in path:
-                rows = [{**r, "organizations": {"id": r["org_id"], "name": "Org " + r["org_id"][:2]}} for r in rows]
-            return 200, rows
-        if method == "GET" and table == "membership_permissions":
-            u = self._user(headers)
-            return 200, self.overrides.get(u["id"], []) if u else []
-        if method == "GET" and table == "audit_log":
-            return 200, self.audit_recent
-        if method == "POST" and table == "audit_log":
-            self.audit_rows.append(payload)
-            return 201, [payload]
-        if method == "POST" and table == "organizations":
-            return 201, [{"id": NEWORG, **payload}]
-        if method == "POST" and table == "memberships":
-            return (500, {}) if self.fail_membership else (201, [payload])
-        if method == "DELETE" and table == "organizations":
-            return 204, None
-        return 404, {}
 
 
 def minimal_analysis():
@@ -88,6 +45,12 @@ class Base(unittest.TestCase):
         self.addCleanup(patcher.stop)
         sec._token_cache.clear()
         self.fake = FakeSupabase()
+        self.fake.add_user("tok-a", UA, "a@x.com")
+        self.fake.add_user("tok-b", UB, "b@x.com")
+        self.fake.add_org(ORG1)
+        self.fake.add_org(ORG2)
+        self.fake.add_member(ORG1, UA, "member")
+        self.fake.add_member(ORG1, UB, "manager")  # o RLS faz UA enxergar também este vínculo
         p = mock.patch.object(sec, "http_json", self.fake)
         p.start()
         self.addCleanup(p.stop)
@@ -155,8 +118,7 @@ class AuthRequired(Base):
         self.assertEqual(payload["visibility"], "private")
         self.assertEqual(user.id, UA)
         self.assertIn("\n", payload["transcript"])  # quebras de linha preservadas
-        acts = [a["action"] for a in self.fake.audit_rows]
-        self.assertIn("analysis.transcript", acts)
+        self.assertIn("analysis.transcript", self.fake.actions())
 
     def test_organizacao_alheia_e_negada(self):
         r = self.client.post("/api/analyze-transcript", headers=self.h(), json={"transcript": "abcd efgh", "org_id": ORG2})
@@ -170,7 +132,8 @@ class AuthRequired(Base):
         self.assertEqual(r.status_code, 400)
 
     def test_deny_remove_permissao_do_papel(self):
-        self.fake.overrides[UA] = [{"org_id": ORG1, "permission": "meetings.write", "effect": "deny"}]
+        self.fake.tables["membership_permissions"].append(
+            {"org_id": ORG1, "user_id": UA, "permission": "meetings.write", "effect": "deny"})
         r = self.client.post("/api/analyze-transcript", headers=self.h(), json={"transcript": "abcd efgh", "org_id": ORG1})
         self.assertEqual(r.status_code, 403)
 
@@ -180,7 +143,8 @@ class AuthRequired(Base):
         self.assertIsNone(self.saved[0][0]["org_id"])
 
     def test_limite_de_uso(self):
-        self.fake.audit_recent = [{"id": i} for i in range(31)]
+        self.fake.tables["audit_log"] += [
+            {"id": i, "actor_id": UA, "action": "analysis.transcript", "at": "2999-01-01T00:00:00+00:00"} for i in range(31)]
         r = self.client.post("/api/analyze-transcript", headers=self.h(), json={"transcript": "abcd efgh"})
         self.assertEqual(r.status_code, 429)
         self.assertEqual(self.saved, [])
@@ -214,7 +178,23 @@ class AuthRequired(Base):
             r = self.client.post("/api/analyze-stored-audio", headers=self.h(), json={"path": f"users/{UA}/{HEX}.mp3", "file_name": "r.mp3"})
         self.assertEqual(r.status_code, 200, r.text)
         self.assertEqual(self.saved[0][0]["owner_id"], UA)
-        self.assertIn("analysis.audio", [a["action"] for a in self.fake.audit_rows])
+        self.assertIn("analysis.audio", self.fake.actions())
+
+    def test_papel_de_outro_membro_nao_vaza_para_mim(self):
+        """O RLS mostra a UA também o vínculo de UB (gestor); UA continua sendo apenas membro."""
+        access = sec.load_access(sec.AuthUser(id=UA, email="a@x.com", token="tok-a"))
+        self.assertEqual(access[ORG1], sec.ROLE_PERMISSIONS["member"])
+        me = self.client.get("/api/me", headers=self.h()).json()
+        self.assertEqual([o["role"] for o in me["organizations"]], ["member"])
+        self.assertNotIn("finance.read", me["organizations"][0]["permissions"])
+
+    def test_filtro_de_espaco_na_listagem(self):
+        for query, expected in [("org_id=personal", "org_id=is.null"), (f"org_id={ORG1}", f"org_id=eq.{ORG1}")]:
+            paths = []
+            with mock.patch.object(index, "_supabase_request", lambda m, p, payload=None, user=None: paths.append(p) or []):
+                self.assertEqual(self.client.get("/api/meetings?" + query, headers=self.h()).status_code, 200)
+            self.assertIn(expected, paths[0])
+        self.assertEqual(self.client.get("/api/meetings?org_id=abc", headers=self.h()).status_code, 400)
 
     def test_dados_financeiros_so_para_quem_pode(self):
         rows = [{"id": "1", "owner_id": UA, "org_id": ORG1, "financial_data": [{"amount": 1}]},
@@ -229,16 +209,17 @@ class AuthRequired(Base):
     def test_criar_organizacao(self):
         r = self.client.post("/api/orgs", headers=self.h(), json={"name": "  Minha   Empresa "})
         self.assertEqual(r.status_code, 200, r.text)
-        self.assertEqual(r.json()["organization"], {"id": NEWORG, "name": "Minha Empresa", "role": "admin"})
-        posted = [c for c in self.fake.calls if c[0] == "POST" and c[1].endswith("/memberships")][0][2]
-        self.assertEqual((posted["user_id"], posted["role"]), (UA, "admin"))
-        self.assertIn("org.create", [a["action"] for a in self.fake.audit_rows])
+        org = r.json()["organization"]
+        self.assertEqual((org["name"], org["role"]), ("Minha Empresa", "admin"))
+        self.assertEqual(self.fake.rows("memberships", org_id=org["id"], user_id=UA)[0]["role"], "admin")
+        self.assertEqual(self.fake.rows("organizations", id=org["id"])[0]["created_by"], UA)
+        self.assertIn("org.create", self.fake.actions())
 
     def test_criar_organizacao_desfaz_se_falhar_o_vinculo(self):
-        self.fake.fail_membership = True
+        self.fake.fail.add(("POST", "memberships"))
         r = self.client.post("/api/orgs", headers=self.h(), json={"name": "X"})
         self.assertEqual(r.status_code, 502)
-        self.assertTrue(any(c[0] == "DELETE" and "organizations" in c[1] for c in self.fake.calls))
+        self.assertEqual(len(self.fake.tables["organizations"]), 2)  # só as duas do cenário: a nova foi desfeita
         self.assertEqual(self.client.post("/api/orgs", headers=self.h(), json={"name": " "}).status_code, 400)
 
 
@@ -273,7 +254,7 @@ class Publico(Base):
 
     def test_serve_o_front_end(self):
         for p in ["/", "/index.html", "/app.js", "/product-shell.css", "/aura-logo.svg", "/aura-logo-real.jpeg",
-                  "/auth.js", "/auth.css", "/supabase-js-2.117.2.umd.js"]:
+                  "/auth.js", "/auth.css", "/orgs.js", "/orgs.css", "/supabase-js-2.117.2.umd.js"]:
             self.assertEqual(self.client.get(p).status_code, 200, p)
 
 

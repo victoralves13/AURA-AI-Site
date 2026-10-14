@@ -12,6 +12,7 @@
   const origFetch = window.fetch.bind(window);
   const PREVIEW_KEY = 'aura-auth-preview';
   const LAST_USER_KEY = 'aura-last-user';
+  const SPACE_KEY = 'aura-space';
   const DATA_KEYS = ['aura-meeting-history-v1', 'aura-actions-done-v1', 'aura-demo-seed-version'];
   const API_OPEN = new Set(['/api/config', '/api/health']);
 
@@ -35,11 +36,47 @@
     } catch { return false; }
   }
 
+  /* ---------- espaço de trabalho (pessoal ou organização) ---------- */
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const BODY_WITH_ORG = new Set(['/api/analyze-transcript', '/api/audio-upload-url', '/api/meetings']);
+  function currentSpace() {
+    const v = safe(() => localStorage.getItem(SPACE_KEY));
+    return v && UUID_RE.test(v) ? v.toLowerCase() : 'personal';
+  }
+  function setSpace(space) {
+    safe(() => localStorage.setItem(SPACE_KEY, space === 'personal' || UUID_RE.test(space) ? space : 'personal'));
+    purgeLocalData();  // o cache local é de um espaço só; evita misturar conteúdo entre espaços
+    location.reload();
+  }
+  window.AURA_AUTH_API = { currentSpace, setSpace, purgeLocalData: () => purgeLocalData() };
+
+  // Leituras pedem só o espaço atual; criações de conteúdo vão para ele (a organização é validada no servidor).
+  function withSpace(input, init) {
+    if (typeof input !== 'string') return [input, init];
+    const u = new URL(input, location.href);
+    const method = String((init && init.method) || 'GET').toUpperCase();
+    const space = currentSpace();
+    if (method === 'GET' && u.pathname === '/api/meetings' && !u.searchParams.has('org_id')) {
+      u.searchParams.set('org_id', space);
+      return [/^https?:/i.test(input) ? u.href : u.pathname + u.search, init];
+    }
+    if (method === 'POST' && space !== 'personal' && BODY_WITH_ORG.has(u.pathname) && init && typeof init.body === 'string') {
+      try {
+        const body = JSON.parse(init.body);
+        if (body && typeof body === 'object' && !Array.isArray(body) && !body.org_id) {
+          return [input, { ...init, body: JSON.stringify({ ...body, org_id: space }) }];
+        }
+      } catch { /* corpo que não é JSON segue intacto */ }
+    }
+    return [input, init];
+  }
+
   window.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || String(input || '');
     if (!isApi(url)) return origFetch(input, init);
     await window.AURA_AUTH_READY;
     if (!enabled || !client) return origFetch(input, init);
+    [input, init] = withSpace(input, init);
     const { data } = await client.auth.getSession();
     const token = data && data.session && data.session.access_token;
     let res;
@@ -205,6 +242,7 @@
       chip.innerHTML = '<span></span><button type="button" class="aura-user-out">Sair</button>';
       chip.querySelector('button').addEventListener('click', async () => {
         purgeLocalData();
+        safe(() => localStorage.removeItem(SPACE_KEY));
         await client.auth.signOut();
         location.reload();
       });
@@ -224,6 +262,7 @@
     if (last && last !== window.AURA_USER.id) {
       // Outro usuário neste navegador: descarta o cache do anterior antes de carregar qualquer dado.
       purgeLocalData();
+      safe(() => localStorage.removeItem(SPACE_KEY));  // o espaço escolhido era do usuário anterior
       safe(() => localStorage.setItem(LAST_USER_KEY, window.AURA_USER.id));
       location.reload();
       return;
@@ -231,6 +270,7 @@
     safe(() => localStorage.setItem(LAST_USER_KEY, window.AURA_USER.id));
     hideGate();
     mountChip();
+    window.dispatchEvent(new Event('aura:user-ready'));
     if (!readyDone) ready();
     else if (gateShown === false && document.documentElement.dataset.auraLoggedOut === '1') location.reload();
   }

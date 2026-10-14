@@ -24,9 +24,11 @@ API_DIR = ROOT / "api"
 if str(API_DIR) not in os.sys.path:
     os.sys.path.insert(0, str(API_DIR))
 import security as sec
+from orgs import router as orgs_router
 
 app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
 handler = app
+app.include_router(orgs_router)
 # O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
 # Para liberar origens específicas: AURA_ALLOWED_ORIGINS="https://app.exemplo.com,https://outra.com"
 if sec.allowed_origins():
@@ -205,11 +207,13 @@ def me(user=Depends(sec.current_user)):
     if user is None:
         return {"ok": True, "auth_required": False, "user": None, "organizations": []}
     try:
-        rows = sec.user_rest(user, "GET", "memberships?select=role,org_id,organizations(id,name)") or []
+        rows = sec.user_rest(user, "GET", f"memberships?select=role,org_id,organizations(id,name)&user_id=eq.{user.id}") or []
+        access = sec.load_access(user)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail="Não foi possível carregar suas organizações.") from exc
-    orgs = [{"id": r["org_id"], "name": (r.get("organizations") or {}).get("name"), "role": r.get("role")} for r in rows]
-    return {"ok": True, "auth_required": True, "user": {"id": user.id, "email": user.email}, "organizations": orgs}
+    orgs = [{"id": r["org_id"], "name": (r.get("organizations") or {}).get("name"), "role": r.get("role"),
+             "permissions": sorted(access.get(r["org_id"], []))} for r in rows]
+    return {"ok": True, "auth_required": True, "user": {"id": user.id, "email": user.email, "email_confirmed": user.email_confirmed}, "organizations": orgs}
 
 @app.post("/api/orgs")
 def create_org(payload: OrgCreateRequest, user=Depends(sec.current_user)):
@@ -231,10 +235,20 @@ def create_org(payload: OrgCreateRequest, user=Depends(sec.current_user)):
     return {"ok": True, "organization": {"id": org_id, "name": name, "role": "admin"}}
 
 @app.get("/api/meetings")
-def meetings(limit: int = 50, user=Depends(sec.current_user)):
+def meetings(limit: int = 50, org_id: str | None = None, user=Depends(sec.current_user)):
     limit = max(1, min(limit, 100))
+    space = ""
+    if user is not None and org_id:
+        # Espaço de trabalho: "personal" (sem organização) ou uma organização. O RLS continua
+        # decidindo o que o usuário pode ver; o filtro só escolhe o recorte.
+        if org_id == "personal":
+            space = "&org_id=is.null"
+        elif sec.UUID_RE.match(org_id):
+            space = f"&org_id=eq.{org_id.lower()}"
+        else:
+            raise HTTPException(status_code=400, detail="Espaço inválido.")
     try:
-        result = _supabase_request("GET", f"meetings?select=*&order=created_at.desc&limit={limit}", user=user)
+        result = _supabase_request("GET", f"meetings?select=*&order=created_at.desc&limit={limit}{space}", user=user)
         return {"ok": True, "persisted": result is not None, "meetings": sec.redact_meetings(result or [], user)}
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc

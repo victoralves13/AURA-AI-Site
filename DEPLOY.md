@@ -106,8 +106,10 @@ AURA_MAX_ANALYSES_PER_HOUR=30  # limite de análises por usuário/hora (custo de
 
 Ordem segura de ativação (cada passo é reversível):
 
-1. Aplicar as migrações de `supabase/migrations/` (aditivas). Rollback em `supabase/rollbacks/`
-   (rode a parte 2 antes da parte 1).
+1. Aplicar as migrações de `supabase/migrations/` na ordem dos nomes (partes 1, 2 e 3). Rollback em
+   `supabase/rollbacks/`, na ordem inversa (3, 2, 1). A parte 3 só recria políticas: faz quem sai de
+   uma organização perder o acesso às reuniões dela (sem ela, ex-membros continuam lendo e apagando
+   o que criaram). **Aplique a parte 3 antes de criar organizações reais.**
 2. Publicar o código com `AURA_AUTH_REQUIRED` vazio: o comportamento atual é mantido, mas os
    arquivos sensíveis (código, `.git`, SQL) deixam de ser servidos e o CORS fica fechado.
 3. Publicar o login do front-end (`auth.js`, `auth.css` e o cliente `supabase-js-2.117.2.umd.js`,
@@ -129,3 +131,24 @@ serviço fica restrita a criar organizações, gravar auditoria e assinar URLs d
 
 Testes: `python -m unittest discover -s tests` (backend) e
 `npm install --no-save @electric-sql/pglite && node tests/db/rls.test.mjs` (migrações + RLS).
+
+### Organizações, papéis e convites
+
+Na interface (com o login ativo): o seletor "Espaço" no cabeçalho alterna entre o **espaço pessoal**
+e as organizações das quais a pessoa participa, ou cria uma nova (quem cria vira administrador).
+Trocar de espaço recarrega a página e limpa o cache local; o que é lido e criado passa a ser desse
+espaço. O botão "Organização" abre o painel:
+
+- **Administrador:** vê os membros, muda papéis, remove pessoas, gera convites e revoga pendentes.
+- **Gestor e colaborador:** veem só o próprio papel e podem sair da organização.
+- Uma organização nunca fica sem administrador (a API recusa rebaixar/remover/sair do último).
+
+Convites: o AURA **não envia e-mail**. O administrador copia o link (`/?invite=<token>`) e o envia.
+O token só aparece na criação (no banco fica o hash), vale 7 dias, é de uso único e só funciona para
+quem entra com o e-mail convidado **já confirmado**. Quem já é membro mantém o papel que tinha.
+O link sobrevive ao cadastro: o token fica guardado no navegador até a pessoa entrar.
+
+Endpoints (todos exigem login): `GET /api/me`, `POST /api/orgs`, `GET|POST /api/orgs/{id}/invitations`,
+`DELETE /api/orgs/{id}/invitations/{inv}`, `GET /api/orgs/{id}/members`,
+`PATCH|DELETE /api/orgs/{id}/members/{user}`, `POST /api/invitations/accept`.
+`GET /api/meetings?org_id=personal|<uuid>` escolhe o recorte; o RLS continua decidindo o que se vê.

@@ -90,6 +90,7 @@ class AuthUser:
     id: str
     email: str | None
     token: str
+    email_confirmed: bool = False
 
 
 _token_cache: dict[str, tuple[float, AuthUser]] = {}
@@ -109,7 +110,8 @@ def verify_token(token: str) -> AuthUser:
         raise HTTPException(status_code=503, detail="Serviço de autenticação indisponível.") from exc
     if status != 200 or not isinstance(body, dict) or not UUID_RE.match(str(body.get("id", ""))):
         raise HTTPException(status_code=401, detail="Sessão inválida ou expirada.")
-    user = AuthUser(id=body["id"], email=body.get("email"), token=token)
+    confirmed = bool(body.get("email_confirmed_at") or body.get("confirmed_at"))
+    user = AuthUser(id=body["id"], email=body.get("email"), token=token, email_confirmed=confirmed)
     if len(_token_cache) > 2000:
         _token_cache.clear()
     _token_cache[digest] = (now + _TOKEN_TTL, user)
@@ -158,7 +160,9 @@ def user_rest(user: AuthUser, method: str, path: str, payload: Any = None) -> An
 # ---------------------------------------------------------------------------
 def load_access(user: AuthUser) -> dict[str, frozenset[str]]:
     """Permissões efetivas do usuário por organização (papel + ajustes 'allow'/'deny')."""
-    memberships = user_rest(user, "GET", "memberships?select=org_id,role") or []
+    # O RLS deixa cada membro ver TODOS os vínculos da própria organização; por isso o filtro
+    # por user_id é obrigatório (sem ele, o papel de outro membro poderia ser atribuído ao usuário).
+    memberships = user_rest(user, "GET", f"memberships?select=org_id,role&user_id=eq.{user.id}") or []
     overrides = user_rest(user, "GET", f"membership_permissions?select=org_id,permission,effect&user_id=eq.{user.id}") or []
     access: dict[str, set[str]] = {}
     for m in memberships:
