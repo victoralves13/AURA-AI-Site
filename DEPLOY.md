@@ -110,7 +110,16 @@ Ordem segura de ativação (cada passo é reversível):
    (rode a parte 2 antes da parte 1).
 2. Publicar o código com `AURA_AUTH_REQUIRED` vazio: o comportamento atual é mantido, mas os
    arquivos sensíveis (código, `.git`, SQL) deixam de ser servidos e o CORS fica fechado.
-3. Publicar o login do front-end e criar o primeiro usuário.
+3. Publicar o login do front-end (`auth.js`, `auth.css` e o cliente `supabase-js-2.117.2.umd.js`,
+   versão fixa e servida pelo próprio site) e criar o primeiro usuário. Com `AURA_AUTH_REQUIRED`
+   vazio, o login **não aparece** e nada muda para quem usa o app; para testar com a exigência
+   desligada, abra a página com `?auth=1` (e `?auth=0` para desfazer).
+   No painel do Supabase (Authentication), antes de usar:
+   - **URL Configuration:** defina o *Site URL* do app e inclua o domínio em *Redirect URLs*
+     (usado nos e-mails de confirmação e de recuperação de senha).
+   - **Sign In / Providers:** mantenha e-mail e senha ligado e escolha se o cadastro público
+     (*Allow new users to sign up*) fica aberto ou fechado; ajuste "Confirm email" conforme a política.
+   - **Senha:** defina o tamanho mínimo em 8 (a tela de cadastro já exige 8).
 4. Atribuir as reuniões antigas (`owner_id` nulo) a um dono.
 5. Definir `SUPABASE_PUBLISHABLE_KEY` e `AURA_AUTH_REQUIRED=1`.
 

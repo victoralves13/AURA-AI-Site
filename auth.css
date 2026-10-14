@@ -1,0 +1,31 @@
+/* AURA AI — tela de login e identidade do usuário */
+@keyframes aura-reveal{to{visibility:visible}}
+/* Evita mostrar o app antes de saber se há login; se o JS falhar, o app aparece após 3 s. */
+html.aura-auth-pending body>*:not(.aura-auth){visibility:hidden;animation:aura-reveal 0s linear 3s forwards}
+
+.aura-auth{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:24px;overflow:auto;background:#020b18 radial-gradient(circle at 78% -8%,rgba(42,181,224,.16),transparent 34%);color:#e9fbff;font-family:Manrope,system-ui,sans-serif}
+.aura-auth[hidden]{display:none}
+.aura-auth-card{width:min(400px,100%);padding:32px 28px;border:1px solid rgba(105,205,230,.16);border-radius:18px;background:rgba(7,21,37,.92);box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.aura-auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;font-weight:800;letter-spacing:.04em}
+.aura-auth-brand img{width:34px;height:34px;object-fit:contain}
+.aura-auth-card h1{margin:0 0 6px;font-size:22px;line-height:1.25}
+.aura-auth-card p.aura-auth-sub{margin:0 0 20px;color:#7895a4;font-size:13px;line-height:1.55}
+.aura-auth-form{display:grid;gap:14px}
+.aura-auth-form label{display:grid;gap:6px;font-size:12px;font-weight:600;color:#a9c1c6}
+.aura-auth-form input{width:100%;padding:12px 13px;border:1px solid rgba(105,205,230,.2);border-radius:10px;background:#04101d;color:#e9fbff;font:500 14px Manrope,system-ui,sans-serif}
+.aura-auth-form input:focus-visible{outline:2px solid #62e9fa;outline-offset:1px}
+.aura-auth-submit{margin-top:4px;padding:13px 16px;border:0;border-radius:10px;background:#62e9fa;color:#03121d;font:800 14px Manrope,system-ui,sans-serif;cursor:pointer}
+.aura-auth-submit:disabled{opacity:.6;cursor:progress}
+.aura-auth-submit:focus-visible,.aura-auth-link:focus-visible,.aura-user-out:focus-visible{outline:2px solid #e9fbff;outline-offset:2px}
+.aura-auth-msg{min-height:18px;margin:0;font-size:12.5px;line-height:1.5}
+.aura-auth-msg.error{color:#ff7898}
+.aura-auth-msg.ok{color:#63e8c1}
+.aura-auth-links{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:18px;font-size:12.5px}
+.aura-auth-link{padding:0;border:0;background:none;color:#62e9fa;font:600 12.5px Manrope,system-ui,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+.aura-user-chip{display:flex;align-items:center;gap:9px;margin-left:8px;padding:5px 6px 5px 12px;border:1px solid rgba(170,220,230,.12);border-radius:11px;background:#071116;color:#a9c1c6;font:600 11px Manrope,system-ui,sans-serif}
+.aura-user-chip span{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aura-user-out{padding:7px 11px;border:1px solid rgba(170,220,230,.16);border-radius:8px;background:transparent;color:#eaf8fa;font:700 11px Manrope,system-ui,sans-serif;cursor:pointer}
+.aura-user-out:hover{border-color:#62e9fa}
+@media (max-width:620px){.aura-user-chip span{display:none}}
+@media (prefers-reduced-motion:reduce){html.aura-auth-pending body>*:not(.aura-auth){animation-duration:0s}}
