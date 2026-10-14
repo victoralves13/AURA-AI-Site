@@ -92,3 +92,31 @@ O código já contém a arquitetura cloud e os endpoints:
 - `/api/meetings`
 
 A validação real da API e o primeiro teste com a **REUNIÃO CEJAM** ficam para a etapa de validação, depois da configuração das variáveis de ambiente.
+
+## Autenticação e isolamento (Etapa 2)
+
+Novas variáveis (nenhuma é segredo, exceto as que já existiam):
+
+```text
+AURA_AUTH_REQUIRED=            # 1 para exigir login em todos os endpoints de dados
+SUPABASE_PUBLISHABLE_KEY=      # chave pública (publishable/anon) do projeto — feita para o navegador
+AURA_ALLOWED_ORIGINS=          # opcional; vazio = CORS fechado (mesma origem)
+AURA_MAX_ANALYSES_PER_HOUR=30  # limite de análises por usuário/hora (custo de IA)
+```
+
+Ordem segura de ativação (cada passo é reversível):
+
+1. Aplicar as migrações de `supabase/migrations/` (aditivas). Rollback em `supabase/rollbacks/`
+   (rode a parte 2 antes da parte 1).
+2. Publicar o código com `AURA_AUTH_REQUIRED` vazio: o comportamento atual é mantido, mas os
+   arquivos sensíveis (código, `.git`, SQL) deixam de ser servidos e o CORS fica fechado.
+3. Publicar o login do front-end e criar o primeiro usuário.
+4. Atribuir as reuniões antigas (`owner_id` nulo) a um dono.
+5. Definir `SUPABASE_PUBLISHABLE_KEY` e `AURA_AUTH_REQUIRED=1`.
+
+Com a exigência ligada, o navegador envia o JWT do usuário; o backend o valida no Supabase Auth e
+grava/lê reuniões **com o token do usuário**, então o RLS do banco é a barreira final. A chave de
+serviço fica restrita a criar organizações, gravar auditoria e assinar URLs de storage.
+
+Testes: `python -m unittest discover -s tests` (backend) e
+`npm install --no-save @electric-sql/pglite && node tests/db/rls.test.mjs` (migrações + RLS).

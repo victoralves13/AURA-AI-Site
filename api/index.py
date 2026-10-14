@@ -6,9 +6,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 try:
@@ -24,9 +23,14 @@ ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
 if str(API_DIR) not in os.sys.path:
     os.sys.path.insert(0, str(API_DIR))
+import security as sec
+
 app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
 handler = app
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
+# Para liberar origens específicas: AURA_ALLOWED_ORIGINS="https://app.exemplo.com,https://outra.com"
+if sec.allowed_origins():
+    app.add_middleware(CORSMiddleware, allow_origins=sec.allowed_origins(), allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
 
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
 AUDIO_BUCKET = os.getenv("AURA_AUDIO_BUCKET", "aura-audio")
@@ -36,12 +40,16 @@ class AudioUploadRequest(BaseModel):
     file_name: str
     content_type: str = "audio/mpeg"
     size_bytes: int = 0
+    org_id: str | None = None
 
 class StoredAudioRequest(BaseModel):
     path: str
     file_name: str = "reuniao"
     client_name: str = "Cliente não identificado"
     context: str = "Outro"
+
+class OrgCreateRequest(BaseModel):
+    name: str
 
 def _clean(value: str | None) -> str:
     return re.sub(r"\s+", " ", value or "").strip()
@@ -60,12 +68,18 @@ def _supabase() -> Client:
         raise RuntimeError("Supabase server credentials não configuradas.")
     return create_client(url, key)
 
-def _supabase_request(method: str, path: str, payload=None):
+def _supabase_request(method: str, path: str, payload=None, user=None):
+    """PostgREST. Com `user`, usa o JWT dele (o RLS do banco vale); sem `user`, usa a chave de serviço."""
     url, key = os.getenv("SUPABASE_URL"), (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
-    if not url or not key:
-        return None
     import urllib.request
-    headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json", "Prefer": "return=representation"}
+    if user is not None:
+        if not url or not sec.publishable_key():
+            raise RuntimeError("Supabase não configurado para autenticação de usuários.")
+        headers = {**sec.rest_headers(user), "Content-Type": "application/json"}
+    else:
+        if not url or not key:
+            return None
+        headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json", "Prefer": "return=representation"}
     req = urllib.request.Request(url.rstrip("/") + "/rest/v1/" + path, method=method, headers=headers)
     if payload is not None:
         req.data = json.dumps(payload, ensure_ascii=False).encode()
@@ -82,13 +96,20 @@ def _supabase_request(method: str, path: str, payload=None):
     except Exception as exc:
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
-def _save_meeting(data: dict):
+def _save_meeting(data: dict, user=None):
     fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","topics","financial_data","participants","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
+    if user is not None:
+        # Dono e organização vêm do token verificado, nunca do corpo da requisição.
+        org_id = data.get("org_id") or None
+        payload["owner_id"] = user.id
+        payload["org_id"] = org_id
+        visibility = data.get("visibility")
+        payload["visibility"] = visibility if org_id and visibility in ("private", "team", "org") else "private"
 
     try:
-        result = _supabase_request("POST", "meetings", payload)
+        result = _supabase_request("POST", "meetings", payload, user=user)
     except RuntimeError as exc:
         # PostgREST can briefly serve a stale schema cache immediately after a
         # migration. If that happens for the newly-added JSONB columns, keep
@@ -111,7 +132,7 @@ def _save_meeting(data: dict):
                 merged_evidence.append(item)
         fallback["evidence"] = merged_evidence
 
-        result = _supabase_request("POST", "meetings", fallback)
+        result = _supabase_request("POST", "meetings", fallback, user=user)
 
         # The response may not expose the newly-added columns during a stale
         # cache window. Rehydrate them in the API response so the frontend can
@@ -151,7 +172,7 @@ def _download_stored_audio(path: str, target: str):
     import urllib.request
     urllib.request.urlretrieve(url, target)
 
-def _build_result(transcript: str, client_name: str, file_name: str, source_type: str, context: str = "Outro", transcription_meta: dict | None = None, is_demo: bool = False, demo_scenario: str | None = None, meeting_title: str | None = None, analysis_transcript: str | None = None):
+def _build_result(transcript: str, client_name: str, file_name: str, source_type: str, context: str = "Outro", transcription_meta: dict | None = None, is_demo: bool = False, demo_scenario: str | None = None, meeting_title: str | None = None, analysis_transcript: str | None = None, user=None, org_id: str | None = None):
     from openai_engine import analyze_transcript, build_product_fields
     analysis = analyze_transcript(analysis_transcript or transcript, context=context)
     fields = build_product_fields(analysis)
@@ -163,7 +184,7 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     if transcription_meta:
         result["transcription"] = transcription_meta
     result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
-    saved = _save_meeting({**result, "source_type": source_type})
+    saved = _save_meeting({**result, "source_type": source_type, "org_id": org_id}, user)
     if saved.get("meeting"):
         result["id"] = saved["meeting"].get("id")
         result["created_at"] = saved["meeting"].get("created_at")
@@ -172,53 +193,107 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "aura-ai", "version": "1.0.0-cloud", "engine": "OpenAI + AURA Intelligence", "openai_configured": bool(os.getenv("OPENAI_API_KEY")), "supabase_configured": bool(os.getenv("SUPABASE_URL") and (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY"))), "audio_storage": AUDIO_BUCKET}
+    return {"ok": True, "service": "aura-ai", "version": "1.0.0-cloud", "engine": "OpenAI + AURA Intelligence", "openai_configured": bool(os.getenv("OPENAI_API_KEY")), "supabase_configured": bool(os.getenv("SUPABASE_URL") and (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY"))), "audio_storage": AUDIO_BUCKET, "auth_required": sec.auth_required(), "auth_configured": bool(sec.supabase_url() and sec.publishable_key())}
+
+@app.get("/api/config")
+def public_config():
+    # Valores públicos por natureza (a chave "publishable" do Supabase é feita para o navegador).
+    return {"auth_required": sec.auth_required(), "supabase_url": sec.supabase_url() or None, "supabase_publishable_key": sec.publishable_key() or None}
+
+@app.get("/api/me")
+def me(user=Depends(sec.current_user)):
+    if user is None:
+        return {"ok": True, "auth_required": False, "user": None, "organizations": []}
+    try:
+        rows = sec.user_rest(user, "GET", "memberships?select=role,org_id,organizations(id,name)") or []
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível carregar suas organizações.") from exc
+    orgs = [{"id": r["org_id"], "name": (r.get("organizations") or {}).get("name"), "role": r.get("role")} for r in rows]
+    return {"ok": True, "auth_required": True, "user": {"id": user.id, "email": user.email}, "organizations": orgs}
+
+@app.post("/api/orgs")
+def create_org(payload: OrgCreateRequest, user=Depends(sec.current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Autenticação necessária para criar organizações.")
+    name = _clean(payload.name)
+    if not 1 <= len(name) <= 120:
+        raise HTTPException(status_code=400, detail="O nome da organização deve ter entre 1 e 120 caracteres.")
+    try:
+        org_id = sec.service_rest("POST", "organizations", {"name": name, "created_by": user.id})[0]["id"]
+        try:
+            sec.service_rest("POST", "memberships", {"org_id": org_id, "user_id": user.id, "role": "admin"})
+        except Exception:
+            sec.service_rest("DELETE", f"organizations?id=eq.{org_id}")
+            raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível criar a organização.") from exc
+    sec.audit(user, "org.create", org_id, "organization", org_id)
+    return {"ok": True, "organization": {"id": org_id, "name": name, "role": "admin"}}
 
 @app.get("/api/meetings")
-def meetings(limit: int = 50):
+def meetings(limit: int = 50, user=Depends(sec.current_user)):
     limit = max(1, min(limit, 100))
     try:
-        result = _supabase_request("GET", f"meetings?select=*&order=created_at.desc&limit={limit}")
-        return {"ok": True, "persisted": result is not None, "meetings": result or []}
+        result = _supabase_request("GET", f"meetings?select=*&order=created_at.desc&limit={limit}", user=user)
+        return {"ok": True, "persisted": result is not None, "meetings": sec.redact_meetings(result or [], user)}
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 @app.post("/api/meetings")
-def create_meeting(payload: dict):
+def create_meeting(payload: dict, user=Depends(sec.current_user)):
     if not payload.get("transcript"):
         raise HTTPException(status_code=400, detail="transcript é obrigatório")
+    sec.require_org_permission(user, payload.get("org_id"), "meetings.write")
     try:
-        return {"ok": True, **_save_meeting(payload)}
+        saved = _save_meeting(payload, user)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    sec.audit(user, "meeting.create", payload.get("org_id"), "meeting", (saved.get("meeting") or {}).get("id"))
+    return {"ok": True, **saved}
 
 @app.post("/api/analyze-transcript")
-def analyze_transcript_endpoint(payload: dict):
+def analyze_transcript_endpoint(payload: dict, user=Depends(sec.current_user)):
     transcript = _clean_transcript(payload.get("transcript"))
     if len(transcript) < 4:
         raise HTTPException(status_code=400, detail="transcript é obrigatório")
+    org_id = payload.get("org_id") or None
+    sec.require_org_permission(user, org_id, "meetings.write")
+    sec.enforce_usage_limit(user)
     try:
-        return _build_result(transcript, _clean(payload.get("client_name")), payload.get("meeting_title") or "transcript", "transcript", _clean(payload.get("context")) or "Outro", is_demo=bool(payload.get("is_demo")), demo_scenario=_clean(payload.get("demo_scenario")) or None, meeting_title=_clean(payload.get("meeting_title")) or "Análise por transcrição")
+        result = _build_result(transcript, _clean(payload.get("client_name")), payload.get("meeting_title") or "transcript", "transcript", _clean(payload.get("context")) or "Outro", is_demo=bool(payload.get("is_demo")), demo_scenario=_clean(payload.get("demo_scenario")) or None, meeting_title=_clean(payload.get("meeting_title")) or "Análise por transcrição", user=user, org_id=org_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    sec.audit(user, "analysis.transcript", org_id, "meeting", result.get("id"))
+    return result
 
 @app.post("/api/audio-upload-url")
-def audio_upload_url(payload: AudioUploadRequest):
+def audio_upload_url(payload: AudioUploadRequest, user=Depends(sec.current_user)):
     if payload.size_bytes <= 0 or payload.size_bytes > MAX_AUDIO_BYTES:
         raise HTTPException(status_code=413, detail="Áudio deve ter até 100 MB.")
-    if payload.content_type not in AUDIO_ALLOWED and not payload.file_name.lower().endswith((".mp3",".wav",".m4a",".mp4",".webm",".ogg")):
+    if payload.content_type not in AUDIO_ALLOWED and not payload.file_name.lower().endswith(sec.AUDIO_EXTENSIONS):
         raise HTTPException(status_code=400, detail="Formato de áudio não suportado.")
-    suffix = Path(payload.file_name).suffix.lower() or ".mp3"
-    path = f"meetings/{uuid.uuid4().hex}{suffix}"
+    org_id = payload.org_id or None
+    sec.require_org_permission(user, org_id, "meetings.write")
+    suffix = sec.audio_suffix(payload.file_name)
+    if user is not None:
+        path = sec.audio_path_for(user, org_id, uuid.uuid4().hex, suffix)
+    else:
+        path = f"meetings/{uuid.uuid4().hex}{suffix}"
     try:
         signed_url, token = _create_upload_url(path)
-        return {"ok": True, "bucket": AUDIO_BUCKET, "path": path, "signed_url": signed_url, "token": token}
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    sec.audit(user, "audio.upload_url", org_id, "audio", path)
+    return {"ok": True, "bucket": AUDIO_BUCKET, "path": path, "signed_url": signed_url, "token": token}
 
 @app.post("/api/analyze-stored-audio")
-def analyze_stored_audio(payload: StoredAudioRequest):
-    if not payload.path.startswith("meetings/"):
+def analyze_stored_audio(payload: StoredAudioRequest, user=Depends(sec.current_user)):
+    org_id = None
+    if user is not None:
+        # O caminho precisa pertencer ao usuário (users/<id>/...) ou a uma organização dele (orgs/<id>/...).
+        org_id = sec.authorize_audio_path(user, payload.path)
+        sec.enforce_usage_limit(user)
+    elif not payload.path.startswith("meetings/"):
         raise HTTPException(status_code=400, detail="Caminho de áudio inválido.")
     temp_path = None
     try:
@@ -246,7 +321,9 @@ def analyze_stored_audio(payload: StoredAudioRequest):
         if timed_transcript:
             meta = {**meta, "plain_text": transcript}
         display_transcript = timed_transcript or transcript
-        return _build_result(display_transcript, _clean(payload.client_name), payload.file_name, "audio", _clean(payload.context) or "Outro", meta, meeting_title=payload.file_name, analysis_transcript=timed_transcript or transcript)
+        result = _build_result(display_transcript, _clean(payload.client_name), payload.file_name, "audio", _clean(payload.context) or "Outro", meta, meeting_title=payload.file_name, analysis_transcript=timed_transcript or transcript, user=user, org_id=org_id)
+        sec.audit(user, "analysis.audio", org_id, "meeting", result.get("id"))
+        return result
     except HTTPException:
         raise
     except Exception as exc:
@@ -258,4 +335,5 @@ def analyze_stored_audio(payload: StoredAudioRequest):
             except OSError:
                 pass
 
-app.mount("/", StaticFiles(directory=ROOT, html=True), name="frontend")
+# Serve só o front-end público (html/css/js/imagens na raiz); nunca api/, supabase/, .git, .env etc.
+app.mount("/", sec.PublicFiles(directory=ROOT, html=True), name="frontend")
