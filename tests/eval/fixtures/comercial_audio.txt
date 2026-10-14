@@ -1,0 +1,6 @@
+[00:04] [A] Bom dia. Hoje quero falar do prazo de implantação e do orçamento.
+[00:15] [B] O prazo de implantação é o ponto que mais me preocupa. Se não começarmos até o dia 15, perdemos a janela do cliente.
+[00:34] [A] Entendi. O orçamento previsto é de R$ 2 milhões para o próximo ano.
+[00:47] [B] Esse valor está aprovado pela diretoria, mas só se o piloto funcionar bem nas duas primeiras unidades.
+[01:02] [A] Então fechamos assim: eu envio a proposta revisada na terça-feira.
+[01:10] [B] Perfeito. Eu confirmo com a diretoria e retorno na quinta.

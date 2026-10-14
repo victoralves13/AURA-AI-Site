@@ -1,0 +1,5 @@
+{
+  "context": "Operacional",
+  "must_find": ["checklist", "atraso", "120 mil"],
+  "must_not": ["demissão", "fornecedor", "multa", "diretoria"]
+}

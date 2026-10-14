@@ -1,0 +1,5 @@
+{
+  "context": "Relacionamento",
+  "must_find": ["responsável", "canal", "urgentes", "confiança"],
+  "must_not": ["cancelar", "reclamação formal", "multa", "renovação"]
+}

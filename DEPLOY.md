@@ -132,6 +132,35 @@ serviço fica restrita a criar organizações, gravar auditoria e assinar URLs d
 Testes: `python -m unittest discover -s tests` (backend) e
 `npm install --no-save @electric-sql/pglite && node tests/db/rls.test.mjs` (migrações + RLS).
 
+### Análise v2: dito × inferido e conferência das evidências (Etapa 3)
+
+A IA agora marca cada achado como **dito** (afirmado na conversa) ou **inferido** (conclusão dela, com
+justificativa) e cita trechos literais. Depois da resposta, o backend **confere cada citação contra a
+transcrição** (`api/verification.py`, código determinístico, sem custo extra de IA):
+
+- **Citação:** `localizada`, `parcial` (parte do trecho ou paráfrase muito próxima) ou `nao_localizada`.
+- **Horário e interlocutor:** vêm da linha da transcrição onde a citação aparece; o que a IA disser
+  de diferente é corrigido. Sem marcações na transcrição, nenhum horário/interlocutor é aceito.
+- **Responsável e prazo:** só valem se foram ditos na transcrição; senão ficam vazios.
+- **Valores:** o número do valor financeiro precisa aparecer na citação (`amount_check`).
+- **Pontuação de risco/oportunidade:** evidência `nao_localizada` não pesa; `parcial` e `inferido`
+  valem metade. Os itens inventados **continuam salvos**, só marcados (`evidence_check`).
+- Se a resposta estruturada da IA não validar, há UMA nova tentativa com o contrato anterior
+  (`analysis_version = 1`). Falhas de API (créditos, limite, rede) não disparam essa nova tentativa.
+
+Migração `20261014140000_etapa3_analise_v2.sql` (aditiva): `analysis_version`, `decisions_detail`,
+`actions_detail` e `evidence_summary`. Reuniões já salvas ficam como versão 1. O backend funciona
+com ou sem a migração (sem ela, grava o restante e devolve tudo na resposta).
+
+Atenção ao comparar resultados: os níveis de risco podem ficar **mais baixos** que antes, porque
+evidências que não existem na transcrição deixaram de somar. As telas ainda não exibem os selos
+(chegam na fase 3.2); até lá o dado já está salvo e conferido.
+
+Avaliar a qualidade real da IA (gasta crédito; a chave só na janela do terminal):
+`python tests/eval/run_eval.py --dry` valida os exemplos sem custo; sem `--dry` roda as 3 transcrições
+de `tests/eval/fixtures/` e mostra % de evidências conferidas, inferências marcadas, fatos esperados
+encontrados e afirmações sem base. Mede conferibilidade, não substitui avaliação humana.
+
 ### Organizações, papéis e convites
 
 Na interface (com o login ativo): o seletor "Espaço" no cabeçalho alterna entre o **espaço pessoal**

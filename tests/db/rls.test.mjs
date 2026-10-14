@@ -54,6 +54,7 @@ await bootstrap();
 await db.exec(read('migrations/20261014120000_etapa2_identidade_organizacoes.sql'));
 await db.exec(read('migrations/20261014120100_etapa2_reunioes_isolamento.sql'));
 await db.exec(read('migrations/20261014130000_etapa2_acesso_exige_membro.sql'));
+await db.exec(read('migrations/20261014140000_etapa3_analise_v2.sql'));
 console.log('migrações aplicadas sem erro');
 await seed();
 
@@ -138,16 +139,34 @@ check('gestor continua vendo as reuniões do ex-membro (conteúdo da empresa)', 
 await db.exec(`insert into public.memberships(org_id,user_id,role) values ('${X}','${C}','member')`);
 check('ao voltar à org, recupera o acesso às próprias reuniões', (await seenAsC()) >= 1);
 
+console.log('\n== análise v2 (migração 4) ==');
+const cols = (await db.query(`select column_name, column_default, is_nullable from information_schema.columns where table_schema='public' and table_name='meetings' and column_name in ('analysis_version','decisions_detail','actions_detail','evidence_summary') order by 1`)).rows;
+check('as 4 colunas novas existem e não aceitam nulo', cols.length === 4 && cols.every(c => c.is_nullable === 'NO'), JSON.stringify(cols));
+const old = (await db.query(`select count(*) n, count(*) filter (where analysis_version = 1) v1, count(*) filter (where decisions_detail = '[]'::jsonb and actions_detail = '[]'::jsonb and evidence_summary = '{}'::jsonb) vazias from public.meetings`)).rows[0];
+check('reuniões já salvas ficam como versão 1, com detalhes vazios', Number(old.n) > 0 && old.n === old.v1 && old.n === old.vazias, JSON.stringify(old));
+await db.exec(`insert into public.meetings(id,transcript,owner_id) values ('${M(9).replace(/9$/, 'b')}','sem colunas novas','${E}')`);
+const dflt = (await db.query(`select analysis_version v, decisions_detail d, actions_detail a, evidence_summary s from public.meetings where id='${M(9).replace(/9$/, 'b')}'`)).rows[0];
+check('inserir sem as colunas novas usa os padrões (v1, listas e resumo vazios)', dflt.v === 1 && JSON.stringify(dflt.d) === '[]' && JSON.stringify(dflt.a) === '[]' && JSON.stringify(dflt.s) === '{}', JSON.stringify(dflt));
+await db.exec(`insert into public.meetings(id,transcript,owner_id,org_id,visibility,analysis_version,decisions_detail,evidence_summary) values ('${M('a')}','v2','${E}',null,'private',2,'[{"description":"d","evidence_check":"localizada"}]'::jsonb,'{"total":1,"localizada":1}'::jsonb)`);
+check('reunião v2 guarda detalhes e resumo da conferência', await as(E, async () => (await db.query(`select analysis_version v, decisions_detail->0->>'evidence_check' c, evidence_summary->>'localizada' l from public.meetings where id='${M('a')}'`)).rows[0]).then(r => r && r.v === 2 && r.c === 'localizada' && r.l === '1'));
+const nul = await tryq(E, "update public.meetings set decisions_detail = null where owner_id = $1", [E]);
+check('NÃO aceita nulo nas colunas jsonb novas', !nul.ok, JSON.stringify(nul));
+check('o RLS continua valendo para as colunas novas (outro usuário não vê)', (await ids(D)).split(',').every(x => x !== 'a'));
+
 console.log('\n== rollback e reaplicação ==');
+await db.exec(read('rollbacks/20261014140000_etapa3_analise_v2.down.sql'));
 await db.exec(read('rollbacks/20261014130000_etapa2_acesso_exige_membro.down.sql'));
 await db.exec(read('rollbacks/20261014120100_etapa2_reunioes_isolamento.down.sql'));
 await db.exec(read('rollbacks/20261014120000_etapa2_identidade_organizacoes.down.sql'));
 const left = (await db.query(`select (select count(*) from information_schema.tables where table_schema='public' and table_name<>'meetings') as t, (select count(*) from information_schema.columns where table_name='meetings' and column_name in ('owner_id','org_id','client_id','team_id','visibility')) as c, (select count(*) from pg_namespace where nspname='aura_private') as s, (select count(*) from public.meetings) as m`)).rows[0];
 check('rollback remove tabelas, colunas e schema novos', Number(left.t) === 0 && Number(left.c) === 0 && Number(left.s) === 0, JSON.stringify(left));
 check('rollback preserva as reuniões existentes', Number(left.m) >= 7, JSON.stringify(left));
+const gone = (await db.query("select count(*) c from information_schema.columns where table_name='meetings' and column_name in ('analysis_version','decisions_detail','actions_detail','evidence_summary')")).rows[0];
+check('rollback remove as colunas da análise v2', Number(gone.c) === 0, JSON.stringify(gone));
 await db.exec(read('migrations/20261014120000_etapa2_identidade_organizacoes.sql'));
 await db.exec(read('migrations/20261014120100_etapa2_reunioes_isolamento.sql'));
 await db.exec(read('migrations/20261014130000_etapa2_acesso_exige_membro.sql'));
+await db.exec(read('migrations/20261014140000_etapa3_analise_v2.sql'));
 check('migrações reaplicam após rollback', true);
 console.log(`\n${pass} aprovados, ${fail} reprovados`);
 process.exit(fail ? 1 : 0);

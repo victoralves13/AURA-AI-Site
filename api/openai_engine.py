@@ -6,10 +6,15 @@ from pathlib import Path
 from typing import Literal
 
 from openai import OpenAI, RateLimitError
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+
+import verification
 
 
 EvidenceStrength = Literal["alta", "média", "baixa"]
+# "dito": afirmado literalmente na conversa. "inferido": conclusão da IA a partir de trechos citados.
+Basis = Literal["dito", "inferido"]
+Confidence = Literal["alta", "média", "baixa"]
 
 
 class EvidenceItem(BaseModel):
@@ -17,12 +22,19 @@ class EvidenceItem(BaseModel):
     evidence: str
     evidence_strength: EvidenceStrength
     timestamp: str | None = None
+    basis: Basis = "dito"
+    inference_rationale: str | None = None
+    speaker: str | None = None
 
 
 class NextAction(BaseModel):
     action: str
     evidence: str
     evidence_strength: EvidenceStrength
+    timestamp: str | None = None
+    speaker: str | None = None
+    owner: str | None = None
+    deadline: str | None = None
 
 
 class InsightItem(BaseModel):
@@ -32,6 +44,31 @@ class InsightItem(BaseModel):
     timestamp: str | None = None
     category: Literal["risco", "oportunidade", "sinal", "relacionamento", "comercial", "operacional", "financeiro", "decisão", "objeção", "ação"]
     impact_score: int = 50
+    basis: Basis = "dito"
+    inference_rationale: str | None = None
+    speaker: str | None = None
+    confidence: Confidence = "média"
+    confidence_reason: str | None = None
+
+
+class DecisionItem(BaseModel):
+    description: str
+    evidence: str
+    timestamp: str | None = None
+    speaker: str | None = None
+    basis: Basis = "dito"
+    inference_rationale: str | None = None
+
+
+class ActionItem(BaseModel):
+    description: str
+    evidence: str
+    timestamp: str | None = None
+    speaker: str | None = None
+    owner: str | None = None
+    deadline: str | None = None
+    basis: Basis = "dito"
+    inference_rationale: str | None = None
 
 
 class FinancialItem(BaseModel):
@@ -45,7 +82,28 @@ class FinancialItem(BaseModel):
     timestamp: str | None = None
     period: str | None = None
 
+
 class AURAAnalysis(BaseModel):
+    """Contrato v2: decisões e ações com evidência; achados marcados como dito/inferido."""
+    client_name: str | None = None
+    summary: str
+    main_topics: list[str]
+    decisions: list[DecisionItem]
+    pending_actions: list[ActionItem]
+    risks: list[EvidenceItem]
+    opportunities: list[EvidenceItem]
+    objections: list[str]
+    important_signals: list[EvidenceItem]
+    insights: list[InsightItem]
+    financial_data: list[FinancialItem]
+    next_actions: list[NextAction]
+    participants: list[str]
+    intelligence_type: str
+    sentiment: str
+
+
+class AURAAnalysisV1(BaseModel):
+    """Contrato v1 (reserva): decisões e pendências como texto simples."""
     client_name: str | None = None
     summary: str
     main_topics: list[str]
@@ -63,12 +121,16 @@ class AURAAnalysis(BaseModel):
     sentiment: str
 
 
+def analysis_version(analysis) -> int:
+    return 1 if isinstance(analysis, AURAAnalysisV1) else 2
+
+
 ANALYSIS_MODEL = os.getenv("AURA_OPENAI_ANALYSIS_MODEL", "gpt-6-sol")
 TRANSCRIPTION_MODEL = os.getenv("AURA_OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-transcribe-diarize")
 MAX_OPENAI_AUDIO_BYTES = 25 * 1024 * 1024
 
 
-SYSTEM_PROMPT = """
+SYSTEM_PROMPT_V1 = """
 Você é o motor de inteligência do AURA AI.
 
 Se a conversa mencionar explicitamente o nome de uma empresa, conta ou cliente, retorne esse nome em client_name. Não invente nomes; se não houver identificação explícita, use null.
@@ -118,25 +180,40 @@ REGRAS:
 """
 
 
+SYSTEM_PROMPT_V2_ADDENDUM = """
+
+REGRAS ADICIONAIS (contrato v2 — dito x inferido, citações e interlocutores):
+- Todo achado (risco, oportunidade, sinal, insight, decisão, ação) tem "basis":
+  - "dito": o conteúdo foi afirmado explicitamente na conversa. "evidence" DEVE ser um trecho LITERAL copiado da transcrição,
+    sem parafrasear, sem corrigir e sem juntar falas de momentos diferentes. Use "…" apenas para omitir partes do mesmo trecho.
+  - "inferido": conclusão SUA a partir de um ou mais trechos. "evidence" continua sendo o(s) trecho(s) literal(is) que a sustentam
+    e "inference_rationale" é OBRIGATÓRIA (1 a 2 frases explicando o raciocínio, sem fatos novos). Nunca apresente inferência como fato.
+- Se você não consegue citar um trecho literal, NÃO registre o achado.
+- "speaker": identificador do interlocutor exatamente como aparece na transcrição ([A], Participante A, um nome escrito ali) ou null.
+  Não invente nomes nem atribua falas a quem não as disse.
+- Em insights, informe "confidence" (alta, média, baixa) e "confidence_reason" (uma frase curta). Confiança baixa é aceitável; omitir a incerteza não é.
+- decisions: cada decisão é um objeto com description, evidence (trecho literal), timestamp, speaker e basis. Só é decisão com confirmação explícita.
+- pending_actions: cada ação é um objeto. "owner" e "deadline" só quando ditos de forma explícita; caso contrário, null.
+- next_actions: "owner" e "deadline" seguem a mesma regra (null quando não ditos).
+"""
+SYSTEM_PROMPT = SYSTEM_PROMPT_V1 + SYSTEM_PROMPT_V2_ADDENDUM
+
+
 def _client() -> OpenAI:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY não configurada no ambiente.")
     return OpenAI(max_retries=0)
 
 
-def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
-    text = (transcript or "").strip()
-    if len(text) < 4:
-        raise ValueError("Transcrição vazia.")
-
+def _parse(schema, prompt: str, context: str, text: str):
     try:
         response = _client().responses.parse(
             model=ANALYSIS_MODEL,
             input=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": f"CONTEXTO DA ANÁLISE: {context or 'Outro'}\n\nTRANSCRIÇÃO:\n{text}"},
             ],
-            text_format=AURAAnalysis,
+            text_format=schema,
         )
     except RateLimitError as exc:
         message = str(exc)
@@ -146,11 +223,27 @@ def analyze_transcript(transcript: str, context: str = "Outro") -> AURAAnalysis:
                 "para o AURA continuar processando análises."
             ) from exc
         raise
-
     parsed = response.output_parsed
     if parsed is None:
         raise RuntimeError("A OpenAI não retornou uma análise estruturada.")
     return parsed
+
+
+def analyze_transcript(transcript: str, context: str = "Outro"):
+    """Analisa com o contrato v2. Se a resposta estruturada não validar, tenta UMA vez o contrato v1.
+    Erros de API (limite, créditos, rede) nunca disparam a nova tentativa."""
+    text = (transcript or "").strip()
+    if len(text) < 4:
+        raise ValueError("Transcrição vazia.")
+    try:
+        return _parse(AURAAnalysis, SYSTEM_PROMPT, context, text)
+    except (ValidationError, RuntimeError) as exc:
+        if isinstance(exc, RuntimeError) and "Créditos" in str(exc):
+            raise
+        if isinstance(exc, RuntimeError) and "não retornou uma análise" not in str(exc):
+            raise
+        return _parse(AURAAnalysisV1, SYSTEM_PROMPT_V1, context, text)
+
 
 
 def _transcribe_one(path: str, prompt: str = "", offset_seconds: float = 0) -> tuple[str, list[dict]]:
@@ -269,14 +362,89 @@ def transcribe_audio(path: str) -> tuple[str, dict]:
         }
 
 
-def evidence_score(items: list[EvidenceItem] | list[NextAction]) -> int:
-    weights = {"alta": 34, "média": 22, "baixa": 10}
-    return min(95, sum(weights.get(item.evidence_strength, 0) for item in items))
+# ---------------------------------------------------------------------------
+# Pontuação e campos de produto (com evidências conferidas contra a transcrição)
+# ---------------------------------------------------------------------------
+STRENGTH_WEIGHT = {"alta": 34, "média": 22, "baixa": 10}
+# Evidência não localizada não pesa; parcial vale metade; inferência vale metade de um fato dito.
+CHECK_FACTOR = {
+    verification.LOCALIZADA: 1.0,
+    verification.PARCIAL: 0.5,
+    verification.NAO_LOCALIZADA: 0.0,
+    verification.NAO_VERIFICADA: 1.0,  # sem transcrição para conferir (comportamento anterior)
+}
+BASIS_FACTOR = {"dito": 1.0, "inferido": 0.5}
 
 
-def build_product_fields(analysis: AURAAnalysis) -> dict:
-    risk_score = evidence_score(analysis.risks)
-    opportunity_score = evidence_score(analysis.opportunities)
+def evidence_score(items: list[dict]) -> int:
+    total = 0.0
+    for item in items:
+        total += (
+            STRENGTH_WEIGHT.get(item.get("evidence_strength"), 0)
+            * CHECK_FACTOR.get(item.get("evidence_check") or verification.NAO_VERIFICADA, 1.0)
+            * BASIS_FACTOR.get(item.get("basis") or "dito", 1.0)
+        )
+    return min(95, round(total))
+
+
+def _kept(items: list[dict]) -> list[dict]:
+    """Itens cuja evidência existe na transcrição (os demais continuam salvos, mas marcados)."""
+    return [x for x in items if x.get("evidence_check") != verification.NAO_LOCALIZADA]
+
+
+def _plain_item(text: str) -> dict:
+    return {"description": text, "evidence": None, "evidence_check": verification.NAO_VERIFICADA,
+            "basis": None, "timestamp": None, "speaker": None, "corrections": []}
+
+
+def _clear_v2_fields(items: list[dict]) -> list[dict]:
+    """Contrato v1 não pedia dito/inferido: não se mostra um valor padrão como se tivesse sido classificado."""
+    for item in items:
+        for key in ("basis", "inference_rationale", "confidence", "confidence_reason"):
+            if key in item:
+                item[key] = None
+    return items
+
+
+def _evidence_summary(groups: list[list[dict]]) -> dict:
+    items = [i for group in groups for i in group if i.get("evidence")]
+    count = lambda check: sum(1 for i in items if i.get("evidence_check") == check)
+    return {
+        "total": len(items),
+        "localizada": count(verification.LOCALIZADA),
+        "parcial": count(verification.PARCIAL),
+        "nao_localizada": count(verification.NAO_LOCALIZADA),
+        "nao_verificada": count(verification.NAO_VERIFICADA),
+        "inferido": sum(1 for i in items if i.get("basis") == "inferido"),
+        "corrigidos": sum(1 for i in items if i.get("corrections")),
+    }
+
+
+def build_product_fields(analysis, transcript: str | None = None) -> dict:
+    v1 = isinstance(analysis, AURAAnalysisV1)
+    data = analysis.model_dump()
+    tr = verification.Transcript(transcript) if transcript else None
+    ann = lambda items: [verification.annotate_item(i, tr) for i in items]
+    maybe_v1 = lambda items: _clear_v2_fields(items) if v1 else items
+
+    risks = maybe_v1(ann(data["risks"]))
+    opportunities = maybe_v1(ann(data["opportunities"]))
+    signals = maybe_v1(ann(data["important_signals"]))
+    insights = maybe_v1(ann(data["insights"]))
+    next_actions = ann(data["next_actions"])
+    if v1:
+        decisions = [_plain_item(text) for text in data["decisions"]]
+        actions = [_plain_item(text) for text in data["pending_actions"]]
+    else:
+        decisions = ann(data["decisions"])
+        actions = ann(data["pending_actions"])
+    financial = []
+    for item in ann(data["financial_data"]):
+        item["amount_check"] = verification.amount_check(float(item["amount"]), item["evidence"]) if item.get("evidence") else "nao_verificavel"
+        financial.append(item)
+
+    risk_score = evidence_score(risks)
+    opportunity_score = evidence_score(opportunities)
 
     if risk_score >= 60:
         risk = "Alto"
@@ -303,80 +471,101 @@ def build_product_fields(analysis: AURAAnalysis) -> dict:
     else:
         impact = "Qualificação"
 
+    first_action = next(iter(_kept(next_actions)), None)
     next_move = (
-        analysis.next_actions[0].action
-        if analysis.next_actions
+        first_action["action"]
+        if first_action
         else "Definir o próximo movimento a partir das decisões e pendências identificadas."
     )
 
-    why = analysis.summary
-    if analysis.risks:
-        why = analysis.risks[0].description
-    elif analysis.opportunities:
-        why = analysis.opportunities[0].description
+    kept_risks, kept_opps = _kept(risks), _kept(opportunities)
+    why = data["summary"]
+    if kept_risks:
+        why = kept_risks[0]["description"]
+    elif kept_opps:
+        why = kept_opps[0]["description"]
 
     return {
-        "client_name": analysis.client_name,
-        "summary": analysis.summary,
-        "topics": analysis.main_topics[:10],
+        "client_name": data["client_name"],
+        "summary": data["summary"],
+        "topics": data["main_topics"][:10],
         "opportunity": opportunity,
         "opportunity_score": opportunity_score,
-        "opportunity_signals": [x.description for x in analysis.opportunities[:4]],
+        "opportunity_signals": [x["description"] for x in kept_opps[:4]],
         "risk": risk,
         "risk_score": risk_score,
-        "risk_signals": [x.description for x in analysis.risks[:4]],
+        "risk_signals": [x["description"] for x in kept_risks[:4]],
         "priority": priority,
         "impact": impact,
         "why_it_matters": why,
-        "intent": analysis.intelligence_type,
-        "objections": analysis.objections[:5],
+        "intent": data["intelligence_type"],
+        "objections": data["objections"][:5],
         "products": [],
         "evidence": [
             {
-                "description": x.description,
-                "evidence": x.evidence,
-                "evidence_strength": x.evidence_strength,
-                "timestamp": x.timestamp,
+                "description": x["description"],
+                "evidence": x["evidence"],
+                "evidence_strength": x["evidence_strength"],
+                "timestamp": x.get("timestamp"),
+                "basis": x.get("basis"),
+                "speaker": x.get("speaker"),
+                "evidence_check": x.get("evidence_check"),
             }
-            for x in (analysis.risks + analysis.opportunities + analysis.important_signals)
-            if x.evidence
+            for x in (risks + opportunities + signals)
+            if x.get("evidence")
         ][:10],
         "next_move": next_move,
-        "owner": "Não identificado",
-        "deadline": "Não identificado",
-        "intelligence_type": analysis.intelligence_type,
-        "decisions": analysis.decisions,
-        "pending_actions": analysis.pending_actions,
-        "important_signals": [x.description for x in analysis.important_signals],
+        # Só quando ditos na conversa; senão o texto padrão histórico das colunas legadas.
+        "owner": (first_action or {}).get("owner") or "Não identificado",
+        "deadline": (first_action or {}).get("deadline") or "Não identificado",
+        "intelligence_type": data["intelligence_type"],
+        # Listas de texto (compatibilidade com a interface atual): só o que tem evidência na transcrição.
+        "decisions": [x["description"] for x in _kept(decisions)],
+        "pending_actions": [x["description"] for x in _kept(actions)],
+        "decisions_detail": decisions,
+        "actions_detail": actions,
+        "important_signals": [x["description"] for x in _kept(signals)],
         "insights": [
             {
-                "description": x.description,
-                "evidence": x.evidence,
-                "evidence_strength": x.evidence_strength,
-                "timestamp": x.timestamp,
-                "type": x.category,
-                "impact_score": max(0, min(100, int(x.impact_score))),
+                "description": x["description"],
+                "evidence": x["evidence"],
+                "evidence_strength": x["evidence_strength"],
+                "timestamp": x.get("timestamp"),
+                "type": x["category"],
+                "impact_score": max(0, min(100, int(x["impact_score"]))),
+                "basis": x.get("basis"),
+                "inference_rationale": x.get("inference_rationale"),
+                "speaker": x.get("speaker"),
+                "confidence": x.get("confidence"),
+                "confidence_reason": x.get("confidence_reason"),
+                "evidence_check": x.get("evidence_check"),
+                "evidence_coverage": x.get("evidence_coverage"),
+                "corrections": x.get("corrections", []),
             }
-            for x in analysis.insights
-            if x.evidence
+            for x in insights
+            if x.get("evidence")
         ],
         "financial_data": [
             {
-                "amount": float(x.amount),
-                "currency": x.currency or "BRL",
-                "financial_type": x.financial_type,
-                "nature": x.nature,
-                "description": x.description,
-                "evidence": x.evidence,
-                "evidence_strength": x.evidence_strength,
-                "timestamp": x.timestamp,
-                "period": x.period,
+                "amount": float(x["amount"]),
+                "currency": x.get("currency") or "BRL",
+                "financial_type": x["financial_type"],
+                "nature": x["nature"],
+                "description": x["description"],
+                "evidence": x["evidence"],
+                "evidence_strength": x["evidence_strength"],
+                "timestamp": x.get("timestamp"),
+                "period": x.get("period"),
+                "evidence_check": x.get("evidence_check"),
+                "amount_check": x.get("amount_check"),
             }
-            for x in analysis.financial_data
-            if x.evidence and x.amount >= 0
+            for x in financial
+            if x.get("evidence") and x["amount"] >= 0
         ],
-        "participants": analysis.participants,
-        "sentiment": analysis.sentiment,
+        "participants": data["participants"],
+        "sentiment": data["sentiment"],
         "analysis_model": ANALYSIS_MODEL,
         "transcription_model": TRANSCRIPTION_MODEL,
+        "analysis_version": 1 if v1 else 2,
+        "evidence_summary": _evidence_summary([risks, opportunities, signals, insights, decisions, actions, financial, next_actions]),
     }

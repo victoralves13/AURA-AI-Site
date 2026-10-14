@@ -98,10 +98,21 @@ def _supabase_request(method: str, path: str, payload=None, user=None):
     except Exception as exc:
         raise RuntimeError(f"Supabase error: {exc}") from exc
 
+# Colunas da análise v2 (migração 20261014140000). Se ainda não existirem no banco, o salvamento
+# degrada: grava sem elas e devolve tudo na resposta, em vez de perder a reunião.
+V2_COLUMNS = ("analysis_version", "decisions_detail", "actions_detail", "evidence_summary")
+
+def _schema_error(exc: RuntimeError, names: tuple) -> bool:
+    message = str(exc).lower()
+    return "400" in message and any(x in message for x in ("schema cache", "pgrst204", "pgrst") + tuple(names))
+
 def _save_meeting(data: dict, user=None):
     fields = ["source_type","file_name","meeting_title","context","is_demo","demo_scenario","transcript","summary","sentiment","sentiment_confidence","opportunity","risk","risk_score","opportunity_score","opportunity_signals","risk_signals","priority","impact","why_it_matters","intent","objections","products","evidence","decisions","pending_actions","important_signals","insights","topics","financial_data","participants","next_move","owner","deadline","model"]
     payload = {key: data.get(key) for key in fields}
     payload["client_name"] = data.get("client_name") or "Cliente não identificado"
+    for key in V2_COLUMNS:  # só quando presentes: null violaria o NOT NULL das colunas jsonb
+        if data.get(key) is not None:
+            payload[key] = data[key]
     if user is not None:
         # Dono e organização vêm do token verificado, nunca do corpo da requisição.
         org_id = data.get("org_id") or None
@@ -110,39 +121,42 @@ def _save_meeting(data: dict, user=None):
         visibility = data.get("visibility")
         payload["visibility"] = visibility if org_id and visibility in ("private", "team", "org") else "private"
 
-    try:
-        result = _supabase_request("POST", "meetings", payload, user=user)
-    except RuntimeError as exc:
-        # PostgREST can briefly serve a stale schema cache immediately after a
-        # migration. If that happens for the newly-added JSONB columns, keep
-        # the meeting usable by persisting the complete insight set through
-        # the existing evidence JSONB column and retrying with the stable schema.
-        message = str(exc).lower()
-        if "400" not in message or not any(x in message for x in ("insights", "topics", "schema cache", "pgrst204", "pgrst")):
+    attempt = dict(payload)
+    rehydrate = False
+    result = None
+    for step in range(3):
+        try:
+            result = _supabase_request("POST", "meetings", attempt, user=user)
+            break
+        except RuntimeError as exc:
+            if step == 0 and any(k in attempt for k in V2_COLUMNS) and _schema_error(exc, V2_COLUMNS):
+                for key in V2_COLUMNS:
+                    attempt.pop(key, None)
+                continue
+            if step <= 1 and not rehydrate and _schema_error(exc, ("insights", "topics")):
+                # PostgREST can briefly serve a stale schema cache immediately after a migration. If that
+                # happens for the JSONB columns, keep the meeting usable by persisting the complete insight
+                # set through the existing evidence JSONB column and retrying with the stable schema.
+                full_insights = attempt.pop("insights", None) or []
+                attempt.pop("topics", None)
+                existing_evidence = attempt.get("evidence") or []
+                merged = list(existing_evidence) if isinstance(existing_evidence, list) else []
+                merged.extend(item for item in full_insights if item not in merged)
+                attempt["evidence"] = merged
+                rehydrate = True
+                continue
             raise
 
-        fallback = dict(payload)
-        full_insights = fallback.pop("insights", None) or []
-        fallback.pop("topics", None)
-
-        existing_evidence = fallback.get("evidence") or []
-        if not isinstance(existing_evidence, list):
-            existing_evidence = []
-        merged_evidence = list(existing_evidence)
-        for item in full_insights:
-            if item not in merged_evidence:
-                merged_evidence.append(item)
-        fallback["evidence"] = merged_evidence
-
-        result = _supabase_request("POST", "meetings", fallback, user=user)
-
-        # The response may not expose the newly-added columns during a stale
-        # cache window. Rehydrate them in the API response so the frontend can
-        # immediately render the full analysis from this request.
-        if result and isinstance(result[0], dict):
-            result[0].setdefault("insights", full_insights)
-            result[0].setdefault("topics", data.get("topics") or [])
-            result[0].setdefault("financial_data", data.get("financial_data") or [])
+    if rehydrate and result and isinstance(result[0], dict):
+        # The response may not expose the newly-added columns during a stale cache window. Rehydrate them
+        # so the frontend can immediately render the full analysis from this request.
+        result[0].setdefault("insights", payload.get("insights") or [])
+        result[0].setdefault("topics", data.get("topics") or [])
+        result[0].setdefault("financial_data", data.get("financial_data") or [])
+    if result and isinstance(result[0], dict):
+        for key in V2_COLUMNS:
+            if key not in result[0] and data.get(key) is not None:
+                result[0][key] = data[key]
 
     if result is None:
         return {"persisted": False, "storage": "local-only"}
@@ -177,12 +191,12 @@ def _download_stored_audio(path: str, target: str):
 def _build_result(transcript: str, client_name: str, file_name: str, source_type: str, context: str = "Outro", transcription_meta: dict | None = None, is_demo: bool = False, demo_scenario: str | None = None, meeting_title: str | None = None, analysis_transcript: str | None = None, user=None, org_id: str | None = None):
     from openai_engine import analyze_transcript, build_product_fields
     analysis = analyze_transcript(analysis_transcript or transcript, context=context)
-    fields = build_product_fields(analysis)
+    fields = build_product_fields(analysis, analysis_transcript or transcript)
     resolved_client = _clean(client_name) or _clean(fields.get("client_name")) or "Cliente não identificado"
     resolved_title = _clean(meeting_title)
     if not resolved_title or resolved_title == "Análise por transcrição":
         resolved_title = resolved_client + " · " + (context or "Outro")
-    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": resolved_title, "client_name": resolved_client, "context": _clean(context) or "Outro", "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": 0, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
+    result = {"ok": True, "source": source_type, "file_name": file_name, "meeting_title": resolved_title, "client_name": resolved_client, "context": _clean(context) or "Outro", "is_demo": bool(is_demo), "demo_scenario": demo_scenario, "transcript": transcript, "sentiment": fields["sentiment"], "sentiment_confidence": None, "model": fields["analysis_model"], "analysis_model": fields["analysis_model"], **fields}
     if transcription_meta:
         result["transcription"] = transcription_meta
     result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
