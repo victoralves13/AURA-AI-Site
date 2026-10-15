@@ -1,0 +1,66 @@
+/* AURA AI — product polish layer
+   Small, intentional overrides over the existing UI. Keep feature styles in their source files. */
+:root {
+  --aura-surface: #0d171d;
+  --aura-surface-raised: #111f26;
+  --aura-border: rgba(174, 207, 215, .12);
+  --aura-text: #e7eff1;
+  --aura-muted: #91a3a9;
+  --aura-accent: #72dce6;
+}
+body { color: var(--aura-text); text-rendering: optimizeLegibility; }
+button, input, textarea, select { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(114,220,230,.8); outline-offset: 3px;
+}
+main { min-width: 0; }
+main > header { gap: 20px; }
+main > header h1 { letter-spacing: -.035em; }
+.eyebrow { letter-spacing: .12em; }
+.panel, .command-card, .real-record-card {
+  box-shadow: none;
+}
+.panel, .command-card {
+  border-color: var(--aura-border);
+}
+.panel-top { padding-bottom: 13px; }
+textarea { line-height: 1.7; }
+textarea::placeholder { color: #71858d; }
+.primary, button.primary {
+  transition: background .18s ease, border-color .18s ease, transform .18s ease, opacity .18s ease;
+}
+.primary:not(:disabled):hover, button.primary:not(:disabled):hover { transform: translateY(-1px); }
+.primary:disabled, button:disabled { cursor: not-allowed; }
+.nav { transition: background .18s ease, color .18s ease, border-color .18s ease; }
+.nav:focus-visible { outline-offset: -2px; }
+.table, .tr, .client-card, .action-row, .evidence-card {
+  border-color: var(--aura-border);
+}
+.client-card, .action-row { transition: border-color .18s ease, background .18s ease; }
+.client-card:hover, .action-row:hover { transform: none; }
+.result-empty, .empty-history, .client-empty, .customer360-empty {
+  color: var(--aura-muted);
+}
+.result-empty strong, .empty-history strong, .client-empty strong, .customer360-empty strong {
+  color: #dce8eb;
+}
+.real-audio-mode-switch { margin-top: 14px; }
+.real-audio-mode-switch button { min-height: 40px; font-size: 11px; }
+.real-record-card { padding: 20px; }
+.real-record-copy strong { font-size: 14px; }
+.real-record-copy p, .real-record-card #realAudioRecordHint { font-size: 11px; }
+.real-record-wave { background: rgba(0,0,0,.12); }
+.real-record-card .real-audio-record-actions button { min-height: 40px; font-size: 11px; }
+.real-record-preview { margin-top: 16px; }
+.real-record-preview audio { height: 40px; }
+.real-audio-status { line-height: 1.55; }
+@media (max-width: 760px) {
+  main > header { align-items: flex-start; }
+  .real-record-card { padding: 15px; }
+  .real-record-top { gap: 10px; }
+  .real-record-copy strong { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
