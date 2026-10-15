@@ -294,7 +294,7 @@
     toggle.addEventListener('click', () => { const o = pane.classList.toggle('open'); toggle.setAttribute('aria-expanded', o ? 'true' : 'false'); });
     host.replaceChildren(el('div', { class: 'chat-screen' }, toggle, pane, main));
     thread.scrollTop = thread.scrollHeight;
-    if (focus || !state.busy) { const t = host.querySelector('.chat-composer textarea'); if (t && !t.disabled && focus) t.focus(); }
+    if (focus || !state.busy) { const t = host.querySelector('.chat-composer textarea'); if (t && !t.disabled && focus && !window.matchMedia('(pointer: coarse)').matches) t.focus(); }   // no celular, abrir o teclado sozinho esconde a conversa
   }
 
   async function render(h) {

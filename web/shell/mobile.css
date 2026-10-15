@@ -1,0 +1,96 @@
+/* AURA AI — contrato do celular (≤700px) e do toque.
+ * Uma só regra para a navegação: no celular a lateral vira uma gaveta (aberta pelo botão do cabeçalho, fechada ao escolher uma área,
+ * tocar fora, Esc ou no X). Os !important abaixo existem só para vencer as regras antigas da lateral recolhida (product-shell.css),
+ * que usam !important para o modo "ícones" do desktop e não se aplicam à gaveta. */
+.aura-menu-btn, .aura-scrim, .aura-drawer-close, .aura-scroll-hint { display: none; }
+
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {   /* celular em pé ou deitado */
+  html:has(body.aura-nav-open), html:has(.aura-panel) { overflow: hidden; }            /* a página não rola atrás do menu/painel */
+  body:has(.aura-panel) { overflow: hidden; }
+  html { scroll-padding-top: 76px; scroll-padding-bottom: 96px; }                       /* scrollIntoView não deixa o conteúdo sob a barra fixa nem sob o campo de envio */
+
+  /* ----- gaveta de navegação ----- */
+  body .rail {
+    display: flex !important; flex-direction: column !important; position: fixed !important; inset: 0 auto 0 0 !important;
+    width: min(86vw, 320px) !important; height: 100dvh !important; max-height: 100dvh !important;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)) !important;
+    overflow-y: auto; overscroll-behavior: contain; z-index: 10010 !important;
+    transform: translateX(-105%); visibility: hidden; transition: transform .22s ease, visibility 0s linear .22s;
+    background: var(--panel); border-right: 1px solid var(--line); box-shadow: 0 0 40px rgba(0, 0, 0, .45);
+  }
+  body.aura-nav-open .rail { transform: none; visibility: visible; transition: transform .22s ease; }
+  body .rail .rail-toggle, body .rail .rail-collapse, body .rail .rail-controls { display: none !important; }
+  body .rail .brand { padding: 0 52px 14px 4px !important; }
+  body .rail nav { display: flex !important; flex-direction: column !important; gap: 4px !important; max-height: none !important; overflow: visible !important; }
+  body .rail .shell-nav, body .rail .shell-new-analysis { width: 100% !important; min-height: 48px; justify-content: flex-start !important; gap: 12px !important; padding: 12px !important; flex: 0 0 auto; }
+  body .rail .shell-nav span, body .rail .shell-new-analysis span { display: inline !important; }
+  body .rail .shell-nav-label { display: block !important; }
+  body .rail .brand > div { display: block !important; }
+  .aura-drawer-account { margin-top: auto; display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .aura-drawer-account .aura-space { display: flex; flex-wrap: wrap; gap: 8px; }
+  .aura-drawer-account .aura-space-select { flex: 1 1 100%; max-width: none; }
+  .aura-drawer-account .aura-user-chip { margin: 0; justify-content: space-between; }
+  .aura-drawer-account .aura-user-chip span { display: inline; }
+  body .chat-conv-del { min-width: 44px; }
+  .aura-drawer-close { display: inline-flex; position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 8px; }
+  .aura-scrim { display: block; position: fixed; inset: 0; z-index: 10005; background: rgba(1, 6, 12, .62); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  body.aura-nav-open .aura-scrim { opacity: 1; pointer-events: auto; }
+
+  /* ----- barra superior: menu, tela atual, busca e perfil ----- */
+  body main { margin-left: 0 !important; padding: 0 14px calc(28px + env(safe-area-inset-bottom)) !important; }
+  body header {
+    position: sticky !important; top: 0; z-index: 60; display: flex !important; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    height: auto !important; min-height: 58px; margin: 0 -14px 14px !important; padding: calc(8px + env(safe-area-inset-top)) 14px 8px !important; background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  /* nas telas geradas o cabeçalho global fica só "para leitor de tela" no desktop; no celular ele é a barra com o menu e precisa aparecer sempre */
+  html body.shell-generated-active main > header {
+    display: flex !important; position: sticky !important; width: auto !important; height: auto !important; min-height: 58px; margin: 0 -14px 14px !important;
+    padding: calc(8px + env(safe-area-inset-top)) 14px 8px !important; overflow: visible !important; clip: auto; clip-path: none; white-space: normal; border: 0; border-bottom: 1px solid var(--line);
+  }
+  html body.shell-generated-active main > header .aura-search-wrap { display: none; }   /* estas telas têm busca própria */
+  html body.shell-generated-active main > header .eyebrow { display: none; }
+  body header > div:first-of-type { flex: 1 1 0; min-width: 0; }
+  body header h1 { margin: 0 !important; font-size: 20px !important; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body header .top-actions { display: contents; }
+  body header .aura-top-status, body header [data-engine-status] { display: none; }
+  body header .aura-search-wrap { order: 3; flex: 1 1 100%; position: relative; }
+  body header .aura-v2-search { display: flex !important; align-items: center; min-width: 0 !important; width: 100%; height: 44px; padding: 0 12px !important; }
+  body header .aura-v2-search input { min-height: 40px; font-size: 16px; }   /* 16px evita o zoom automático do iOS ao focar */
+  body header .aura-search-results { position: absolute; left: 0; right: 0; width: auto; max-height: 60dvh; }
+  .aura-menu-btn { display: inline-flex; order: -1; }
+  body .aura-space-manage { display: inline-flex !important; }
+  body .aura-space-select { max-width: 150px; }
+  body .aura-profile-panel { position: fixed !important; left: 12px; right: 12px; top: calc(64px + env(safe-area-inset-top)) !important; width: auto !important; max-height: calc(100dvh - 84px); overflow-y: auto; }
+  body .aura-panel { width: 100%; height: 100dvh; }
+  body .aura-panel-body { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+
+  /* ----- conteúdo ----- */
+  body .meeting-workspace-grid, body .chat-screen { grid-template-columns: 1fr; }
+  body .chat-composer { position: sticky; bottom: 0; z-index: 5; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg); }
+  body .aura-pulse-chart, body .shell-local-tabs { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .aura-scroll-hint { display: block; margin: 6px 0 0; font-size: 12px; color: var(--muted); text-align: right; }
+  body table { display: block; max-width: 100%; overflow-x: auto; }
+}
+
+/* janelas baixas no desktop: a lateral rola em vez de cortar os últimos itens */
+body .rail { overflow-y: auto; overscroll-behavior: contain; }
+
+/* ----- toque: alvos de 44px e nada que dependa de hover ----- */
+@media (pointer: coarse), (max-width: 700px) {
+  .aura-menu-btn, .aura-drawer-close, .aura-panel-close, .aura-v2-profile, .rail-toggle { min-width: 44px; min-height: 44px; }
+  body button, body [role="button"], body .aura-btn, body select, body input:not([type="checkbox"]):not([type="radio"]), body textarea { min-height: 44px; }
+  body input:not([type="checkbox"]):not([type="radio"]), body select, body textarea { font-size: 16px; }   /* 16px: o iOS não dá zoom automático ao focar (o zoom manual do usuário segue liberado) */
+  body .aura-home-link, body a.aura-home-link { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+  body .skip-link:focus { min-height: 44px; }
+  body .meeting-back, body .client-back, body [class*="back"] { min-width: 44px; min-height: 44px; }
+}
+
+.aura-menu-btn, .aura-drawer-close {
+  align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--text); cursor: pointer;
+}
+.aura-menu-btn svg, .aura-drawer-close svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+.aura-menu-btn:focus-visible, .aura-drawer-close:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  body .rail, .aura-scrim { transition: none !important; }
+}

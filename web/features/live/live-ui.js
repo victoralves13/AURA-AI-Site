@@ -199,7 +199,21 @@
       else if (!on && S.wake) { await S.wake.release(); S.wake = null; }
     } catch { /* sem bloqueio de tela: segue gravando */ }
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.session && !S.paused && !S.stopping) wakeLock(true); });
+  // Aba em segundo plano / tela bloqueada: o celular pode parar a captura. Detecta ao voltar e avisa, sem prometer o que o navegador não garante.
+  document.addEventListener('visibilitychange', () => {
+    if (!S.session || S.paused || S.stopping) return;
+    if (document.visibilityState === 'hidden') { S.hiddenAt = Date.now(); return; }
+    wakeLock(true);
+    const track = S.stream && S.stream.getAudioTracks()[0];
+    const away = S.hiddenAt ? Date.now() - S.hiddenAt : 0;
+    S.hiddenAt = 0;
+    if (track && track.readyState === 'ended') S.interrupt = 'O microfone foi interrompido (aparelho, outro aplicativo ou o próprio navegador). O áudio já enviado está guardado: encerre a gravação para gerar a reunião ou comece outra.';
+    else if (S.recorder && S.recorder.mr.state === 'inactive') {
+      try { S.recorder = newRecorder(); S.recStart = Date.now(); S.interrupt = 'O navegador pausou a captura enquanto a tela estava bloqueada ou a aba em segundo plano. A gravação foi retomada, mas pode haver um trecho sem áudio nesse intervalo.'; }
+      catch { S.interrupt = 'O navegador interrompeu a gravação e ela não pôde ser retomada. Encerre para guardar o que foi gravado.'; }
+    } else if (away > 3000) S.interrupt = 'A aba ficou em segundo plano. Em celulares, bloquear a tela pode interromper a gravação: confira a transcrição desse intervalo.';
+    draw();
+  });
   window.addEventListener('beforeunload', e => { if (S.session && !S.stopping) { e.preventDefault(); e.returnValue = ''; } });
 
   function micError(err) {
@@ -233,6 +247,8 @@
         S.analyser = S.ctx.createAnalyser(); S.analyser.fftSize = 256;
         S.ctx.createMediaStreamSource(stream).connect(S.analyser);
       });
+      S.interrupt = null; S.hiddenAt = 0;
+      stream.getAudioTracks().forEach(t => t.addEventListener('ended', () => { if (S.session && !S.stopping && !S.paused) { S.interrupt = 'O microfone foi desconectado ou interrompido. O áudio já enviado está guardado: encerre a gravação para gerar a reunião.'; draw(); } }));
       S.recorder = newRecorder(); S.recStart = Date.now();
       S.timer = setInterval(tick, 500);
       startTranscript(S.session.id);
@@ -302,7 +318,7 @@
         startConsAfterStop = { id: session.id, title: session.title };
       }
     } catch (err) { S.doneMsg = null; S.error = err.message; toast(err.message, 'error'); }
-    S.session = null; S.recorder = null; S.stopping = false; S.paused = false;
+    S.session = null; S.interrupt = null; S.recorder = null; S.stopping = false; S.paused = false;
     await loadInterrupted();
     draw();
     if (startConsAfterStop) { const c = startConsAfterStop; startConsAfterStop = null; consolidate(c.id, c.title); }
@@ -682,6 +698,8 @@
       el('div', { class: 'live-meter', 'aria-hidden': 'true' }, el('i', { id: 'liveLevel' })),
       el('div', { class: 'live-actions' }, pause, stop),
       stats,
+      S.interrupt ? el('p', { class: 'live-interrupt', role: 'alert', text: S.interrupt }) : null,
+      el('p', { class: 'aura-note', text: 'Mantenha esta aba aberta e a tela ligada: o navegador do celular pode parar de gravar com a tela bloqueada ou em segundo plano, e o AURA não consegue impedir isso. ' }),
       el('p', { class: 'aura-note', text: 'O áudio é enviado em pedaços de cerca de 30 segundos e guardado neste aparelho até chegar ao servidor. ' + (durable ? '' : 'Atenção: este navegador não permite guardar o áudio localmente; se a conexão cair, parte da gravação pode se perder. ') + 'Não feche esta aba durante a reunião.' }),
       el('p', { class: 'live-done', id: 'liveDone', role: 'status' }),
       transcriptBox(), alertsBox());
