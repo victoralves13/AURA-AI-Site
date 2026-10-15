@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from aura.features.onboarding import router as ob  # noqa: E402
+from aura.features.onboarding import service as ob  # noqa: E402
 from test_orgs import OrgBase, ORG1, UA, UB, UC  # noqa: E402
 
 
