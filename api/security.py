@@ -11,6 +11,7 @@ Princípios:
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import logging
@@ -61,6 +62,27 @@ def publishable_key() -> str:
 
 def service_key() -> str:
     return os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
+
+
+def key_kind(value: str) -> str:
+    """Só o TIPO de uma chave do Supabase (nunca o valor): ajuda a achar chaves trocadas ou coladas no lugar errado."""
+    value = value or ""
+    if not value.strip():
+        return "vazia"
+    if any(c.isspace() for c in value):
+        return "com espaço ou quebra de linha"
+    if value.startswith("sb_publishable_"):
+        return "publishable"
+    if value.startswith("sb_secret_"):
+        return "secret"
+    parts = value.split(".")
+    if len(parts) == 3:
+        try:
+            payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=" * (-len(parts[1]) % 4)))
+            return {"anon": "publishable", "service_role": "secret"}.get(payload.get("role"), "desconhecida")
+        except (ValueError, TypeError):
+            return "desconhecida"
+    return "desconhecida"
 
 
 def allowed_origins() -> list[str]:

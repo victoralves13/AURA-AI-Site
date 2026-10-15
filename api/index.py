@@ -260,7 +260,7 @@ live_consolidate.set_pipeline(_build_result)  # reuniões ao vivo usam a mesma a
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "aura-ai", "version": "1.0.0-cloud", "engine": "OpenAI + AURA Intelligence", "openai_configured": bool(os.getenv("OPENAI_API_KEY")), "supabase_configured": bool(os.getenv("SUPABASE_URL") and (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY"))), "audio_storage": AUDIO_BUCKET, "auth_required": sec.auth_required(), "auth_configured": bool(sec.supabase_url() and sec.publishable_key())}
+    return {"ok": True, "service": "aura-ai", "version": "1.0.0-cloud", "engine": "OpenAI + AURA Intelligence", "openai_configured": bool(os.getenv("OPENAI_API_KEY")), "supabase_configured": bool(os.getenv("SUPABASE_URL") and (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY"))), "audio_storage": AUDIO_BUCKET, "auth_required": sec.auth_required(), "auth_configured": bool(sec.supabase_url() and sec.publishable_key()), "publishable_key_kind": sec.key_kind(sec.publishable_key()), "service_key_kind": sec.key_kind(sec.service_key())}
 
 @app.get("/api/config")
 def public_config():

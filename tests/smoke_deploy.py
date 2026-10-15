@@ -108,6 +108,10 @@ def main(argv):
         check("a chave pública está presente e é publishable/anon", key.startswith("sb_publishable_") or jwt_role(key) == "anon",
               "defina SUPABASE_PUBLISHABLE_KEY")
         check("supabase_url presente", str(cfg.get("supabase_url") or "").startswith("https://"))
+        check("SUPABASE_PUBLISHABLE_KEY é mesmo uma chave publishable", health.get("publishable_key_kind") == "publishable",
+              f"tipo atual: {health.get('publishable_key_kind')} (chaves trocadas? espaço ou quebra de linha na variável?)")
+        check("SUPABASE_SECRET_KEY é mesmo uma chave secret", health.get("service_key_kind") == "secret",
+              f"tipo atual: {health.get('service_key_kind')} (chaves trocadas? espaço ou quebra de linha na variável?)")
 
     print("\n== CORS fechado")
     status, headers, _ = call(base, "OPTIONS", "/api/meetings", {"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"})

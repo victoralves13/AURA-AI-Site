@@ -258,5 +258,34 @@ class Publico(Base):
             self.assertEqual(self.client.get(p).status_code, 200, p)
 
 
+class TipoDeChave(unittest.TestCase):
+    def jwt(self, role):
+        import base64
+        import json
+        enc = lambda o: base64.urlsafe_b64encode(json.dumps(o).encode()).rstrip(b"=").decode()
+        return f"{enc({'alg': 'HS256'})}.{enc({'role': role})}.assinatura"
+
+    def test_tipos(self):
+        k = sec.key_kind
+        self.assertEqual(k(self.jwt("anon")), "publishable")
+        self.assertEqual(k(self.jwt("service_role")), "secret")
+        self.assertEqual(k("sb_publishable_abc"), "publishable")
+        self.assertEqual(k("sb_secret_abc"), "secret")
+        self.assertEqual(k(""), "vazia")
+        self.assertEqual(k(None), "vazia")
+        self.assertEqual(k("sb_secret_abc\n"), "com espaço ou quebra de linha")  # erro comum ao colar a chave
+        self.assertEqual(k(" sb_secret_abc"), "com espaço ou quebra de linha")
+        self.assertEqual(k("qualquer-coisa"), "desconhecida")
+        self.assertEqual(k("a.b.c"), "desconhecida")
+
+    def test_saude_mostra_so_o_tipo_nunca_o_valor(self):
+        import index
+        from fastapi.testclient import TestClient
+        with mock.patch.dict(os.environ, {"SUPABASE_PUBLISHABLE_KEY": "sb_secret_TROCADA", "SUPABASE_SECRET_KEY": "sb_publishable_TROCADA"}):
+            body = TestClient(index.app).get("/api/health").json()
+        self.assertEqual((body["publishable_key_kind"], body["service_key_kind"]), ("secret", "publishable"))  # chaves trocadas: salta aos olhos
+        self.assertNotIn("TROCADA", str(body))
+
+
 if __name__ == "__main__":
     unittest.main()
