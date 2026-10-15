@@ -541,6 +541,8 @@ class FakeSupabase:
             hit = [r for r in self.tables[table] if match(r)]
             for r in hit:
                 r.update(payload)
+                if table == "live_sessions" and payload.get("status") == "ended" and not r.get("ended_at"):
+                    r["ended_at"] = self._live_ts()  # o gatilho do banco preenche a hora do encerramento
             return 200, [dict(r) for r in hit]
         if method == "DELETE":
             self.tables[table] = [r for r in self.tables[table] if not match(r)]

@@ -205,20 +205,8 @@ def process_chunk(session_id: str, chunk: dict, now: datetime, restore_attempts:
 # ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
-@router.post("/api/live/{session_id}/transcribe")
-def transcribe(session_id: str, payload: TranscribeRequest | None = None, user=Depends(sec.current_user)):
-    user = live._need_user(user)
-    sid = live._uuid(session_id, "Gravação")
-    session = live._get_session(user, sid)
-    if session.get("audio_deleted_at"):
-        raise HTTPException(status_code=409, detail="O áudio desta gravação foi apagado.")
-    retry = bool(payload and payload.retry_failed)
-    enforce_hourly_limit(user)
-    now = live._now()
-    try:
-        chunks = sec.service_rest("GET", f"live_chunks?select={CHUNK_COLUMNS}&session_id=eq.{sid}&order=seq.asc&limit=400") or []
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+def run_batch(sid: str, chunks: list[dict], now: datetime, retry: bool = False) -> tuple[list[int], list[int], int]:
+    """Transcreve até BATCH pedaços pendentes (reservando cada um). Retorna (transcritos, falhos, pulados). Levanta HTTPException 503/502."""
     pending = pick_pending(chunks, now, retry)
     done, failed, skipped = [], [], 0
     for chunk in pending:
@@ -235,6 +223,24 @@ def transcribe(session_id: str, payload: TranscribeRequest | None = None, user=D
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         except RuntimeError as exc:
             raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+    return done, failed, skipped
+
+
+@router.post("/api/live/{session_id}/transcribe")
+def transcribe(session_id: str, payload: TranscribeRequest | None = None, user=Depends(sec.current_user)):
+    user = live._need_user(user)
+    sid = live._uuid(session_id, "Gravação")
+    session = live._get_session(user, sid)
+    if session.get("audio_deleted_at"):
+        raise HTTPException(status_code=409, detail="O áudio desta gravação foi apagado.")
+    retry = bool(payload and payload.retry_failed)
+    enforce_hourly_limit(user)
+    now = live._now()
+    try:
+        chunks = sec.service_rest("GET", f"live_chunks?select={CHUNK_COLUMNS}&session_id=eq.{sid}&order=seq.asc&limit=400") or []
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+    done, failed, skipped = run_batch(sid, chunks, now, retry)
     remaining = len(pick_pending([c for c in chunks if c["seq"] not in done and c["seq"] not in failed], now, False))
     return {"ok": True, "transcribed": done, "failed": failed, "skipped": skipped, "remaining": remaining}
 

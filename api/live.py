@@ -14,6 +14,7 @@ Regras:
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -143,6 +144,39 @@ def _sweep(sessions: list[dict]) -> list[dict]:
     return sessions
 
 
+def retention_days() -> int:
+    """Dias que o áudio de uma gravação ENCERRADA fica guardado (0 = guarda até a pessoa apagar). Padrão: 0."""
+    try:
+        return max(0, int(os.getenv("AURA_LIVE_AUDIO_RETENTION_DAYS", "0") or "0"))
+    except ValueError:
+        return 0
+
+
+def delete_audio_of(user: sec.AuthUser, session: dict, reason: str = "user") -> int:
+    """Apaga o ÁUDIO da gravação (o texto, a sessão e a reunião ficam). O áudio sai primeiro; só depois se marca no banco."""
+    paths = [r["storage_path"] for r in (_db(lambda: sec.user_rest(user, "GET", f"live_chunks?select=storage_path&session_id=eq.{session['id']}&limit=400")) or [])]
+    storage_io.delete_objects(paths)
+    sec.service_rest("PATCH", f"live_sessions?id=eq.{session['id']}", {"audio_deleted_at": _now().isoformat()})
+    session["audio_deleted_at"] = _now().isoformat()
+    sec.audit(user, "live.audio_delete", session.get("org_id"), "live_session", session["id"], {"chunks": len(paths), "reason": reason})
+    return len(paths)
+
+
+def _retention(user: sec.AuthUser, sessions: list[dict]) -> list[dict]:
+    """Retenção preguiçosa (sem agendador): ao listar, apaga o áudio de gravações encerradas há mais que o prazo (no máximo 3 por vez)."""
+    days = retention_days()
+    if days <= 0:
+        return sessions
+    cutoff = _now() - timedelta(days=days)
+    due = [s for s in sessions if s.get("status") == "ended" and not s.get("audio_deleted_at") and (_iso(s.get("ended_at")) or _now()) < cutoff][:3]
+    for s in due:
+        try:
+            delete_audio_of(user, s, "retention")
+        except Exception as exc:  # falhou: tenta de novo na próxima listagem; nada é perdido
+            log.warning("retenção do áudio da gravação %s não aplicada: %s", s.get("id"), type(exc).__name__)
+    return sessions
+
+
 def _get_session(user: sec.AuthUser, session_id: str) -> dict:
     rows = _db(lambda: sec.user_rest(user, "GET", f"live_sessions?select={SESSION_COLUMNS},owner_id&id=eq.{session_id}&limit=1")) or []
     if not rows:
@@ -221,7 +255,7 @@ def list_sessions(org_id: str | None = None, status: str | None = None, limit: i
         where += f"&status=eq.{status}"
     limit = max(1, min(limit, 100))
     rows = _db(lambda: sec.user_rest(user, "GET", f"live_sessions?select={SESSION_COLUMNS}{where}&order=started_at.desc&limit={limit}")) or []
-    return {"ok": True, "sessions": [_public(s) for s in _sweep(rows)]}
+    return {"ok": True, "sessions": [_public(s) for s in _retention(user, _sweep(rows))]}
 
 
 @router.get("/api/live/{session_id}")

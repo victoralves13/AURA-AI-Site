@@ -65,3 +65,9 @@
 .live-al-check{color:#7895a4;font-size:11px}
 .live-al-quote{margin:0;padding:8px 10px;border-left:3px solid rgba(98,233,250,.5);background:rgba(98,233,250,.05);color:#d7edf1;font-size:12.5px;line-height:1.55;overflow-wrap:anywhere}
 .live-al-actions{display:flex;flex-wrap:wrap;gap:8px}
+.live-cons h4{margin:2px 0 0;font-size:16px}
+.live-cons p{margin:0;color:#c3d8dc;font-size:13.5px;line-height:1.6}
+.live-cons.ok{border-color:rgba(120,230,170,.5)}
+.live-cons.warn{border-color:rgba(242,200,111,.55)}
+.live-cons.error{border-color:rgba(255,120,152,.5)}
+.live-cons.ok>b{color:#9df0c1}.live-cons.warn>b{color:#f3dca5}.live-cons.error>b{color:#ff9bb0}

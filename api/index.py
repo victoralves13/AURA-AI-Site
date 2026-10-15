@@ -31,6 +31,8 @@ from clients import router as clients_router
 from conversations import router as conversations_router
 from live import router as live_router
 from live_alerts import router as live_alerts_router
+from live_consolidate import router as live_consolidate_router
+import live_consolidate
 from live_transcribe import router as live_transcribe_router
 from orgs import router as orgs_router
 
@@ -43,6 +45,7 @@ app.include_router(conversations_router)
 app.include_router(live_router)
 app.include_router(live_transcribe_router)
 app.include_router(live_alerts_router)
+app.include_router(live_consolidate_router)
 # O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
 # Para liberar origens específicas: AURA_ALLOWED_ORIGINS="https://app.exemplo.com,https://outra.com"
 if sec.allowed_origins():
@@ -233,6 +236,8 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
         # As ações viram registros acompanháveis (estado, responsável, prazo). Falha aqui nunca perde a análise.
         actions_mod.sync_for_meeting(user, {**result, "id": result.get("id"), "org_id": org_id})
     return result
+
+live_consolidate.set_pipeline(_build_result)  # reuniões ao vivo usam a mesma análise
 
 @app.get("/api/health")
 def health():

@@ -68,7 +68,8 @@
     seq: 0, recStart: 0, accumulated: 0, paused: false, stopping: false, timer: null, wake: null, startedAt: 0,
     stats: { pending: 0, sent: 0, dead: 0, retrying: false }, pumping: false, nextTry: new Map(), interrupted: [], busy: false, error: null, doneMsg: null,
     tr: { sid: null, lines: [], missing: [], counts: null, usage: null, timer: null, inflight: false, notice: null, blockedUntil: 0 },
-    al: { items: [], seen: new Set(), nextSeq: 0, timer: null, inflight: false, enabled: true, notice: null, blockedUntil: 0, dismissed: 0, open: new Set(), live: false }
+    al: { items: [], seen: new Set(), nextSeq: 0, timer: null, inflight: false, enabled: true, notice: null, blockedUntil: 0, dismissed: 0, open: new Set(), live: false },
+    cons: null, toFinish: [], doneList: []
   };
   const elapsed = () => S.accumulated + (S.recorder && !S.paused ? Date.now() - S.recStart : 0);
 
@@ -267,6 +268,7 @@
     S.busy = false; draw();
   }
 
+  let startConsAfterStop = null;
   async function stopRecording() {
     const { api, toast } = ui();
     if (!S.session || S.stopping) return;
@@ -296,12 +298,14 @@
         S.doneMsg = plural(left.length, 'pedaço de áudio ainda não foi enviado', 'pedaços de áudio ainda não foram enviados') + '. Eles estão guardados neste aparelho e serão enviados quando a conexão voltar. Depois, finalize a gravação em “Gravações interrompidas”.';
       } else {
         const r = await api('POST', '/api/live/' + session.id + '/finish');
-        S.doneMsg = 'Gravação encerrada: ' + plural(r.chunks, 'pedaço enviado', 'pedaços enviados') + (r.missing && r.missing.length ? ', com ' + plural(r.missing.length, 'lacuna', 'lacunas') + ' na sequência' : '') + '. A análise automática da reunião chega na próxima fase; o áudio e a transcrição estão guardados com segurança.';
+        S.doneMsg = 'Gravação encerrada: ' + plural(r.chunks, 'pedaço enviado', 'pedaços enviados') + (r.missing && r.missing.length ? ', com ' + plural(r.missing.length, 'lacuna', 'lacunas') + ' na sequência' : '') + '. O áudio está guardado com segurança.';
+        startConsAfterStop = { id: session.id, title: session.title };
       }
     } catch (err) { S.doneMsg = null; S.error = err.message; toast(err.message, 'error'); }
     S.session = null; S.recorder = null; S.stopping = false; S.paused = false;
     await loadInterrupted();
     draw();
+    if (startConsAfterStop) { const c = startConsAfterStop; startConsAfterStop = null; consolidate(c.id, c.title); }
   }
 
   /* ---------- transcrição contínua (texto crescendo) ---------- */
@@ -469,6 +473,72 @@
     if (note) { note.textContent = al.notice || ''; note.classList.toggle('warn', !!al.notice); }
   }
 
+  /* ---------- consolidar: gerar a reunião a partir da gravação ---------- */
+  async function consolidate(sid, title, opts = {}) {
+    const { api } = ui();
+    if (S.cons && S.cons.running && S.cons.sid === sid) return;
+    S.cons = { sid, title: title || 'Reunião ao vivo', state: 'running', msg: 'Preparando a reunião…', info: null, running: true };
+    draw();
+    let busyTries = 0;
+    for (let guard = 0; guard < 400; guard++) {
+      let r;
+      try { r = await api('POST', '/api/live/' + sid + '/consolidate', { allow_gaps: !!opts.allowGaps, retry_failed: !!opts.retryFailed }); }
+      catch (err) {
+        S.cons = { ...S.cons, state: err.status === 429 ? 'limit' : 'failed', msg: err.message, running: false };
+        draw(); return;
+      }
+      opts = { ...opts, retryFailed: false };   // a nova tentativa vale só para a primeira chamada
+      if (r.state === 'pending') {
+        S.cons = { ...S.cons, state: 'running', msg: 'Transcrevendo os últimos trechos (' + r.transcribed + ' de ' + r.total + ')…' };
+        drawCons(); await wait(1500); continue;
+      }
+      if (r.state === 'busy') {
+        if (++busyTries > 6) { S.cons = { ...S.cons, state: 'failed', msg: 'Outra tentativa ainda está em andamento. Aguarde um pouco e tente de novo.', running: false }; draw(); return; }
+        S.cons = { ...S.cons, msg: 'Outra tentativa está em andamento; aguardando…' }; drawCons(); await wait(4000); continue;
+      }
+      S.cons = { ...S.cons, state: r.state, info: r, running: false, msg: null };
+      if (r.state === 'running') continue;
+      break;
+    }
+    if (S.cons.state === 'done') { await loadInterrupted(); }
+    draw();
+  }
+
+  function consCard() {
+    const { el, api, toast } = ui();
+    const c = S.cons;
+    if (!c) return null;
+    const close = el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Fechar', onclick: () => { S.cons = null; draw(); } });
+    const retry = (label, o) => el('button', { type: 'button', class: 'aura-btn small', text: label, onclick: () => consolidate(c.sid, c.title, o) });
+    const drop = () => el('button', { type: 'button', class: 'aura-btn danger small', text: 'Apagar a gravação', onclick: async () => {
+      try { await api('DELETE', '/api/live/' + c.sid); S.cons = null; await loadInterrupted(); toast('Gravação apagada.'); draw(); } catch (err) { toast(err.message, 'error'); } } });
+    const box = (cls, kids) => el('section', { class: 'live-card live-cons ' + cls, role: 'status', 'aria-live': 'polite' }, kids);
+    if (c.state === 'running') return box('', [el('b', { text: 'Gerando a reunião…' }), el('p', { id: 'liveConsMsg', text: c.msg || '' }),
+      el('p', { class: 'aura-note', text: 'O AURA junta a transcrição, analisa a conversa e confere cada evidência. Pode levar alguns instantes; você pode sair desta tela, a gravação fica guardada.' })]);
+    if (c.state === 'done') {
+      const i = c.info || {};
+      const open = i.meeting_id && window.__auraOpenMeeting ? el('button', { type: 'button', class: 'aura-btn', text: 'Abrir a reunião', onclick: () => window.__auraOpenMeeting({ id: i.meeting_id }) }) : null;
+      return box('ok', [el('b', { text: 'Reunião criada' }), el('h4', { text: i.title || c.title }), i.summary ? el('p', { text: i.summary }) : null,
+        i.gaps ? el('p', { class: 'aura-note', text: plural(i.gaps, 'trecho ficou sem transcrição', 'trechos ficaram sem transcrição') + ' e aparece marcado na reunião.' }) : null,
+        el('p', { class: 'aura-note', text: 'A reunião passa pela mesma análise das demais: cliente, evidências conferidas, decisões e ações. O áudio fica guardado até você apagá-lo.' }),
+        el('div', { class: 'live-actions' }, open, close)]);
+    }
+    if (c.state === 'needs_decision') {
+      const i = c.info || {};
+      const parts = [];
+      if (i.failed) parts.push(plural(i.failed, 'trecho não pôde ser transcrito', 'trechos não puderam ser transcritos'));
+      if (i.missing && i.missing.length) parts.push(plural(i.missing.length, 'trecho não chegou ao servidor', 'trechos não chegaram ao servidor'));
+      return box('warn', [el('b', { text: 'Faltam partes da gravação' }), el('p', { text: parts.join(' e ') + '. Se analisar assim mesmo, os buracos aparecem marcados e o AURA não inventa o que foi dito neles.' }),
+        el('div', { class: 'live-actions' }, retry('Tentar transcrever de novo', { retryFailed: true }), retry('Analisar assim mesmo', { allowGaps: true }), drop(), close)]);
+    }
+    if (c.state === 'empty') return box('warn', [el('b', { text: 'Nenhuma fala reconhecida' }), el('p', { text: c.info && c.info.message ? c.info.message : 'Nada foi reconhecido nesta gravação.' }),
+      el('div', { class: 'live-actions' }, drop(), close)]);
+    return box('error', [el('b', { text: c.state === 'limit' ? 'Limite de uso atingido' : 'Não foi possível gerar a reunião' }), el('p', { text: c.msg || '' }),
+      el('p', { class: 'aura-note', text: 'A gravação e a transcrição estão guardadas. Você pode tentar de novo.' }),
+      el('div', { class: 'live-actions' }, retry('Tentar de novo', {}), close)]);
+  }
+  function drawCons() { const m = document.getElementById('liveConsMsg'); if (m && S.cons) m.textContent = S.cons.msg || ''; }
+
   /* ---------- gravações interrompidas ---------- */
   async function loadInterrupted() {
     try {
@@ -476,7 +546,10 @@
       const [a, b, c] = await Promise.all(['recording', 'paused', 'abandoned'].map(st => ui().api('GET', '/api/live?org_id=' + space + '&status=' + st)));
       const mine = S.session && S.session.id;
       S.interrupted = [...a.sessions, ...b.sessions, ...c.sessions].filter(s => s.id !== mine).sort((x, y) => String(y.started_at).localeCompare(String(x.started_at)));
-    } catch { S.interrupted = []; }
+      const [p, f, d] = await Promise.all(['processing', 'failed', 'ended'].map(st => ui().api('GET', '/api/live?org_id=' + space + '&status=' + st + (st === 'ended' ? '&limit=8' : ''))));
+      S.toFinish = [...p.sessions, ...f.sessions].filter(s => s.id !== mine && !(S.cons && S.cons.sid === s.id && S.cons.running)).sort((x, y) => String(y.started_at).localeCompare(String(x.started_at)));
+      S.doneList = d.sessions;
+    } catch { S.interrupted = []; S.toFinish = []; S.doneList = []; }
   }
 
   /* ---------- tela ---------- */
@@ -493,7 +566,7 @@
         const del = el('button', { type: 'button', class: 'aura-btn danger small', text: 'Descartar' });
         fin.addEventListener('click', async () => {
           fin.disabled = true;
-          try { kick(); const r = await api('POST', '/api/live/' + s.id + '/finish'); toast('Gravação finalizada (' + plural(r.chunks, 'pedaço', 'pedaços') + ').'); await loadInterrupted(); draw(); }
+          try { kick(); const r = await api('POST', '/api/live/' + s.id + '/finish'); toast('Gravação finalizada (' + plural(r.chunks, 'pedaço', 'pedaços') + '). Gerando a reunião…'); await loadInterrupted(); consolidate(s.id, s.title); }
           catch (err) { toast(err.message, 'error'); fin.disabled = false; }
         });
         del.addEventListener('click', () => {
@@ -522,6 +595,54 @@
       el('h3', { id: 'liveInterruptedTitle', text: 'Gravações interrompidas' }),
       el('p', { class: 'aura-note', text: 'Estas gravações pararam de enviar áudio (aba fechada, bateria, conexão). O que já foi enviado está guardado. Finalize para seguir com elas ou descarte.' }),
       el('div', { class: 'aura-list' }, rows));
+  }
+
+  function toFinishList() {
+    const { el, api, toast } = ui();
+    if (!S.toFinish.length) return null;
+    const rows = S.toFinish.map(s => {
+      const go = el('button', { type: 'button', class: 'aura-btn small', text: 'Gerar a reunião', onclick: () => consolidate(s.id, s.title) });
+      const del = el('button', { type: 'button', class: 'aura-btn danger small', text: 'Descartar' });
+      const row = el('div', { class: 'aura-row live-row' });
+      const draw1 = () => {
+        row.replaceChildren(el('div', { class: 'live-row-main' }, el('b', { text: s.title }),
+          el('small', { text: (s.status === 'failed' ? 'A análise falhou; o áudio e o texto estão guardados' : 'Encerrada, aguardando a análise') + ' · ' + new Date(s.started_at).toLocaleString('pt-BR') + ' · ' + clock((s.duration_seconds || 0) * 1000) })),
+          el('div', { class: 'live-actions' }, go, del));
+      };
+      del.addEventListener('click', () => {
+        const yes = el('button', { type: 'button', class: 'aura-btn danger small', text: 'Apagar gravação e áudio', onclick: async () => {
+          try { await api('DELETE', '/api/live/' + s.id); toast('Gravação apagada.'); await loadInterrupted(); draw(); } catch (err) { toast(err.message, 'error'); } } });
+        row.replaceChildren(el('b', { text: 'Apagar “' + s.title + '” e todo o áudio dela?' }), el('div', { class: 'live-actions' }, yes, el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Cancelar', onclick: draw1 })));
+      });
+      draw1();
+      return row;
+    });
+    return el('section', { class: 'live-card', 'aria-labelledby': 'liveToFinishTitle' }, el('h3', { id: 'liveToFinishTitle', text: 'Gravações a concluir' }),
+      el('p', { class: 'aura-note', text: 'Estas gravações já foram encerradas, mas a reunião ainda não foi gerada. Nada se perdeu.' }), el('div', { class: 'aura-list' }, rows));
+  }
+
+  function doneListCard() {
+    const { el, api, toast } = ui();
+    if (!S.doneList.length) return null;
+    const rows = S.doneList.map(s => {
+      const row = el('div', { class: 'aura-row live-row' });
+      const draw1 = () => {
+        const open = s.meeting_id && window.__auraOpenMeeting ? el('button', { type: 'button', class: 'aura-btn small', text: 'Abrir a reunião', onclick: () => window.__auraOpenMeeting({ id: s.meeting_id }) }) : null;
+        const audio = s.audio_deleted_at ? el('small', { text: 'Áudio apagado' }) : el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Apagar o áudio' });
+        if (!s.audio_deleted_at) audio.addEventListener('click', () => {
+          const yes = el('button', { type: 'button', class: 'aura-btn danger small', text: 'Apagar só o áudio', onclick: async () => {
+            try { await api('DELETE', '/api/live/' + s.id + '/audio'); s.audio_deleted_at = new Date().toISOString(); toast('Áudio apagado. A reunião e o texto continuam.'); draw1(); } catch (err) { toast(err.message, 'error'); } } });
+          row.replaceChildren(el('b', { text: 'Apagar o áudio de “' + s.title + '”?' }), el('p', { class: 'aura-note', text: 'A reunião, a transcrição e a análise continuam. Só o áudio original é removido e não dá para recuperá-lo.' }),
+            el('div', { class: 'live-actions' }, yes, el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Cancelar', onclick: draw1 })));
+        });
+        row.replaceChildren(el('div', { class: 'live-row-main' }, el('b', { text: s.title }), el('small', { text: new Date(s.started_at).toLocaleString('pt-BR') + ' · ' + clock((s.duration_seconds || 0) * 1000) + ' de áudio' })),
+          el('div', { class: 'live-actions' }, open, audio));
+      };
+      draw1();
+      return row;
+    });
+    return el('section', { class: 'live-card', 'aria-labelledby': 'liveDoneTitle' }, el('h3', { id: 'liveDoneTitle', text: 'Gravações concluídas' }),
+      el('p', { class: 'aura-note', text: 'O áudio fica guardado até você apagá-lo. Apagar o áudio não afeta a reunião nem a transcrição.' }), el('div', { class: 'aura-list' }, rows));
   }
 
   function idleForm() {
@@ -593,11 +714,16 @@
     else {
       if (S.doneMsg) kids.push(el('div', { class: 'live-card live-finished', role: 'status' }, el('b', { text: 'Gravação concluída' }), el('p', { text: S.doneMsg }), S.tr.sid ? transcriptBox() : null, S.tr.sid && (S.al.items.length || S.al.dismissed) ? alertsBox() : null));
       if (S.error) kids.push(el('p', { class: 'aura-msg error', role: 'alert', text: S.error }));
+      if (S.cons) kids.push(consCard());
       kids.push(el('section', { class: 'live-card' }, el('h3', { text: 'Gravar uma reunião ao vivo' }),
         el('p', { class: 'aura-note', text: 'O AURA grava o microfone deste aparelho, guarda o áudio com segurança e, nas próximas fases, transcreve em tempo real e analisa a reunião ao final. Para registrar uma reunião online, deixe o áudio dela sair pelo alto-falante ou use a captura de áudio do seu sistema.' }),
         idleForm()));
+      const pending = toFinishList();
+      if (pending) kids.push(pending);
       const list = interruptedList();
       if (list) kids.push(list);
+      const doneCard = doneListCard();
+      if (doneCard) kids.push(doneCard);
     }
     S.host.replaceChildren(el('div', { class: 'live-screen' }, kids));
     drawStats(); drawDone(); drawTimer(); drawTranscript(); drawAlerts();

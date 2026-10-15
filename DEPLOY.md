@@ -501,3 +501,25 @@ O gatilho de pedaços também passa a recusar um pedaço já "reservado" vindo d
 - **Limite honesto:** a conferência garante que o trecho citado EXISTE; não garante que a conclusão tirada dele esteja certa. Por isso o cartão mostra sempre o trecho e rotula inferências.
 - **Teste real (você):** com a chave da OpenAI, grave uma conversa simulada em que alguém cita um prazo apertado, um preço e um compromisso, e confira se os alertas aparecem sem nenhum som,
   com o trecho certo, e se "Desligar alertas" realmente para as varreduras.
+
+## Etapa 6.5 — Consolidar a gravação em uma reunião; retenção do áudio (sem migração nova)
+
+`api/live_consolidate.py` + telas em `live-ui.js` v7 / `live-ui.css` v4. A transcrição (com um horário `[mm:ss]` por pedaço) passa pela MESMA análise das demais reuniões
+(`_build_result`): cliente (vínculo automático/sugerido), evidências conferidas na transcrição, decisões e ações (criadas como ações acompanháveis). A reunião nasce com `source_type="live"` e
+`file_name="live-<id da sessão>"`, no espaço da gravação, e a sessão fica "encerrada" com `meeting_id` ligado.
+- **Endpoint:** `POST /api/live/{id}/consolidate` (corpo opcional `{"allow_gaps": bool, "retry_failed": bool}`). Responde 200 com `state`:
+  `pending` (transcreveu um lote; chame de novo), `needs_decision` (pedaços falhos ou faltando: tentar de novo ou analisar assim mesmo), `empty` (nenhuma fala reconhecida), `busy` (outra tentativa em andamento),
+  `done` (com `meeting_id`). Falha da análise = 502 amigável e a sessão vai para "failed" com áudio e texto intactos; chamar de novo tenta outra vez.
+- **Sem duplicar:** idempotente (sessão encerrada devolve a mesma reunião); se uma tentativa salvou a reunião mas não conseguiu ligá-la, a próxima a reaproveita (procura `live-<id>`); a reserva
+  é condicional no banco (processing + sem marca → "consolidating"; reserva com mais de 10 min é retomada). Conta no limite de análises por hora (`AURA_MAX_ANALYSES_PER_HOUR`).
+- **Buracos:** pedaços sem transcrição entram como `[trecho sem transcrição]` com o horário certo e a IA não preenche o que não foi dito. Sem nenhuma fala reconhecida, não cria reunião vazia.
+- **Áudio:** `DELETE /api/live/{id}/audio` apaga SÓ o áudio (a reunião, a transcrição e a análise ficam), depois que o texto está pronto; o áudio sai do bucket primeiro e só então se marca no banco.
+  Apagar a gravação inteira (`DELETE /api/live/{id}`) continua disponível e não apaga a reunião. **Retenção opcional:** `AURA_LIVE_AUDIO_RETENTION_DAYS` (padrão 0 = guarda até a pessoa apagar). Com N > 0, ao listar
+  gravações o sistema apaga o áudio das ENCERRADAS há mais de N dias (no máximo 3 por vez; sem agendador).
+- **Telas:** ao encerrar, a reunião é gerada sozinha (progresso, decisão sobre buracos, erro com "Tentar de novo", e "Abrir a reunião"). Listas: "Gravações a concluir", "Gravações interrompidas" (Finalizar já gera a reunião)
+  e "Gravações concluídas" (abrir a reunião, apagar o áudio com confirmação).
+- **Limites conhecidos:** (1) apagar uma REUNIÃO não apaga o áudio da gravação de origem (apague pela lista); (2) gravações de ex-membros de uma organização ficam invisíveis, e o áudio delas continua no
+  bucket até alguém limpar; (3) a análise de uma reunião muito longa pode passar do tempo da função na Vercel (o mesmo limite das demais análises: em caso de erro, tente de novo; a gravação não se perde);
+  (4) não há identificação de quem fala (cada pedaço é transcrito isolado).
+- **Teste real (você):** grave 2 a 3 minutos com conversa sobre um cliente, encerre e confira: a reunião aparece com cliente, ações e evidências; teste "Apagar o áudio" e veja que a reunião continua;
+  teste também sem a chave da OpenAI (a transcrição pendente deve dar aviso, sem perder nada).
