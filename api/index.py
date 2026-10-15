@@ -200,7 +200,7 @@ async def analyze_audio_upload(
     file: UploadFile = File(...),
     context: str = Header(default="Outro", alias="X-AURA-Context"),
 ):
-    """Analyze an audio file directly; Supabase Storage is not required for this path."""
+    """Analyze an audio file directly; Supabase Storage is optional and persistence is best-effort."""
     filename = Path(file.filename or "reuniao.webm").name
     suffix = Path(filename).suffix.lower() or ".webm"
     if suffix not in {".mp3", ".wav", ".m4a", ".mp4", ".webm", ".ogg", ".mpeg", ".mpga"}:
