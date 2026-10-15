@@ -32,7 +32,7 @@
       "dest": "/api/index.py"
     },
     {
-      "src": "/(index.html|app.js|dynamic-data.js|real-engine.js|persistence.js|styles.css|brand.css|app-enhancements.css|real-engine.css|product-shell.css|product-shell.js|cloud-bridge.js|auth.js|auth.css|orgs.js|orgs.css|evidence.css|clients-ui.js|clients-ui.css|actions-ui.js|actions-ui.css)",
+      "src": "/(index.html|app.js|dynamic-data.js|real-engine.js|persistence.js|styles.css|brand.css|app-enhancements.css|real-engine.css|product-shell.css|product-shell.js|cloud-bridge.js|auth.js|auth.css|orgs.js|orgs.css|evidence.css|clients-ui.js|clients-ui.css|actions-ui.js|actions-ui.css|chat-ui.js|chat-ui.css)",
       "headers": {
         "Cache-Control": "public, max-age=0, must-revalidate"
       },

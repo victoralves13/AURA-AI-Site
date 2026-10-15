@@ -360,3 +360,16 @@ Testes: `python -m unittest discover -s tests` e `node tests/db/chat.test.mjs`.
   `AURA_OPENAI_CHAT_MODEL` (padrão = o da análise; o nome padrão `gpt-6-sol` continua sem confirmação).
 - **Avaliação com a IA real (você roda, com a chave só na janela do terminal):** `python tests/eval/chat_eval.py --dry` valida os exemplos sem custo;
   sem `--dry` faz 5 chamadas e mostra, por pergunta, nível de evidência, afirmações comprovadas/descartadas e se algo proibido vazou.
+
+## Etapa 5.3 — Chat como tela inicial (interface; sem migração nova)
+
+Arquivos novos: `chat-ui.js` e `chat-ui.css` (no `vercel.json` e no `smoke_deploy.py`). `product-shell.js` ganhou a área **Conversar** no menu.
+Só atuam com login ativo; sem login, o item some do menu e o app abre na Visão geral como antes.
+- **Tela inicial:** depois do login o app abre em Conversar (a Visão geral continua no menu). Se a pessoa já estiver em outra tela, não é desviada.
+- **Conversas:** lista do espaço atual (pessoal ou organização), retomar, renomear, apagar com confirmação, "Nova conversa", e a última conversa
+  aberta é restaurada ao recarregar (por espaço, só nesta aba).
+- **Respostas:** nível de evidência (forte / parcial / sem evidência suficiente, com explicação ao passar o mouse), fontes numeradas como chips,
+  e ao abrir uma fonte: trecho literal, horário, interlocutor, se foi conferido na transcrição ou só na análise, e botão para abrir a reunião ou ver as ações.
+  Se a IA falhar, aparece "Tentar de novo" (a pergunta continua gravada). Tudo entra no DOM com textContent.
+- **Mobile:** a lista de conversas vira um botão "Conversas (n)"; sem rolagem horizontal.
+Atenção ao publicar: `index.html` referencia `chat-ui.js`/`chat-ui.css` versão v2 (os arquivos são cacheados por versão).
