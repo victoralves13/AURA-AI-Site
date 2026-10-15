@@ -7,3 +7,5 @@ supabase
 __pycache__
 *.pyc
 *.md
+docs
+scripts

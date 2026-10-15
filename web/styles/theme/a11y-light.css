@@ -1,4 +1,4 @@
-/* AURA AI — tema claro: texto, fundos e bordas. GERADO por tests/tools/gen_light_theme.py (não edite à mão).
+/* AURA AI — tema claro: texto, fundos e bordas. GERADO por scripts/gen_light_theme.py (não edite à mão).
    Cada regra de texto claro do tema escuro ganha a versão escurecida (mesma matiz) para o tema claro. */
 body.aura-light .aura-auth{color:#00748d!important;background:#fff!important}
 body.aura-light .aura-auth-card{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
