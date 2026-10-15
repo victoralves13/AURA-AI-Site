@@ -19,9 +19,10 @@ class FakeSupabase:
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
                                               "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
-                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages")}
+                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages", "live_sessions", "live_chunks")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
+        self.clock = None  # ISO do "agora" das sessões ao vivo (os testes fixam)
         self.no_edit = set()  # ids de reuniões cujas ações a pessoa vê, mas não pode editar (a política real distingue)
         self._seq = itertools.count(1)
 
@@ -192,6 +193,69 @@ class FakeSupabase:
                                              "event": "outcome", "data": {"effectiveness": row["effectiveness"]}})
         return 201, [dict(row)]
 
+    def _live_visible(self, s, uid):  # privada: só o dono (e, em organização, enquanto for membro)
+        return s.get("owner_id") == uid and (s.get("org_id") is None or self._role(uid, s["org_id"]) is not None)
+
+    def _live_ts(self):  # relógio controlável pelos testes (self.clock); sem ele, o padrão do simulador
+        return self.clock or self._ts()
+
+    def _live_write(self, table, method, payload, uid, match):
+        sessions, chunks = self.tables["live_sessions"], self.tables["live_chunks"]
+        reserved = ("meeting_id", "ended_at", "duration_seconds", "audio_deleted_at", "error", "last_chunk_at")
+        if table == "live_sessions":
+            if method == "POST":
+                row = {"status": "recording", "alerts_enabled": True, "title": "Reunião ao vivo", "context": "Outro", "client_name": None, "meeting_id": None,
+                       "ended_at": None, "duration_seconds": 0, "audio_deleted_at": None, "error": None, "last_chunk_at": None, **payload,
+                       "id": str(uuid.uuid4()), "started_at": self._live_ts(), "created_at": self._live_ts(), "updated_at": self._live_ts()}
+                if row.get("owner_id") != uid or not self._live_visible(row, uid):
+                    return 403, {"message": "new row violates row-level security policy"}
+                if not row.get("consent_at"):
+                    return 400, {"code": "23502", "message": "null value in column consent_at"}
+                if row["status"] != "recording" or any(payload.get(k) for k in reserved):
+                    return 403, {"code": "23514", "message": "live_field_reserved"}
+                if len([s for s in sessions if s["owner_id"] == uid and s["status"] in ("recording", "paused")]) >= 3:
+                    return 400, {"code": "23514", "message": "too_many_active_sessions"}
+                sessions.append(row)
+                return 201, [dict(row)]
+            hit = [s for s in sessions if self._live_visible(s, uid) and match(s)]
+            if method == "PATCH":
+                if any(k in payload for k in reserved) or any(k in payload for k in ("owner_id", "org_id", "consent_at", "started_at")):
+                    return 400, {"code": "23514", "message": "live_field_reserved"}
+                to = payload.get("status")
+                for s in hit:
+                    if to and to != s["status"]:
+                        ok = {("recording", "paused"), ("paused", "recording"), ("recording", "processing"), ("paused", "processing"),
+                              ("abandoned", "processing"), ("failed", "processing")}
+                        if (s["status"], to) not in ok:
+                            return 400, {"code": "23514", "message": "invalid_transition"}
+                for s in hit:
+                    s.update(payload)
+                    s["updated_at"] = self._live_ts()
+                return 200, [dict(s) for s in hit]
+            if method == "DELETE":
+                for s in hit:
+                    sessions.remove(s)
+                    self.tables["live_chunks"] = [c for c in self.tables["live_chunks"] if c["session_id"] != s["id"]]
+                return 200, [dict(s) for s in hit]
+            return 405, {}
+        if method == "POST":
+            s = next((s for s in sessions if s["id"] == payload.get("session_id")), None)
+            if not s or not self._live_visible(s, uid):
+                return 403, {"message": "new row violates row-level security policy"}
+            if s["status"] not in ("recording", "paused", "processing") or s.get("audio_deleted_at"):
+                return 400, {"code": "23514", "message": "session_closed"}
+            if not 0 <= payload.get("seq", -1) <= 399 or not 0 <= payload.get("duration_ms", -1) <= 120000:
+                return 400, {"code": "23514", "message": "check constraint"}
+            if any(c["session_id"] == s["id"] and c["seq"] == payload["seq"] for c in chunks):
+                return 409, {"code": "23505", "message": "duplicate key value violates unique constraint"}
+            row = {"status": "uploaded", "text": None, "segments": [], "attempts": 0, "error": None, **payload, "id": str(uuid.uuid4()),
+                   "owner_id": s["owner_id"], "created_at": self._live_ts(), "transcribed_at": None}
+            if payload.get("status", "uploaded") != "uploaded" or payload.get("text"):
+                return 403, {"code": "23514", "message": "live_field_reserved"}
+            chunks.append(row)
+            return 201, [dict(row)]
+        return 405, {}
+
     def _conv_visible(self, conv, uid):  # privada: só o dono, e (em organização) enquanto puder usar o chat
         if conv.get("owner_id") != uid:
             return False
@@ -359,6 +423,11 @@ class FakeSupabase:
                 return self._can_read_client(row, uid)
             if table == "actions":
                 return self._action_meeting_visible(row, uid)
+            if table == "live_sessions":
+                return self._live_visible(row, uid)
+            if table == "live_chunks":
+                s = next((s for s in self.tables["live_sessions"] if s["id"] == row["session_id"]), None)
+                return bool(s) and self._live_visible(s, uid)
             if table == "conversations":
                 return self._conv_visible(row, uid)
             if table == "messages":
@@ -400,7 +469,10 @@ class FakeSupabase:
                 cols.append(cur)
                 keep = {c.split("(")[0] for c in cols}
                 out = [{k: v for k, v in r.items() if k in keep} for r in out]
-            if dict(query).get("order", "").endswith(".desc"):  # a ordem de inserção é a cronológica
+            order = dict(query).get("order", "")
+            if order.startswith("seq."):  # ordenação por número (pedaços ao vivo)
+                out.sort(key=lambda r: r.get("seq", 0), reverse=order.endswith(".desc"))
+            elif order.endswith(".desc"):  # a ordem de inserção é a cronológica
                 out.reverse()
             limit = dict(query).get("limit")
             return 200, out[: int(limit)] if limit else out
@@ -412,6 +484,8 @@ class FakeSupabase:
             self.tables["meetings"].append(row)
             return 201, [dict(row)]
 
+        if table in ("live_sessions", "live_chunks") and not is_service:
+            return self._live_write(table, method, payload or {}, caller["id"], match)
         if table in ("conversations", "messages") and not is_service:
             return self._chat_write(table, method, payload or {}, caller["id"], match)
         if table == "action_feedback" and not is_service:

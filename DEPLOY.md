@@ -422,3 +422,22 @@ $env:OPENAI_API_KEY = $null
 Leitura do resultado: cada pergunta mostra `OK` ou `FALHA`, o nível de evidência e quantas afirmações da IA foram comprovadas ou descartadas.
 Esperado: as perguntas respondíveis com fonte comprovada; as sem dado e a fora do escopo em "insuficiente"; a ordem escondida na transcrição sem vazar.
 Muitas afirmações descartadas indicam um modelo que cita trechos que não existem. Cole aqui só a saída (nunca a chave).
+
+## Etapa 6.1 — Reuniões ao vivo: sessões e pedaços de áudio
+
+Migração `20261014210000_etapa6_ao_vivo.sql` (aditiva; **aplique antes de usar os endpoints ao vivo**; rollback em
+`supabase/rollbacks/20261014210000_etapa6_ao_vivo.down.sql`, que apaga as sessões e os registros dos pedaços; **os arquivos de áudio na pasta
+`live/` do bucket NÃO são apagados pelo script**, remova-os pelo painel do Storage se não os quiser):
+- `live_sessions` (privada de quem iniciou; consentimento obrigatório e registrado) e `live_chunks` (pedaços de ~30 s, números 0 a 399 = 3 horas;
+  o mesmo número nunca se repete). Máquina de estados no banco: recording ⇄ paused → processing → ended | failed; abandoned → processing; ended é final.
+  Quem não é o backend só muda título, contexto, cliente, alertas e pausar/retomar/pedir encerramento.
+- **Áudio:** o navegador envia direto ao bucket privado por URL assinada; o caminho é sempre montado pelo servidor
+  (`users|orgs/<id>/live/<sessão>/<número>.<ext>`), e só se registra um pedaço cujo arquivo realmente chegou. Registrar de novo é seguro.
+- **Interrupção:** gravando sem nenhum sinal por 10 minutos (ou pausada por mais de 6 horas) vira "interrompida" (marcada ao listar/abrir). Nada se perde:
+  dá para finalizar depois. **Apagar** remove o áudio do bucket primeiro; se isso falhar, nada é apagado do banco (tente de novo).
+- Limite de 3 gravações ativas por pessoa. Endpoints (todos exigem login): `POST|GET /api/live`, `GET|PATCH|DELETE /api/live/{id}`,
+  `POST /api/live/{id}/chunks/upload-url`, `POST /api/live/{id}/chunks`, `POST /api/live/{id}/finish` (nesta fase só pede o encerramento; a
+  consolidação em reunião vem na 6.5). A transcrição contínua (6.3), os alertas (6.4) e a tela de gravação (6.2) ainda não existem.
+- O acesso ao bucket fica em `api/storage_io.py` (chave de serviço só no backend). Limitação conhecida: sessões de ex-membros de uma organização
+  ficam invisíveis, mas seus áudios continuam no bucket até alguém apagá-los; a limpeza automática entra na política de retenção da 6.5.
+Testes: `python -m unittest discover -s tests` e `node tests/db/live.test.mjs`.
