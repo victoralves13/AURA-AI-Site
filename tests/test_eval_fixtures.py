@@ -5,10 +5,10 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "tests" / "eval"))
 
-import openai_engine as eng  # noqa: E402
+from aura.features.analysis import engine as eng  # noqa: E402
 import run_eval  # noqa: E402
 
 

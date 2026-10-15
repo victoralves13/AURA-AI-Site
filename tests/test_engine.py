@@ -7,14 +7,18 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(ROOT / "backend"))
 
 from pydantic import ValidationError  # noqa: E402
 
-import index  # noqa: E402
-import openai_engine as eng  # noqa: E402
-import verification as v  # noqa: E402
-from openai_engine import (ActionItem, AURAAnalysis, AURAAnalysisV1, DecisionItem, EvidenceItem, FinancialItem,  # noqa: E402
+from aura import app as index
+
+from aura.features.meetings import router as meetings_mod
+
+from aura.features.analysis import router as analysis_mod  # noqa: E402
+from aura.features.analysis import engine as eng  # noqa: E402
+from aura.core import verification as v  # noqa: E402
+from aura.features.analysis.engine import (ActionItem, AURAAnalysis, AURAAnalysisV1, DecisionItem, EvidenceItem, FinancialItem,  # noqa: E402
                            InsightItem, NextAction)
 
 T = (
@@ -220,9 +224,9 @@ class Salvamento(unittest.TestCase):
                 raise outcome
             return [{**requests[-1], "id": "m-1", "created_at": "2026-10-14T00:00:00Z"}]
 
-        with mock.patch("openai_engine.analyze_transcript", lambda text, context="Outro": analysis), \
-             mock.patch.object(index, "_supabase_request", fake_request):
-            return index._build_result(T, "", "reuniao.mp3", "audio", "Comercial", analysis_transcript=T)
+        with mock.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": analysis), \
+             mock.patch.object(meetings_mod, "_supabase_request", fake_request):
+            return analysis_mod._build_result(T, "", "reuniao.mp3", "audio", "Comercial", analysis_transcript=T)
 
     def test_grava_contrato_v2_completo_e_sem_confianca_falsa(self):
         self.script, reqs = [], []
@@ -241,7 +245,7 @@ class Salvamento(unittest.TestCase):
         reqs = []
         result = self.build(reqs)
         self.assertEqual(len(reqs), 2)
-        self.assertTrue(all(k not in reqs[1] for k in index.V2_COLUMNS))
+        self.assertTrue(all(k not in reqs[1] for k in meetings_mod.V2_COLUMNS))
         self.assertTrue(result["persisted"])
         self.assertEqual(result["meeting"]["analysis_version"], 2)  # a resposta ainda traz tudo
         self.assertEqual(result["meeting"]["evidence_summary"]["total"], 3)  # 2 riscos + 1 decisão com evidência
@@ -262,9 +266,9 @@ class Salvamento(unittest.TestCase):
 
     def test_post_direto_so_envia_colunas_presentes(self):
         sent = []
-        with mock.patch.object(index, "_supabase_request", lambda m, p, payload=None, user=None: sent.append(payload) or [dict(payload, id="x")]):
-            index._save_meeting({"transcript": "abcd", "insights": []})
-        self.assertTrue(all(k not in sent[0] for k in index.V2_COLUMNS))  # null violaria o NOT NULL
+        with mock.patch.object(meetings_mod, "_supabase_request", lambda m, p, payload=None, user=None: sent.append(payload) or [dict(payload, id="x")]):
+            meetings_mod._save_meeting({"transcript": "abcd", "insights": []})
+        self.assertTrue(all(k not in sent[0] for k in meetings_mod.V2_COLUMNS))  # null violaria o NOT NULL
 
 
 if __name__ == "__main__":

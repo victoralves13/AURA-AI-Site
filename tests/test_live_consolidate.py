@@ -9,13 +9,17 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import index  # noqa: E402
-import live  # noqa: E402
-import live_consolidate as lc  # noqa: E402
-import live_transcribe as lt  # noqa: E402
-import storage_io  # noqa: E402
+from aura import app as index
+
+from aura.features.meetings import router as meetings_mod
+
+from aura.features.analysis import router as analysis_mod  # noqa: E402
+from aura.features.live import router as live  # noqa: E402
+from aura.features.live import consolidate as lc  # noqa: E402
+from aura.features.live import transcribe as lt  # noqa: E402
+from aura.core import storage as storage_io  # noqa: E402
 from test_live_api import CLOCK  # noqa: E402
 from test_live_transcribe import Base63  # noqa: E402
 from test_orgs import ORG1, UA  # noqa: E402
@@ -537,12 +541,12 @@ class Retencao(Base65):
 
 
 class PipelineReal(Base65):
-    """Usa a análise de verdade (index._build_result), com a IA substituída: a reunião sai marcada como 'live' e com os horários da transcrição."""
+    """Usa a análise de verdade (analysis_mod._build_result), com a IA substituída: a reunião sai marcada como 'live' e com os horários da transcrição."""
 
     def test_reuniao_salva_como_live_com_arquivo_e_espaco_certos(self):
         from unittest import mock as m
         analysis = minimal_analysis()
-        with m.patch("openai_engine.analyze_transcript", lambda text, context="Outro": analysis), m.patch.object(lc, "PIPELINE", index._build_result):
+        with m.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": analysis), m.patch.object(lc, "PIPELINE", analysis_mod._build_result):
             self.feed("Vamos revisar a proposta do Atlas.", "Combinado, envio o contrato até sexta.")
             self.finish()
             r = self.go().json()

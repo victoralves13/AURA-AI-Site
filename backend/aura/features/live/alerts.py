@@ -20,10 +20,10 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import live
-import live_transcribe as lt
-import security as sec
-import verification
+from aura.features.live import router as live
+from aura.features.live import transcribe as lt
+from aura.core import security as sec
+from aura.core import verification
 
 log = logging.getLogger("aura.live.alerts")
 router = APIRouter()

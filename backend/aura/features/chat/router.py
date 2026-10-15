@@ -18,8 +18,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import chat_engine
-import security as sec
+from aura.features.chat import engine as chat_engine
+from aura.core import security as sec
 
 log = logging.getLogger("aura.conversations")
 router = APIRouter()

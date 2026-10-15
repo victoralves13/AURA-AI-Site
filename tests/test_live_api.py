@@ -9,10 +9,10 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import live  # noqa: E402
-import storage_io  # noqa: E402
+from aura.features.live import router as live  # noqa: E402
+from aura.core import storage as storage_io  # noqa: E402
 from test_orgs import OrgBase, ORG1, ORG2, UA, UB, UC, UD, UE  # noqa: E402
 
 CLOCK = datetime(2026, 10, 14, 12, 0, tzinfo=timezone.utc)

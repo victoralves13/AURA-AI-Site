@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from urllib.parse import quote
 
-import security as sec
+from aura.core import security as sec
 
 
 def bucket() -> str:

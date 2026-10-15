@@ -6,10 +6,10 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import security as sec  # noqa: E402
-import storage_io  # noqa: E402
+from aura.core import security as sec  # noqa: E402
+from aura.core import storage as storage_io  # noqa: E402
 
 ENV = {"SUPABASE_URL": "https://x.supabase.co", "SUPABASE_SECRET_KEY": "sk", "SUPABASE_PUBLISHABLE_KEY": "pk", "AURA_AUDIO_BUCKET": "aura-audio"}
 

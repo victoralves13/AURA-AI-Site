@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-import security as sec
+from aura.core import security as sec
 
 log = logging.getLogger("aura.onboarding")
 router = APIRouter()

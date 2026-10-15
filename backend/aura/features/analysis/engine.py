@@ -8,7 +8,7 @@ from typing import Literal
 from openai import OpenAI, RateLimitError
 from pydantic import BaseModel, ValidationError
 
-import verification
+from aura.core import verification
 
 
 EvidenceStrength = Literal["alta", "média", "baixa"]

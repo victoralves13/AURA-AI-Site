@@ -18,8 +18,8 @@ from difflib import SequenceMatcher
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import security as sec
-import verification
+from aura.core import security as sec
+from aura.core import verification
 
 log = logging.getLogger("aura.clients")
 router = APIRouter()

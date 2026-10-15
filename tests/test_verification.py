@@ -4,9 +4,9 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(ROOT / "backend"))
 
-import verification as v  # noqa: E402
+from aura.core import verification as v  # noqa: E402
 
 AUDIO = (
     "[00:05] [A] Bom dia, a gente precisa conversar sobre o prazo de implantação.\n"

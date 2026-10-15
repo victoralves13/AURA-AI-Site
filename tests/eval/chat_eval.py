@@ -20,10 +20,10 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / "api"))
+sys.path.insert(0, str(HERE.parents[1] / "backend"))
 
-import chat_engine as ce  # noqa: E402
-import verification  # noqa: E402
+from aura.features.chat import engine as ce  # noqa: E402
+from aura.core import verification  # noqa: E402
 
 FIXTURES = HERE / "fixtures"
 QUESTIONS = HERE / "chat_questions.json"

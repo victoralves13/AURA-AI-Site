@@ -8,9 +8,9 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import actions as act  # noqa: E402
+from aura.features.actions import router as act  # noqa: E402
 from test_orgs import OrgBase, ORG1, ORG2, UA, UB, UC, UD, UE  # noqa: E402
 from test_security import minimal_analysis  # noqa: E402
 
@@ -603,10 +603,10 @@ class EstatisticasPorOrigem(Base):
 class AoAnalisar(Base):
     def setUp(self):
         super().setUp()
-        from openai_engine import ActionItem
+        from aura.features.analysis.engine import ActionItem
         analysis = minimal_analysis().model_copy(update={"pending_actions": [ActionItem(
             description="Enviar a proposta", evidence="envio amanhã", owner="Carlos", deadline="amanhã")]})
-        p = mock.patch("openai_engine.analyze_transcript", lambda text, context="Outro": analysis)
+        p = mock.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": analysis)
         p.start()
         self.addCleanup(p.stop)
         self.fake.tables["meetings"].append({"id": "m-1", "org_id": ORG1, "owner_id": UA})  # a que o salvamento simulado devolve

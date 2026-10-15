@@ -23,7 +23,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import security as sec
+from aura.core import security as sec
 
 router = APIRouter()
 
@@ -258,3 +258,45 @@ def accept_invitation(payload: InviteAccept, user=Depends(sec.current_user)):
     org = (_svc("GET", f"organizations?select=id,name&id=eq.{org_id}&limit=1") or [{}])[0]
     sec.audit(user, "org.invite.accept", org_id, "invitation", inv["id"], {"role": role, "already_member": bool(existing)})
     return {"ok": True, "organization": {"id": org_id, "name": org.get("name"), "role": role}}
+
+
+class OrgCreateRequest(BaseModel):
+    name: str
+
+
+def _clean_name(value):
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+@router.get("/api/me")
+def me(user=Depends(sec.current_user)):
+    if user is None:
+        return {"ok": True, "auth_required": False, "user": None, "organizations": []}
+    try:
+        rows = sec.user_rest(user, "GET", f"memberships?select=role,org_id,organizations(id,name)&user_id=eq.{user.id}") or []
+        access = sec.load_access(user)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível carregar suas organizações.") from exc
+    orgs = [{"id": r["org_id"], "name": (r.get("organizations") or {}).get("name"), "role": r.get("role"),
+             "permissions": sorted(access.get(r["org_id"], []))} for r in rows]
+    return {"ok": True, "auth_required": True, "user": {"id": user.id, "email": user.email, "email_confirmed": user.email_confirmed}, "organizations": orgs}
+
+
+@router.post("/api/orgs")
+def create_org(payload: OrgCreateRequest, user=Depends(sec.current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Autenticação necessária para criar organizações.")
+    name = _clean_name(payload.name)
+    if not 1 <= len(name) <= 120:
+        raise HTTPException(status_code=400, detail="O nome da organização deve ter entre 1 e 120 caracteres.")
+    try:
+        org_id = sec.service_rest("POST", "organizations", {"name": name, "created_by": user.id})[0]["id"]
+        try:
+            sec.service_rest("POST", "memberships", {"org_id": org_id, "user_id": user.id, "role": "admin"})
+        except Exception:
+            sec.service_rest("DELETE", f"organizations?id=eq.{org_id}")
+            raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível criar a organização.") from exc
+    sec.audit(user, "org.create", org_id, "organization", org_id)
+    return {"ok": True, "organization": {"id": org_id, "name": name, "role": "admin"}}

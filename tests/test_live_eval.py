@@ -4,9 +4,9 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "eval"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import live_alerts as la  # noqa: E402
+from aura.features.live import alerts as la  # noqa: E402
 import live_eval as ev  # noqa: E402
 
 PRAZO = "O prazo de entrega está apertado e preciso renegociar com o fornecedor"

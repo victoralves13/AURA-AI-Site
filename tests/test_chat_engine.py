@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import chat_engine as ce  # noqa: E402
+from aura.features.chat import engine as ce  # noqa: E402
 
 TRANSCRIPT = ("[00:05] Ana: Vamos revisar a proposta comercial do projeto Atlas.\n"
               "[00:12] Carlos: O prazo de entrega está apertado e preciso renegociar com o fornecedor.\n"

@@ -18,15 +18,15 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from cryptography import x509  # noqa: E402
 from cryptography.hazmat.primitives import hashes, serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import ec  # noqa: E402
 from cryptography.x509.oid import NameOID  # noqa: E402
 
-import integrations as integ  # noqa: E402
-import webhook_provider as wp  # noqa: E402
+from aura.features.integrations import router as integ  # noqa: E402
+from aura.features.integrations import webhook as wp  # noqa: E402
 from test_integrations_api import Base, KEY  # noqa: E402
 from test_orgs import ORG1, UA  # noqa: E402
 
@@ -399,7 +399,9 @@ class AgendadorERetencao(Base):
         self.assertEqual(r.status_code, 200)
 
     def test_provedor_padrao_e_registrado_no_app(self):
-        import index
+        from aura import app as index
+        from aura.features.meetings import router as meetings_mod
+        from aura.features.analysis import router as analysis_mod
         integ.unregister_provider("webhook")
         index.register_default_providers()
         self.assertIsInstance(integ._PROVIDERS["webhook"], wp.WebhookProvider)

@@ -19,9 +19,9 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import security as sec
-from integrations import emit_safe
-import verification
+from aura.core import security as sec
+from aura.features.integrations.router import emit_safe
+from aura.core import verification
 
 log = logging.getLogger("aura.actions")
 router = APIRouter()

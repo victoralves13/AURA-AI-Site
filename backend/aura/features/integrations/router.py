@@ -27,8 +27,8 @@ from typing import Protocol
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
-import integration_crypto as ic
-import security as sec
+from aura.features.integrations import crypto as ic
+from aura.core import security as sec
 
 log = logging.getLogger("aura.integrations")
 router = APIRouter()
@@ -508,7 +508,8 @@ def _cron_allowed(authorization: str | None, x_cron_secret: str | None) -> None:
         raise HTTPException(status_code=401, detail="Não autorizado.")
 
 
-@router.api_route("/api/integrations/dispatch", methods=["GET", "POST"])
+@router.get("/api/integrations/dispatch")
+@router.post("/api/integrations/dispatch")
 def dispatch_endpoint(authorization: str | None = Header(default=None), x_cron_secret: str | None = Header(default=None)):
     """Chamada pelo agendador (cron) da hospedagem: entrega o que está vencido e limpa eventos antigos."""
     _cron_allowed(authorization, x_cron_secret)

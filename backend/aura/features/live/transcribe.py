@@ -25,10 +25,10 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import live
-import security as sec
-import storage_io
-import verification
+from aura.features.live import router as live
+from aura.core import security as sec
+from aura.core import storage as storage_io
+from aura.core import verification
 
 log = logging.getLogger("aura.live.transcribe")
 router = APIRouter()
@@ -136,7 +136,7 @@ def assemble(chunks: list[dict]) -> dict:
 def transcribe_audio(data: bytes, ext: str, context: str = "") -> str:
     if not os.getenv("OPENAI_API_KEY"):
         raise Unavailable("A transcrição não está configurada neste ambiente.")
-    from openai_engine import _client  # import tardio: os testes não precisam do pacote
+    from aura.features.analysis.engine import _client  # import tardio: os testes não precisam do pacote
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
         tmp.write(data)
         path = tmp.name

@@ -20,7 +20,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(ROOT / "backend"))
 
 FIXTURES = HERE / "fixtures"
 
@@ -35,7 +35,7 @@ def load_fixtures():
 
 def validate_fixture(fx):
     """Problemas nos próprios exemplos (devolve lista vazia se estiver tudo coerente)."""
-    from verification import normalize
+    from aura.core.verification import normalize
     haystack = " " + normalize(fx["transcript"]) + " "
     problems = []
     for word in fx.get("must_find", []):
@@ -48,13 +48,13 @@ def validate_fixture(fx):
 
 
 def evaluate(fx):
-    import openai_engine as eng
+    from aura.features.analysis import engine as eng
     analysis = eng.analyze_transcript(fx["transcript"], fx.get("context", "Outro"))
     fields = eng.build_product_fields(analysis, fx["transcript"])
     summary = fields["evidence_summary"]
     asserted = " ".join([fields["summary"], *[i["description"] + " " + (i["evidence"] or "") for i in fields["insights"]],
                          *fields["decisions"], *fields["pending_actions"]])
-    from verification import normalize
+    from aura.core.verification import normalize
     text = " " + normalize(asserted) + " "
     found = [w for w in fx.get("must_find", []) if " " + normalize(w) + " " in text]
     invented = [w for w in fx.get("must_not", []) if " " + normalize(w) + " " in text]

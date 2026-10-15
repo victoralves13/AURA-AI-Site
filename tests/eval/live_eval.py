@@ -20,10 +20,10 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / "api"))
+sys.path.insert(0, str(HERE.parents[1] / "backend"))
 
-import live_alerts as la  # noqa: E402
-import live_transcribe as lt  # noqa: E402
+from aura.features.live import alerts as la  # noqa: E402
+from aura.features.live import transcribe as lt  # noqa: E402
 
 DEFAULT_SECONDS = 30
 

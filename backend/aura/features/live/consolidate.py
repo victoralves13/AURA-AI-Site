@@ -18,11 +18,11 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import live
-import live_alerts
-import live_transcribe as lt
-import security as sec
-from integrations import emit_safe
+from aura.features.live import router as live
+from aura.features.live import alerts as live_alerts
+from aura.features.live import transcribe as lt
+from aura.core import security as sec
+from aura.features.integrations.router import emit_safe
 
 log = logging.getLogger("aura.live.consolidate")
 router = APIRouter()

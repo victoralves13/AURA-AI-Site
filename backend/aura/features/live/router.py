@@ -20,8 +20,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import security as sec
-import storage_io
+from aura.core import security as sec
+from aura.core import storage as storage_io
 
 log = logging.getLogger("aura.live")
 router = APIRouter()

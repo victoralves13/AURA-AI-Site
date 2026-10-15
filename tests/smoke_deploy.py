@@ -18,7 +18,8 @@ import sys
 import urllib.error
 import urllib.request
 
-SENSITIVE = ["/api/index.py", "/api/security.py", "/api/openai_engine.py", "/api/orgs.py", "/api/clients.py",
+SENSITIVE = ["/api/index.py", "/backend/aura/app.py", "/backend/aura/core/security.py", "/backend/aura/features/integrations/crypto.py",
+             "/backend/aura/features/analysis/engine.py", "/backend/aura/features/orgs/router.py",
              "/.git/config", "/.env", "/.env.example", "/supabase/schema.sql", "/requirements.txt",
              "/DEPLOY.md", "/README.md", "/tests/test_security.py", "/vercel.json", "/package.json"]
 ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/actions-ui.js", "/chat-ui.js", "/live-ui.js", "/onboarding-ui.js", "/integrations-ui.js", "/product-shell.js", "/auth.css",

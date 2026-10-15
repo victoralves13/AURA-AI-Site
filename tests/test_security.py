@@ -10,13 +10,17 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-import index  # noqa: E402
-import security as sec  # noqa: E402
+from aura import app as index
+
+from aura.features.meetings import router as meetings_mod
+
+from aura.features.analysis import router as analysis_mod  # noqa: E402
+from aura.core import security as sec  # noqa: E402
 from fake_supabase import FakeSupabase  # noqa: E402
 
 UA = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
@@ -28,7 +32,7 @@ HEX = "0123456789abcdef0123456789abcdef"
 
 
 def minimal_analysis():
-    from openai_engine import AURAAnalysis
+    from aura.features.analysis.engine import AURAAnalysis
     return AURAAnalysis(summary="ok", main_topics=[], decisions=[], pending_actions=[], risks=[], opportunities=[],
                         objections=[], important_signals=[], insights=[], financial_data=[], next_actions=[],
                         participants=[], intelligence_type="comercial", sentiment="Neutro")
@@ -62,10 +66,10 @@ class Base(unittest.TestCase):
                 self.saved.append((payload, user))
                 return [{**payload, "id": "m-1", "created_at": "2026-10-14T00:00:00Z"}]
             return self.meetings_rows
-        p2 = mock.patch.object(index, "_supabase_request", fake_request)
+        p2 = mock.patch.object(meetings_mod, "_supabase_request", fake_request)
         p2.start()
         self.addCleanup(p2.stop)
-        p3 = mock.patch("openai_engine.analyze_transcript", lambda text, context="Outro": minimal_analysis())
+        p3 = mock.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": minimal_analysis())
         p3.start()
         self.addCleanup(p3.stop)
         self.client = TestClient(index.app)
@@ -156,7 +160,7 @@ class AuthRequired(Base):
         self.assertEqual(self.saved, [])
 
     def test_caminho_de_audio_pertence_ao_usuario(self):
-        with mock.patch.object(index, "_create_upload_url", return_value=("https://signed", "t")):
+        with mock.patch.object(analysis_mod, "_create_upload_url", return_value=("https://signed", "t")):
             pessoal = self.client.post("/api/audio-upload-url", headers=self.h(), json={"file_name": "a.mp3", "size_bytes": 10}).json()
             org = self.client.post("/api/audio-upload-url", headers=self.h(), json={"file_name": "a.MP3", "size_bytes": 10, "org_id": ORG1}).json()
             negada = self.client.post("/api/audio-upload-url", headers=self.h(), json={"file_name": "a.mp3", "size_bytes": 10, "org_id": ORG2})
@@ -173,8 +177,8 @@ class AuthRequired(Base):
             self.assertEqual(r.status_code, status, path)
 
     def test_analisar_audio_proprio(self):
-        with mock.patch.object(index, "_download_stored_audio"), \
-             mock.patch("openai_engine.transcribe_audio", return_value=("Ana: oi", {"segments": []})):
+        with mock.patch.object(analysis_mod, "_download_stored_audio"), \
+             mock.patch("aura.features.analysis.engine.transcribe_audio", return_value=("Ana: oi", {"segments": []})):
             r = self.client.post("/api/analyze-stored-audio", headers=self.h(), json={"path": f"users/{UA}/{HEX}.mp3", "file_name": "r.mp3"})
         self.assertEqual(r.status_code, 200, r.text)
         self.assertEqual(self.saved[0][0]["owner_id"], UA)
@@ -191,7 +195,7 @@ class AuthRequired(Base):
     def test_filtro_de_espaco_na_listagem(self):
         for query, expected in [("org_id=personal", "org_id=is.null"), (f"org_id={ORG1}", f"org_id=eq.{ORG1}")]:
             paths = []
-            with mock.patch.object(index, "_supabase_request", lambda m, p, payload=None, user=None: paths.append(p) or []):
+            with mock.patch.object(meetings_mod, "_supabase_request", lambda m, p, payload=None, user=None: paths.append(p) or []):
                 self.assertEqual(self.client.get("/api/meetings?" + query, headers=self.h()).status_code, 200)
             self.assertIn(expected, paths[0])
         self.assertEqual(self.client.get("/api/meetings?org_id=abc", headers=self.h()).status_code, 400)
@@ -246,7 +250,8 @@ class Publico(Base):
         self.assertNotIn("access-control-allow-origin", {k.lower() for k in r.headers})
 
     def test_nao_serve_codigo_nem_configuracao(self):
-        for p in ["/api/index.py", "/api/security.py", "/api/openai_engine.py", "/supabase/schema.sql",
+        for p in ["/api/index.py", "/backend/aura/app.py", "/backend/aura/core/security.py", "/backend/aura/features/integrations/crypto.py",
+                  "/backend/aura/features/analysis/engine.py", "/supabase/schema.sql",
                   "/supabase/migrations/20261014120000_etapa2_identidade_organizacoes.sql", "/.git/config",
                   "/.gitignore", "/.env.example", "/requirements.txt", "/README.md", "/DEPLOY.md", "/equipe.txt",
                   "/tests/test_security.py", "/.venv/pyvenv.cfg", "/package.json", "/vercel.json"]:
@@ -279,7 +284,9 @@ class TipoDeChave(unittest.TestCase):
         self.assertEqual(k("a.b.c"), "desconhecida")
 
     def test_saude_mostra_so_o_tipo_nunca_o_valor(self):
-        import index
+        from aura import app as index
+        from aura.features.meetings import router as meetings_mod
+        from aura.features.analysis import router as analysis_mod
         from fastapi.testclient import TestClient
         with mock.patch.dict(os.environ, {"SUPABASE_PUBLISHABLE_KEY": "sb_secret_TROCADA", "SUPABASE_SECRET_KEY": "sb_publishable_TROCADA"}):
             body = TestClient(index.app).get("/api/health").json()

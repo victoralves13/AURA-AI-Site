@@ -6,10 +6,10 @@ import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import conversations as conv  # noqa: E402
-import security as sec  # noqa: E402
+from aura.features.chat import router as conv  # noqa: E402
+from aura.core import security as sec  # noqa: E402
 from test_orgs import OrgBase, ORG1, ORG2, UA, UB, UC, UD, UE  # noqa: E402
 
 
