@@ -47,6 +47,25 @@ def object_size(path: str) -> int | None:
     return int(size) if size is not None else 0
 
 
+def download(path: str, max_bytes: int = 25 * 1024 * 1024) -> bytes:
+    """Baixa um arquivo do bucket (chave de serviço). Lança erro se faltar ou passar do tamanho máximo."""
+    import urllib.error
+    import urllib.request
+    url = f"{sec.supabase_url()}/storage/v1/object/{bucket()}/{quote(path, safe='/')}"
+    key = sec.service_key()
+    req = urllib.request.Request(url, headers={"apikey": key, "Authorization": f"Bearer {key}"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            data = response.read(max_bytes + 1)
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Falha ao baixar do armazenamento (HTTP {exc.code}).") from exc
+    except Exception as exc:
+        raise RuntimeError(f"Falha de rede: {type(exc).__name__}") from exc
+    if len(data) > max_bytes:
+        raise RuntimeError("Arquivo grande demais.")
+    return data
+
+
 def delete_objects(paths: list[str]) -> None:
     """Apaga arquivos do bucket. Lança erro se a exclusão falhar (quem chamou não deve apagar os registros)."""
     if not paths:

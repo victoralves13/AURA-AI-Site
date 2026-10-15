@@ -66,7 +66,8 @@
   const S = {
     host: null, session: null, stream: null, ctx: null, analyser: null, recorder: null, mime: null, ext: '.webm',
     seq: 0, recStart: 0, accumulated: 0, paused: false, stopping: false, timer: null, wake: null, startedAt: 0,
-    stats: { pending: 0, sent: 0, dead: 0, retrying: false }, pumping: false, nextTry: new Map(), interrupted: [], busy: false, error: null, doneMsg: null
+    stats: { pending: 0, sent: 0, dead: 0, retrying: false }, pumping: false, nextTry: new Map(), interrupted: [], busy: false, error: null, doneMsg: null,
+    tr: { sid: null, lines: [], missing: [], counts: null, usage: null, timer: null, inflight: false, notice: null, blockedUntil: 0 }
   };
   const elapsed = () => S.accumulated + (S.recorder && !S.paused ? Date.now() - S.recStart : 0);
 
@@ -232,6 +233,7 @@
       });
       S.recorder = newRecorder(); S.recStart = Date.now();
       S.timer = setInterval(tick, 500);
+      startTranscript(S.session.id);
       wakeLock(true);
       document.title = '● Gravando — AURA AI';
     } catch (err) {
@@ -291,12 +293,93 @@
         S.doneMsg = plural(left.length, 'pedaço de áudio ainda não foi enviado', 'pedaços de áudio ainda não foram enviados') + '. Eles estão guardados neste aparelho e serão enviados quando a conexão voltar. Depois, finalize a gravação em “Gravações interrompidas”.';
       } else {
         const r = await api('POST', '/api/live/' + session.id + '/finish');
-        S.doneMsg = 'Gravação encerrada: ' + plural(r.chunks, 'pedaço enviado', 'pedaços enviados') + (r.missing && r.missing.length ? ', com ' + plural(r.missing.length, 'lacuna', 'lacunas') + ' na sequência' : '') + '. A transcrição e a análise automática da reunião chegam nas próximas fases; o áudio está guardado com segurança.';
+        S.doneMsg = 'Gravação encerrada: ' + plural(r.chunks, 'pedaço enviado', 'pedaços enviados') + (r.missing && r.missing.length ? ', com ' + plural(r.missing.length, 'lacuna', 'lacunas') + ' na sequência' : '') + '. A análise automática da reunião chega na próxima fase; o áudio e a transcrição estão guardados com segurança.';
       }
     } catch (err) { S.doneMsg = null; S.error = err.message; toast(err.message, 'error'); }
     S.session = null; S.recorder = null; S.stopping = false; S.paused = false;
     await loadInterrupted();
     draw();
+  }
+
+  /* ---------- transcrição contínua (texto crescendo) ---------- */
+  const TR_POLL_MS = () => Number(window.AURA_LIVE_POLL_MS) > 0 ? Number(window.AURA_LIVE_POLL_MS) : 6000;
+  const money = v => 'US$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  const mins = v => (Number(v || 0)).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' min';
+
+  function startTranscript(sid) {
+    stopTranscript();
+    S.tr = { sid, lines: [], missing: [], counts: null, usage: null, timer: null, inflight: false, notice: null, blockedUntil: 0 };
+    S.tr.timer = setInterval(pollTranscript, TR_POLL_MS());
+    setTimeout(pollTranscript, 1500);
+  }
+  function stopTranscript() { if (S.tr.timer) clearInterval(S.tr.timer); S.tr.timer = null; }
+
+  async function pollTranscript(forceRetry) {
+    const { api } = ui();
+    const tr = S.tr;
+    if (!tr.sid || tr.inflight) return;
+    tr.inflight = true;
+    try {
+      const pending = !tr.counts || tr.counts.pending > 0 || !!forceRetry;
+      if (pending && Date.now() >= tr.blockedUntil) {
+        try {
+          await api('POST', '/api/live/' + tr.sid + '/transcribe', forceRetry ? { retry_failed: true } : {});
+          tr.notice = null;
+        } catch (err) {
+          if (err.status === 429) { tr.notice = err.message; tr.blockedUntil = Date.now() + 5 * 60000; }
+          else if (err.status === 503 || err.status === 409) { tr.notice = err.message; tr.blockedUntil = Date.now() + 60000; }
+          else if (err.status !== 401) tr.notice = 'Não foi possível transcrever agora. O áudio está guardado; vamos tentar de novo.';
+        }
+      }
+      const d = await api('GET', '/api/live/' + tr.sid + '/transcript');
+      tr.lines = d.lines; tr.missing = d.missing; tr.counts = d.counts; tr.usage = d.usage; tr.status = d.session_status;
+      drawTranscript();
+      // terminou: sessão fora de gravação, nada pendente e a fila local vazia
+      const queued = (await idb.all()).filter(r => r.sid === tr.sid && !r.dead).length;
+      if (!S.session && d.counts.pending === 0 && !queued) stopTranscript();
+    } catch (err) {
+      if (err.status === 404) stopTranscript();
+    }
+    tr.inflight = false;
+  }
+
+  function transcriptBox() {
+    const { el } = ui();
+    return el('section', { class: 'live-transcript', 'aria-label': 'Transcrição ao vivo' },
+      el('div', { class: 'live-tr-head' }, el('b', { text: 'Transcrição' }), el('small', { id: 'liveTrUsage' })),
+      el('div', { class: 'live-tr-body', id: 'liveTrBody', role: 'log', 'aria-live': 'off', tabindex: '0' }),
+      el('p', { class: 'live-tr-note', id: 'liveTrNote', role: 'status' }),
+      el('p', { class: 'aura-note', text: 'A transcrição aparece com alguns segundos de atraso e não identifica quem está falando. Pode haver erros de reconhecimento. O custo mostrado é uma estimativa.' }));
+  }
+
+  function drawTranscript() {
+    const body = document.getElementById('liveTrBody');
+    if (!body) return;
+    const { el, api } = ui();
+    const tr = S.tr;
+    const atBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 40;
+    if (!tr.lines.length) body.replaceChildren(el('p', { class: 'live-tr-empty', text: S.session && !S.paused ? 'Aguardando os primeiros trechos…' : 'Ainda não há texto.' }));
+    else body.replaceChildren(...tr.lines.map(l => {
+      const t = '[' + clock(l.start_ms) + ']';
+      if (l.status === 'transcribed') return el('p', { class: 'live-line' + (l.text ? '' : ' silent') }, el('time', { text: t }), el('span', { text: l.text || '(sem fala neste trecho)' }));
+      if (l.status === 'failed' && l.attempts >= 3) return el('p', { class: 'live-line failed' }, el('time', { text: t }), el('span', { text: '(não foi possível transcrever este trecho; o áudio está guardado)' }));
+      return el('p', { class: 'live-line pending' }, el('time', { text: t }), el('span', { text: '(transcrevendo…)' }));
+    }), ...tr.missing.map(n => el('p', { class: 'live-line failed' }, el('time', { text: '#' + n }), el('span', { text: '(trecho ' + n + ' não recebido)' }))));
+    if (atBottom) body.scrollTop = body.scrollHeight;
+    const u = tr.usage, c = tr.counts;
+    const usage = document.getElementById('liveTrUsage');
+    if (usage && u) usage.textContent = 'Transcrito: ' + mins(u.minutes_transcribed) + ' · custo ≈ ' + money(u.estimated_cost_usd) + ' (estimativa)' + (u.minutes_last_hour != null ? ' · última hora: ' + mins(u.minutes_last_hour) + ' de ' + mins(u.hourly_limit_minutes) : '');
+    const note = document.getElementById('liveTrNote');
+    if (note) {
+      note.replaceChildren();
+      const parts = [];
+      if (tr.notice) parts.push(tr.notice);
+      if (c && c.failed) parts.push(plural(c.failed, 'trecho não pôde ser transcrito', 'trechos não puderam ser transcritos') + '.');
+      if (!S.session && c && c.pending) parts.push('Transcrevendo os últimos ' + plural(c.pending, 'trecho', 'trechos') + '…');
+      note.append(document.createTextNode(parts.join(' ')));
+      if (c && c.failed) note.append(' ', el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Tentar de novo', onclick: () => pollTranscript(true) }));
+      note.classList.toggle('warn', parts.length > 0);
+    }
   }
 
   /* ---------- gravações interrompidas ---------- */
@@ -392,7 +475,8 @@
       el('div', { class: 'live-actions' }, pause, stop),
       stats,
       el('p', { class: 'aura-note', text: 'O áudio é enviado em pedaços de cerca de 30 segundos e guardado neste aparelho até chegar ao servidor. ' + (durable ? '' : 'Atenção: este navegador não permite guardar o áudio localmente; se a conexão cair, parte da gravação pode se perder. ') + 'Não feche esta aba durante a reunião.' }),
-      el('p', { class: 'live-done', id: 'liveDone', role: 'status' }));
+      el('p', { class: 'live-done', id: 'liveDone', role: 'status' }),
+      transcriptBox());
   }
 
   function drawTimer() { const t = document.getElementById('liveTimer'); if (t) t.textContent = clock(elapsed()); }
@@ -420,7 +504,7 @@
     const kids = [];
     if (S.session) kids.push(recordingPanel());
     else {
-      if (S.doneMsg) kids.push(el('div', { class: 'live-card live-finished', role: 'status' }, el('b', { text: 'Gravação concluída' }), el('p', { text: S.doneMsg })));
+      if (S.doneMsg) kids.push(el('div', { class: 'live-card live-finished', role: 'status' }, el('b', { text: 'Gravação concluída' }), el('p', { text: S.doneMsg }), S.tr.sid ? transcriptBox() : null));
       if (S.error) kids.push(el('p', { class: 'aura-msg error', role: 'alert', text: S.error }));
       kids.push(el('section', { class: 'live-card' }, el('h3', { text: 'Gravar uma reunião ao vivo' }),
         el('p', { class: 'aura-note', text: 'O AURA grava o microfone deste aparelho, guarda o áudio com segurança e, nas próximas fases, transcreve em tempo real e analisa a reunião ao final. Para registrar uma reunião online, deixe o áudio dela sair pelo alto-falante ou use a captura de áudio do seu sistema.' }),
@@ -429,7 +513,7 @@
       if (list) kids.push(list);
     }
     S.host.replaceChildren(el('div', { class: 'live-screen' }, kids));
-    drawStats(); drawDone(); drawTimer();
+    drawStats(); drawDone(); drawTimer(); drawTranscript();
   }
 
   async function render(h) {

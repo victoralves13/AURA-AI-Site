@@ -461,3 +461,25 @@ Arquivos novos: `live-ui.js` e `live-ui.css` (no `vercel.json` e no `smoke_deplo
   desligue o Wi-Fi por 1 minuto e religue, encerre. Confira que o contador de "Enviados" sobe e a fila volta a 0. Teste no celular também (Chrome e Safari).
   Em Safari/iOS o navegador pode exigir um toque para liberar o microfone e pode pausar a gravação com a tela bloqueada.
 - Versões de cache no `index.html`: `live-ui` v3.
+
+## Etapa 6.3 — Transcrição contínua ao vivo
+
+Migração `20261014220000_etapa6_transcricao.sql` (aditiva; **aplique antes de usar a transcrição**; rollback em `supabase/rollbacks/`, que só remove a coluna `claimed_at`
+e o índice e devolve o gatilho à versão da migração 11; o texto transcrito continua): coluna `claimed_at` (reserva de pedaço) e índice do limite por hora.
+O gatilho de pedaços também passa a recusar um pedaço já "reservado" vindo do navegador.
+- **Endpoints (login):** `POST /api/live/{id}/transcribe` (transcreve até 2 pedaços por chamada; corpo opcional `{"retry_failed": true}`) e
+  `GET /api/live/{id}/transcript` (linhas por pedaço com horário, lacunas, texto montado, contagens, uso e custo estimado).
+- **Reserva sem corrida:** cada pedaço é reservado por um UPDATE condicional no banco (uploaded/failed → transcribing): duas chamadas nunca transcrevem o mesmo
+  pedaço; uma reserva abandonada é retomada após 2 minutos. Até 3 tentativas automáticas por pedaço; depois fica "falhou" e a pessoa pode pedir nova tentativa.
+  O áudio nunca é apagado por falha. Sem chave da OpenAI: 503 e o pedaço volta para a fila sem gastar tentativa.
+- **Ordem e repetição:** o texto é montado pelo número do pedaço (qualquer ordem de chegada), lacunas viram "trecho n não recebido" e a pequena repetição na emenda
+  entre dois pedaços consecutivos é removida. O pedaço anterior vai como contexto ao modelo. Sem rótulos de interlocutor (cada pedaço é transcrito isolado).
+- **Modelo e custo:** `AURA_OPENAI_LIVE_TRANSCRIPTION_MODEL` (padrão `gpt-4o-mini-transcribe`, **nome não confirmado por mim**). Custo exibido = minutos × `AURA_LIVE_COST_PER_MIN_USD`
+  (padrão 0,006): é uma ESTIMATIVA configurável, não o preço da OpenAI; confira o preço atual antes de confiar. Limite por pessoa:
+  `AURA_MAX_LIVE_MINUTES_PER_HOUR` (padrão 90 min de áudio transcrito por hora; falha ao verificar bloqueia). Passou do limite: 429, o áudio continua guardado e a
+  transcrição segue quando liberar. Uma reunião de 1 hora gasta ~60 min do limite.
+- **Limite honesto:** modelos de transcrição podem inventar frases comuns em silêncio ("Obrigado por assistir"); descartamos as mais conhecidas quando são o pedaço inteiro,
+  mas isso não elimina o risco. Reconhecimento pode errar nomes e números.
+- **Tela:** o texto cresce abaixo do cronômetro (com "transcrevendo…" nos pedaços pendentes, falhas em vermelho e "Tentar de novo"), mostra transcrito, custo estimado e uso na última hora, e
+  continua depois de encerrar até terminar os últimos pedaços. `index.html`: `live-ui` v5.
+- **Teste real (você):** grave 2–3 minutos falando em português e confira o texto, as emendas entre pedaços (palavras repetidas) e a estimativa de custo; teste também com a chave da OpenAI ausente.

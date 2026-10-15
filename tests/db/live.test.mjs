@@ -11,7 +11,7 @@ const U = n => '00000000-0000-0000-0000-00000000000' + n;
 const A = U(1), B = U(2), C = U(3), D = U(4), E = U(5);
 const X = '10000000-0000-0000-0000-000000000001', Y = '10000000-0000-0000-0000-000000000002';
 const MIGRATIONS = ['20261014120000_etapa2_identidade_organizacoes', '20261014120100_etapa2_reunioes_isolamento', '20261014130000_etapa2_acesso_exige_membro',
-  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014210000_etapa6_ao_vivo'];
+  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014210000_etapa6_ao_vivo', '20261014220000_etapa6_transcricao'];
 
 async function as(uid, fn) {
   await db.exec('reset role');
@@ -145,6 +145,24 @@ check('o navegador NÃO edita nem apaga pedaços', !(await tryq(A, `update publi
 check('o backend grava a transcrição do pedaço', (await svc(`update public.live_chunks set status='transcribed', text='olá', segments='[{"start":0}]', attempts=1, transcribed_at=now() where session_id='${csid}' and seq=0`)).ok);
 check('o backend NÃO muda número nem caminho do pedaço', /live_immutable/.test((await svc(`update public.live_chunks set seq=9 where session_id='${csid}' and seq=0`)).err || '') && /live_immutable/.test((await svc(`update public.live_chunks set storage_path='outro/caminho/x.webm' where session_id='${csid}' and seq=0`)).err || ''));
 
+console.log('\n== transcrição (migração 12) ==');
+const tsid = (await mk(E, null, { title: 'Transcrição' })).rows[0].id;
+await db.exec(`update public.live_sessions set status='processing' where owner_id='${E}' and status='recording' and id <> '${tsid}'`);
+const tk = await chunk(E, tsid, 0);
+check('pedaço novo nasce sem reserva (claimed_at nulo)', tk.ok && (await svc(`select claimed_at is null ok from public.live_chunks where session_id='${tsid}' and seq=0`)).rows[0].ok);
+check('o backend reserva o pedaço (UPDATE condicional) e só uma chamada vence', await (async () => {
+  const a = await svc(`update public.live_chunks set status='transcribing', claimed_at=now(), attempts=attempts+1 where session_id='${tsid}' and seq=0 and status='uploaded' returning id`);
+  const b = await svc(`update public.live_chunks set status='transcribing', claimed_at=now(), attempts=attempts+1 where session_id='${tsid}' and seq=0 and status='uploaded' returning id`);
+  return a.rows.length === 1 && b.rows.length === 0;
+})());
+check('o backend grava o texto e conclui', (await svc(`update public.live_chunks set status='transcribed', text='olá a todos', transcribed_at=now(), claimed_at=null where session_id='${tsid}' and seq=0`)).ok);
+check('o navegador NÃO escreve claimed_at nem transcrição', !(await tryq(E, `update public.live_chunks set claimed_at=now() where session_id=$1`, [tsid])).ok
+  && !(await tryq(E, `update public.live_chunks set text='forjado' where session_id=$1`, [tsid])).ok);
+check('o navegador NÃO registra pedaço já reservado', /live_field_reserved/.test((await tryq(E, `insert into public.live_chunks(session_id,seq,storage_path,duration_ms,size_bytes,claimed_at) values ($1,5,'users/x/live/y/0005.webm',1000,10,now())`, [tsid])).err || ''));
+check('a pessoa lê o texto transcrito do próprio pedaço', (await tryq(E, `select text from public.live_chunks where session_id=$1 and seq=0`, [tsid])).rows[0].text === 'olá a todos');
+check('outra pessoa NÃO lê o texto', await count(C, `select 1 from public.live_chunks where session_id='${tsid}'`) === 0);
+check('o índice de uso existe', Number((await svc(`select count(*) c from pg_indexes where indexname='live_chunks_usage_idx'`)).rows[0].c) === 1);
+
 console.log('\n== saída da organização, permissão e exclusão ==');
 await db.exec(`insert into public.membership_permissions(org_id,user_id,permission,effect) values ('${X}','${C}','meetings.write','deny')`);
 check("com 'meetings.write' negado: não cria nem muda sessão na org, mas ainda vê", !(await mk(C, X)).ok && (await up(C, `title='x'`)).n === 0 && await count(C, 'select 1 from public.live_sessions') >= 1);
@@ -167,13 +185,16 @@ check('apagar a reunião resultante só desfaz o vínculo (a sessão fica)', awa
 
 console.log('\n== rollback e reaplicação ==');
 const orgs = Number((await svc('select count(*) c from public.organizations')).rows[0].c);
+await db.exec(read('rollbacks/20261014220000_etapa6_transcricao.down.sql'));
+check('rollback da 12 remove a coluna e o índice e preserva o texto', Number((await svc(`select count(*) c from information_schema.columns where table_name='live_chunks' and column_name='claimed_at'`)).rows[0].c) === 0 && Number((await svc(`select count(*) c from public.live_chunks where text is not null`)).rows[0].c) >= 1);
 await db.exec(read('rollbacks/20261014210000_etapa6_ao_vivo.down.sql'));
 const left = (await svc(`select (select count(*) from information_schema.tables where table_name in ('live_sessions','live_chunks')) t,
   (select count(*) from pg_proc where proname in ('live_sessions_guard','live_chunks_guard')) f`)).rows[0];
 check('rollback remove tabelas e funções', Number(left.t) === 0 && Number(left.f) === 0, JSON.stringify(left));
 check('rollback preserva organizações e reuniões', Number((await svc('select count(*) c from public.organizations')).rows[0].c) === orgs);
 await db.exec(read('migrations/20261014210000_etapa6_ao_vivo.sql'));
-check('migração reaplica após o rollback', true);
+await db.exec(read('migrations/20261014220000_etapa6_transcricao.sql'));
+check('migrações 11 e 12 reaplicam após o rollback', true);
 
 console.log(`\n${pass} aprovados, ${fail} reprovados`);
 process.exit(fail ? 1 : 0);
