@@ -727,26 +727,7 @@ main>.view.meeting-focus-mode #meetingWorkspace{display:block!important;width:10
 }
 .rail .brand-logo{width:30px!important;height:30px!important;border-radius:7px!important}
 .rail .brand>div strong{font:700 17px Manrope,sans-serif!important;letter-spacing:.08em!important}
-.rail .brand>div span{font:600 9px 'DM Mono',monospace!important;letter-spacing:.16em!important}
-.rail-toggle{
-  position:absolute!important;
-  top:0!important;
-  right:0!important;
-  width:30px!important;
-  height:30px!important;
-  display:grid!important;
-  place-items:center!important;
-  padding:0!important;
-  border:1px solid rgba(170,220,230,.10)!important;
-  border-radius:7px!important;
-  background:rgba(255,255,255,.025)!important;
-  color:#8ea4ac!important;
-  cursor:pointer!important;
-  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease!important;
-}
-.rail-toggle:hover{background:rgba(101,231,245,.06)!important;border-color:rgba(101,231,245,.20)!important;color:#dceff2!important}
-.rail-toggle svg{width:15px!important;height:15px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-.rail nav{
+.rail .brand>div span{font:600 9px 'DM Mono',monospace!important;letter-spacing:.16em!important}.rail nav{
   display:flex!important;
   flex-direction:column!important;
   gap:2px!important;
@@ -831,15 +812,7 @@ main>.view.meeting-focus-mode #meetingWorkspace{display:block!important;width:10
 .rail-collapsed .rail .brand-logo{
   width:30px!important;height:30px!important;
 }
-.rail-collapsed .rail .brand>div{display:none!important}
-.rail-collapsed .rail .rail-toggle{
-  top:0!important;
-  right:-2px!important;
-  width:25px!important;height:25px!important;
-  border-radius:6px!important;
-  background:rgba(5,10,15,.92)!important;
-}
-.rail-collapsed .rail nav{
+.rail-collapsed .rail .brand>div{display:none!important}.rail-collapsed .rail nav{
   max-height:calc(100vh - 68px)!important;
   padding-top:5px!important;
 }
@@ -863,9 +836,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 @media(max-width:900px){
   .rail{width:68px!important;padding:12px 8px!important}
   .rail .brand{justify-content:center!important;padding:0 0 20px!important}
-  .rail .brand>div{display:none!important}
-  .rail .rail-toggle{right:-2px!important;width:25px!important;height:25px!important}
-  .rail nav{max-height:calc(100vh - 68px)!important}
+  .rail .brand>div{display:none!important}.rail nav{max-height:calc(100vh - 68px)!important}
   .shell-nav-label{display:none!important}
   .shell-nav{justify-content:center!important;gap:0!important;padding:10px 0!important}
   .shell-nav span{display:none!important}
@@ -886,43 +857,11 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 .rail .brand{
   min-height:48px!important;
   padding:4px 8px 18px!important;
-}
-.rail-toggle,.rail-close{
-  position:static!important;
-  width:26px!important;
-  height:26px!important;
-  flex:0 0 26px!important;
-  display:grid!important;
-  place-items:center!important;
-  padding:0!important;
-  border:1px solid transparent!important;
-  border-radius:6px!important;
-  background:transparent!important;
-  color:#81959d!important;
-  cursor:pointer!important;
-  transition:background .16s ease,color .16s ease,border-color .16s ease!important;
-}
-.rail-toggle:hover,.rail-close:hover{
-  background:rgba(255,255,255,.045)!important;
-  border-color:rgba(170,220,230,.10)!important;
-  color:#e4f1f3!important;
-}
-.rail-toggle svg{
-  width:15px!important;height:15px!important;
-  fill:none!important;stroke:currentColor!important;
-  stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important;
-}
-.rail-close{display:none!important}
+}.rail-close{display:none!important}
 .rail-collapsed .rail-controls{
   justify-content:center!important;
   padding-bottom:2px!important;
-}
-.rail-collapsed .rail-toggle{
-  width:28px!important;height:28px!important;
-  border-color:rgba(170,220,230,.08)!important;
-  background:rgba(255,255,255,.025)!important;
-}
-.rail-collapsed .rail .brand{
+}.rail-collapsed .rail .brand{
   min-height:42px!important;
   height:42px!important;
   padding:0!important;
@@ -932,9 +871,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   width:30px!important;height:30px!important;
 }
 @media(max-width:900px){
-  .rail-controls{height:34px!important;padding:0 4px 3px!important}
-  .rail-toggle{display:none!important}
-  .rail-close{
+  .rail-controls{height:34px!important;padding:0 4px 3px!important}.rail-close{
     display:grid!important;
     font:400 24px/1 Arial,sans-serif!important;
   }
@@ -956,66 +893,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   gap:10px!important;
 }
 .rail .brand-logo{flex:0 0 auto!important}
-.rail .brand>div{min-width:0!important}
-.rail-toggle{
-  position:absolute!important;
-  top:50%!important;
-  right:4px!important;
-  transform:translateY(-50%)!important;
-  width:28px!important;
-  height:28px!important;
-  min-width:28px!important;
-  display:grid!important;
-  place-items:center!important;
-  padding:0!important;
-  border:1px solid transparent!important;
-  border-radius:6px!important;
-  background:transparent!important;
-  color:#9aadb4!important;
-  cursor:pointer!important;
-  z-index:2!important;
-}
-.rail-toggle:hover{
-  background:rgba(255,255,255,.045)!important;
-  border-color:rgba(170,220,230,.10)!important;
-  color:#e8f3f5!important;
-}
-.rail-toggle>span{
-  width:100%!important;
-  height:100%!important;
-  display:grid!important;
-  place-items:center!important;
-}
-.rail-toggle-open,.rail-toggle-closed{
-  margin:0!important;
-  padding:0!important;
-  font-style:normal!important;
-}
-.rail-toggle-open{
-  display:block!important;
-  font:300 24px/26px Arial,sans-serif!important;
-  transform:translateY(-1px)!important;
-}
-.rail-toggle-closed{
-  display:none!important;
-  width:15px!important;
-  height:13px!important;
-  align-content:center!important;
-  gap:3px!important;
-}
-.rail-toggle-closed span{
-  display:block!important;
-  width:15px!important;
-  height:1.5px!important;
-  border-radius:2px!important;
-  background:currentColor!important;
-}
-.rail-toggle.is-collapsed{
-  right:1px!important;
-}
-.rail-toggle.is-collapsed .rail-toggle-open{display:none!important}
-.rail-toggle.is-collapsed .rail-toggle-closed{display:grid!important}
-.rail-collapsed .rail .brand{
+.rail .brand>div{min-width:0!important}.rail-collapsed .rail .brand{
   min-height:42px!important;
   height:42px!important;
   padding:0!important;
@@ -1024,75 +902,14 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 .rail-collapsed .rail .brand-logo{
   width:30px!important;
   height:30px!important;
-}
-.rail-collapsed .rail .rail-toggle{
-  top:3px!important;
-  right:1px!important;
-  transform:none!important;
-  width:24px!important;
-  height:24px!important;
-  min-width:24px!important;
-  border-radius:5px!important;
-}
-@media(max-width:900px){
+}@media(max-width:900px){
   .rail .brand{
     padding-right:36px!important;
-  }
-  .rail .rail-toggle{
-    display:grid!important;
-  }
-}
+  }}
 
 
 /* Remove the extra control row so the rail header no longer visually protrudes */
 .rail{padding-top:10px!important}
-
-
-/* Final navigation icon state — explicit, conflict-proof */
-.rail .rail-toggle .rail-toggle-open{
-  display:block!important;
-  width:auto!important;
-  height:auto!important;
-  color:currentColor!important;
-  font:300 24px/24px Arial,sans-serif!important;
-  font-style:normal!important;
-  opacity:1!important;
-}
-.rail .rail-toggle .rail-toggle-closed{
-  display:none!important;
-  position:relative!important;
-  width:16px!important;
-  height:14px!important;
-  margin:0!important;
-  padding:0!important;
-  overflow:visible!important;
-}
-.rail .rail-toggle .rail-toggle-closed::before,
-.rail .rail-toggle .rail-toggle-closed::after{
-  content:""!important;
-  position:absolute!important;
-  left:0!important;
-  width:16px!important;
-  height:2px!important;
-  border-radius:2px!important;
-  background:currentColor!important;
-}
-.rail .rail-toggle .rail-toggle-closed::before{
-  top:0!important;
-  box-shadow:0 6px 0 currentColor,0 12px 0 currentColor!important;
-}
-.rail .rail-toggle .rail-toggle-closed::after{
-  display:none!important;
-}
-.rail .rail-toggle .rail-toggle-closed span{
-  display:none!important;
-}
-.rail .rail-toggle.is-collapsed .rail-toggle-open{
-  display:none!important;
-}
-.rail .rail-toggle.is-collapsed .rail-toggle-closed{
-  display:block!important;
-}
 
 
 /* Navigation control sits above the brand mark, not over it */
@@ -1102,13 +919,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   min-height:76px!important;
   height:76px!important;
   align-items:flex-end!important;
-}
-.rail .rail-toggle{
-  top:7px!important;
-  right:8px!important;
-  transform:none!important;
-}
-.rail-collapsed .rail .brand{
+}.rail-collapsed .rail .brand{
   padding-top:0!important;
   min-height:76px!important;
   height:76px!important;
@@ -1117,15 +928,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 }
 .rail-collapsed .rail .brand-logo{
   margin-bottom:2px!important;
-}
-.rail-collapsed .rail .rail-toggle{
-  top:6px!important;
-  right:5px!important;
-  transform:none!important;
-}
-
-
-/* Final navigation positioning fix — control above the brand mark */
+}/* Final navigation positioning fix — control above the brand mark */
 .rail{
   position:fixed!important;
   left:0!important;
@@ -1141,16 +944,7 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   padding:30px 40px 8px 8px!important;
   align-items:flex-end!important;
   justify-content:flex-start!important;
-}
-.rail .rail-toggle{
-  position:absolute!important;
-  top:3px!important;
-  right:5px!important;
-  transform:none!important;
-  width:27px!important;
-  height:27px!important;
-}
-.rail-collapsed .rail .brand{
+}.rail-collapsed .rail .brand{
   min-height:76px!important;
   height:76px!important;
   padding:30px 0 8px!important;
@@ -1160,23 +954,13 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
 .rail-collapsed .rail .brand-logo{
   width:30px!important;
   height:30px!important;
-}
-.rail-collapsed .rail .rail-toggle{
-  top:3px!important;
-  right:5px!important;
-  transform:none!important;
-  width:25px!important;
-  height:25px!important;
-}
-@media(max-width:900px){
+}@media(max-width:900px){
   .rail .brand{
     min-height:76px!important;
     height:76px!important;
     padding:30px 0 8px!important;
     justify-content:center!important;
-  }
-  .rail .rail-toggle{display:none!important}
-}
+  }}
 
 
 /* Final nav spacing correction — move only the control, never the workspace */
@@ -1186,44 +970,13 @@ main{margin-left:236px!important;transition:margin-left .24s cubic-bezier(.2,.7,
   padding:0 40px 0 8px!important;
   align-items:center!important;
   justify-content:flex-start!important;
-}
-.rail .rail-toggle{
-  top:-8px!important;
-  right:5px!important;
-  transform:none!important;
-  width:27px!important;
-  height:27px!important;
-}
-.rail-collapsed .rail .brand{
+}.rail-collapsed .rail .brand{
   min-height:42px!important;
   height:42px!important;
   padding:0!important;
   align-items:center!important;
   justify-content:center!important;
-}
-.rail-collapsed .rail .rail-toggle{
-  top:-8px!important;
-  right:5px!important;
-  transform:none!important;
-  width:25px!important;
-  height:25px!important;
-}
-
-
-/* Final micro-adjustment — keep the collapsed control clear of the logo */
-.rail-collapsed .rail .rail-toggle{
-  top:-18px!important;
-}
-
-
-/* Final micro-position — move collapsed navigation control higher and slightly left */
-.rail-collapsed .rail .rail-toggle{
-  top:-25px!important;
-  right:9px!important;
-}
-
-
-/* Profile — enterprise account workspace */
+}/* Profile — enterprise account workspace */
 .profile-workspace{width:100%;padding:8px 0 44px;position:relative}
 .profile-hero{
   display:flex;justify-content:space-between;gap:28px;align-items:stretch;
@@ -1428,3 +1181,23 @@ body[data-aura-view="profile"] main{padding-top:18px}body[data-aura-view="profil
 @media(max-width:760px){
   .financial-intelligence-panel .financial-item{grid-template-columns:1fr}
 }
+
+/* ---- Botão de recolher/abrir o menu (fonte única das regras do .rail-toggle) ----
+   Ancorado ao bloco da marca (.brand) e centralizado por margens automáticas: sem margens negativas nem offsets soltos.
+   Recolhida: fica acima da logo, na mesma coluna dela. Expandida: à direita da marca, centralizado na altura da linha. */
+.rail .brand .rail-toggle {
+  position: absolute; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid transparent; border-radius: 10px;
+  background: transparent; color: var(--text); cursor: pointer;
+}
+.rail .brand .rail-toggle:hover { background: rgba(255, 255, 255, .06); border-color: rgba(170, 220, 230, .14); }
+.rail .brand .rail-toggle span { margin: 0; padding: 0; color: inherit; font: inherit; letter-spacing: 0; }   /* anula o estilo de ".brand span" (o "AI" do logotipo) */
+.rail .brand .rail-toggle > span { display: grid; place-items: center; pointer-events: none; }
+.rail-collapsed .rail .brand .rail-toggle { inset-inline: 0; margin-inline: auto; bottom: 100%; margin-bottom: 8px; }
+body:not(.rail-collapsed) .rail .brand .rail-toggle { inset-block: 0; margin-block: auto; right: 0; }
+.rail-toggle .rail-toggle-open { display: block; font: 300 26px/1 Arial, sans-serif; font-style: normal; }
+.rail-toggle .rail-toggle-closed { display: none; gap: 4px; width: 18px; font-style: normal; }
+.rail-toggle .rail-toggle-closed span { display: block; height: 2px; border-radius: 2px; background: currentColor; }
+.rail-toggle.is-collapsed .rail-toggle-open { display: none; }
+.rail-toggle.is-collapsed .rail-toggle-closed { display: grid; }
+/* até 900px a lateral é sempre só de ícones e não expande: o botão não teria o que fazer */
+@media (max-width: 900px) { .rail .brand .rail-toggle { display: none; } }

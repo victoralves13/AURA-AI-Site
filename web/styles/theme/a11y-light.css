@@ -1015,8 +1015,6 @@ body.aura-light .meeting-filter-empty b{color:#2e727d!important}
 body.aura-light .meeting-filter-empty p{color:#546d76!important}
 body.aura-light .meeting-memory-card.is-selected{border-color:rgba(8,45,57,0.30)!important}
 body.aura-light .rail{background:#fff!important;border-right:1px solid rgba(8,45,57,0.12)!important}
-body.aura-light .rail-toggle{color:#556c74!important;border:1px solid rgba(8,45,57,0.12)!important}
-body.aura-light .rail-toggle:hover{color:#2e727d!important;border-color:rgba(8,45,57,0.20)!important}
 body.aura-light .shell-nav{color:#5a6c73!important}
 body.aura-light .shell-nav i{color:#5b6d73!important}
 body.aura-light .shell-nav:hover{color:#406f79!important}
@@ -1025,14 +1023,6 @@ body.aura-light .shell-nav.active{color:#247382!important;border-color:rgba(8,45
 body.aura-light .shell-nav.active i{color:#087581!important}
 body.aura-light .shell-nav-primary .shell-nav{color:#436e78!important}
 body.aura-light .shell-nav-primary .shell-nav i{color:#087581!important}
-body.aura-light .rail-collapsed .rail .rail-toggle{background:#fff!important}
-body.aura-light .rail-toggle{color:#596c73!important}
-body.aura-light .rail-close{color:#596c73!important}
-body.aura-light .rail-toggle:hover{color:#367079!important;border-color:rgba(8,45,57,0.12)!important}
-body.aura-light .rail-close:hover{color:#367079!important;border-color:rgba(8,45,57,0.12)!important}
-body.aura-light .rail-collapsed .rail-toggle{border-color:rgba(8,45,57,0.12)!important}
-body.aura-light .rail-toggle{color:#566c74!important}
-body.aura-light .rail-toggle:hover{color:#35707b!important;border-color:rgba(8,45,57,0.12)!important}
 body.aura-light .profile-hero{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
 body.aura-light .profile-back{color:#556c74!important;border:1px solid rgba(8,45,57,0.12)!important}
 body.aura-light .profile-back:hover{color:#35707b!important;border-color:rgba(8,45,57,0.18)!important}
@@ -1098,6 +1088,7 @@ body.aura-light .financial-intelligence-panel .financial-item-context b{color:#3
 body.aura-light .financial-intelligence-panel .financial-item-context p{color:#566d74!important}
 body.aura-light .financial-intelligence-panel .financial-item-context small{color:#546d76!important}
 body.aura-light .client-detail-shell .financial-intelligence-panel .financial-item{background:#fff!important}
+body.aura-light .rail .brand .rail-toggle:hover{border-color:rgba(8,45,57,0.14)!important}
 body.aura-light{background:#fff!important}
 body.aura-light .rail{background:#fff!important}
 body.aura-light .brand strong{color:#007186!important}
