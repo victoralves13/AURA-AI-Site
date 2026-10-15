@@ -197,7 +197,7 @@ class FakeSupabase:
         return s.get("owner_id") == uid and (s.get("org_id") is None or self._role(uid, s["org_id"]) is not None)
 
     def _live_ts(self):  # relógio controlável pelos testes (self.clock); sem ele, o padrão do simulador
-        return self.clock or self._ts()
+        return self.clock or datetime.now(timezone.utc).isoformat()
 
     def _live_write(self, table, method, payload, uid, match):
         sessions, chunks = self.tables["live_sessions"], self.tables["live_chunks"]

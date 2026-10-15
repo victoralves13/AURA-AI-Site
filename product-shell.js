@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const V={chat:['Conversar','AURA CHAT · PERGUNTE AOS SEUS DADOS'],overview:['Visão geral','AURA INTELLIGENCE CENTER'],analysis:['Nova análise','AURA INTELLIGENCE · INGESTÃO'],history:['Reuniões','AURA MEMORY · REUNIÕES'],clients:['Clientes','AURA MEMORY · CUSTOMER 360'],risks:['Riscos','AURA SIGNALS · RISCO'],opportunities:['Oportunidades','AURA SIGNALS · OPORTUNIDADES'],actions:['Ações','AURA EXECUTION · PRÓXIMOS MOVIMENTOS'],evolution:['Evolução','AURA MEMORY · O QUE MUDOU'],profile:['Perfil','AURA ACCOUNT · PERFIL']};
+const V={live:['Gravar ao vivo','AURA LIVE · GRAVAÇÃO DE REUNIÕES'],chat:['Conversar','AURA CHAT · PERGUNTE AOS SEUS DADOS'],overview:['Visão geral','AURA INTELLIGENCE CENTER'],analysis:['Nova análise','AURA INTELLIGENCE · INGESTÃO'],history:['Reuniões','AURA MEMORY · REUNIÕES'],clients:['Clientes','AURA MEMORY · CUSTOMER 360'],risks:['Riscos','AURA SIGNALS · RISCO'],opportunities:['Oportunidades','AURA SIGNALS · OPORTUNIDADES'],actions:['Ações','AURA EXECUTION · PRÓXIMOS MOVIMENTOS'],evolution:['Evolução','AURA MEMORY · O QUE MUDOU'],profile:['Perfil','AURA ACCOUNT · PERFIL']};
 const C=['Comercial','Financeiro','Operacional','Gestão','Estratégico','Risco & Compliance','Relacionamento','Outro'];
 const S='viewBox="0 0 24 24"';
 const I={
@@ -13,6 +13,7 @@ act:'<svg '+S+'><path d="M5 6h14M5 12h9M5 18h6"/><path d="m16 15 2 2 4-5"/></svg
 trend:'<svg '+S+'><path d="M4 18 9 12l4 3 7-9"/><path d="M16 6h4v4"/></svg>',
 plus:'<svg '+S+'><path d="M12 5v14M5 12h14"/></svg>',
 chat:'<svg '+S+'><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+mic:'<svg '+S+'><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>',
 left:'<svg '+S+'><path d="m14 6-6 6 6 6"/></svg>',
 right:'<svg '+S+'><path d="m10 6 6 6-6 6"/></svg>'
 };
@@ -35,7 +36,7 @@ function activate(id,scroll=true){
  document.querySelectorAll('.shell-nav').forEach(x=>x.classList.toggle('active',x.dataset.shellView===id));
  const t=document.getElementById('pageTitle'),e=document.querySelector('header .eyebrow');
  if(t)t.textContent=V[id][0]; if(e)e.textContent=V[id][1];
- document.body.dataset.auraView=id;document.body.classList.toggle('shell-generated-active',['chat','history','clients','risks','opportunities','actions','evolution','profile'].includes(id));
+ document.body.dataset.auraView=id;document.body.classList.toggle('shell-generated-active',['live','chat','history','clients','risks','opportunities','actions','evolution','profile'].includes(id));
  if(scroll)window.scrollTo({top:0,behavior:'smooth'});
  if(id==='history'){window.AURA_SYNC_MEETINGS?.();meeting();}
  if(id==='insights')intelligence();
@@ -43,6 +44,7 @@ function activate(id,scroll=true){
  if(id==='risks')signals('shellRisks','risco');
  if(id==='opportunities')signals('shellOpportunities','oportunidade');
  if(id==='actions')actions();
+ if(id==='live'&&window.AURA_LIVE_UI)window.AURA_LIVE_UI.render(document.getElementById('shellLive'));
  if(id==='chat'&&window.AURA_CHAT_UI)window.AURA_CHAT_UI.render(document.getElementById('shellChat'));
  if(id==='evolution')evolution();
  if(id==='profile')profile();
@@ -852,10 +854,11 @@ function setup(){
   syncToggle(localStorage.getItem('aura-rail-collapsed')==='1');
   if(localStorage.getItem('aura-rail-collapsed')==='1')document.body.classList.add('rail-collapsed');
  }
- const primary=[['analysis','plus','Nova análise'],['chat','chat','Conversar'],['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes']];
+ const primary=[['analysis','plus','Nova análise'],['chat','chat','Conversar'],['live','mic','Gravar ao vivo'],['overview','home','Visão geral'],['history','meet','Reuniões'],['clients','client','Clientes']];
  const intelligence=[['risks','risk','Riscos'],['opportunities','opp','Oportunidades'],['actions','act','Ações'],['evolution','trend','Evolução']];
- const item=(x)=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+(x[0]==='chat'?' shell-chat-nav':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>';
+ const item=(x)=>'<button class="shell-nav '+(x[0]==='overview'?'active':'')+(x[0]==='chat'?' shell-chat-nav':'')+(x[0]==='live'?' shell-live-nav':'')+'" data-shell-view="'+x[0]+'" title="'+x[2]+'"><i>'+I[x[1]]+'</i><span>'+x[2]+'</span></button>';
  n.innerHTML='<div class="shell-nav-primary">'+item(primary[0])+'</div>'+primary.slice(1).map(item).join('')+'<div class="shell-nav-divider"></div><div class="shell-nav-label">INTELIGÊNCIA</div>'+intelligence.map(item).join('')+'<div class="shell-nav-divider profile-nav-divider"></div><div class="shell-nav-profile">'+item(['profile','client','Perfil'])+'</div>';
+ add('live','Gravar ao vivo','AURA LIVE','Grave uma reunião em andamento: o áudio é guardado com segurança enquanto você grava.','shellLive');
  add('chat','Conversar','AURA CHAT','Pergunte sobre reuniões, clientes e ações. Cada resposta traz o trecho que a comprova.','shellChat');
  add('clients','Clientes','CUSTOMER 360','Entenda a história de cada relacionamento a partir das reuniões que o AURA conhece.','shellClients');
  add('risks','Riscos','RISK CENTER','Sinais que merecem atenção, sempre ligados às evidências das reuniões.','shellRisks');

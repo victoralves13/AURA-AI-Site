@@ -441,3 +441,23 @@ Migração `20261014210000_etapa6_ao_vivo.sql` (aditiva; **aplique antes de usar
 - O acesso ao bucket fica em `api/storage_io.py` (chave de serviço só no backend). Limitação conhecida: sessões de ex-membros de uma organização
   ficam invisíveis, mas seus áudios continuam no bucket até alguém apagá-los; a limpeza automática entra na política de retenção da 6.5.
 Testes: `python -m unittest discover -s tests` e `node tests/db/live.test.mjs`.
+
+## Etapa 6.2 — Gravação no navegador (sem migração nova)
+
+Arquivos novos: `live-ui.js` e `live-ui.css` (no `vercel.json` e no `smoke_deploy.py`); `product-shell.js` ganhou a área **Gravar ao vivo** no menu (só aparece com login).
+- **Gravação:** o microfone é gravado em pedaços INDEPENDENTES de ~30 s (um gravador novo começa antes de o anterior parar, sem buraco no áudio) e cada pedaço
+  vai direto ao bucket privado por URL assinada e é registrado na API. Formatos escolhidos pelo navegador: webm/opus, mp4 (Safari) ou ogg.
+- **Consentimento:** o botão "Iniciar gravação" só habilita depois de marcar "Avisei os participantes de que esta reunião está sendo gravada".
+  Indicador de gravação sempre visível (ponto pulsante, cronômetro e título da aba "● Gravando"), medidor de nível do microfone, pausar/retomar, e o aviso
+  de fechar a aba. O bloqueio de tela (Wake Lock) é pedido quando o navegador permite.
+- **Sem perder áudio:** cada pedaço é guardado em IndexedDB antes de enviar e só sai de lá depois de registrado. Queda de rede ou erro do servidor = nova
+  tentativa automática com espera crescente (e imediata quando a conexão volta). Ao encerrar, espera até 60 s pelos últimos pedaços; se a conexão estiver
+  ruim, o áudio continua guardado no aparelho e sai depois. Se a gravação foi marcada como interrompida enquanto isso, ela é reaberta automaticamente para
+  receber o áudio. Perda possível: no máximo o pedaço em curso (<30 s) se a aba for fechada de repente. Sem IndexedDB, o app avisa que a proteção é menor.
+- **Gravações interrompidas:** lista com **Finalizar** (pede o encerramento) e **Descartar** (confirma; apaga áudio e registros). 
+- **Ainda não existe:** transcrição contínua (6.3), alertas silenciosos (6.4) e a análise automática da reunião ao encerrar (6.5). Hoje o encerramento só
+  deixa a gravação em "processando" com o áudio guardado.
+- **Teste real (microfone de verdade, você faz):** abra o preview, vá em Gravar ao vivo, marque o consentimento, grave 2 minutos falando, pause e retome,
+  desligue o Wi-Fi por 1 minuto e religue, encerre. Confira que o contador de "Enviados" sobe e a fila volta a 0. Teste no celular também (Chrome e Safari).
+  Em Safari/iOS o navegador pode exigir um toque para liberar o microfone e pode pausar a gravação com a tela bloqueada.
+- Versões de cache no `index.html`: `live-ui` v3.
