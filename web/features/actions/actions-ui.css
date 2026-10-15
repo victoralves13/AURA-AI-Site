@@ -1,0 +1,56 @@
+/* AURA AI — ações acompanháveis (estado, responsável, prazo, resultados) */
+.act-screen{display:grid;gap:16px}
+.act-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px 16px}
+.act-head h2{margin:2px 0 4px;font-size:24px}
+.act-head p{margin:0;max-width:640px;color:#8fa8b0;font-size:13px;line-height:1.55}
+.act-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.act-stat{display:grid;gap:3px;padding:14px;border:1px solid rgba(98,233,250,.16);border-radius:12px;background:rgba(4,16,29,.7)}
+.act-stat span{color:#7895a4;font:600 10px 'DM Mono',monospace;letter-spacing:.09em}
+.act-stat b{font-size:24px;color:#eaf8fa}
+.act-stat small{color:#7895a4;font-size:11.5px}
+.act-filters{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.act-filters select{padding:8px 10px;border:1px solid rgba(105,205,230,.2);border-radius:10px;background:#04101d;color:#e9fbff;font:600 13px Manrope,system-ui,sans-serif}
+.act-filters select:focus-visible,.act-check input:focus-visible{outline:2px solid #62e9fa;outline-offset:2px}
+.act-check{display:inline-flex;align-items:center;gap:6px;color:#a9c1c6;font-size:12.5px;cursor:pointer}
+.act-list{display:grid;gap:8px}
+.act-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px;border:1px solid rgba(105,205,230,.14);border-radius:12px;background:rgba(4,16,29,.7);color:#e9fbff;text-align:left;cursor:pointer;font:inherit}
+.act-row:hover{border-color:rgba(98,233,250,.4)}
+.act-row:focus-visible{outline:2px solid #62e9fa;outline-offset:2px}
+.act-row.closed{opacity:.72}
+.act-row-main{display:grid;gap:7px;min-width:0;flex:1}
+.act-row h3{margin:0;font-size:14.5px;line-height:1.45;overflow-wrap:anywhere}
+.act-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;color:#8fa8b0;font-size:12px}
+.act-chevron{flex:none;color:#62e9fa;font-size:22px}
+.act-badges{display:flex;flex-wrap:wrap;gap:6px}
+.act-badge{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(170,220,230,.22);color:#c3d8dc;font:600 10.5px Manrope,system-ui,sans-serif}
+.act-badge.st-open{border-color:rgba(98,233,250,.5);color:#8ff1ff}
+.act-badge.st-in_progress{border-color:rgba(242,200,111,.55);color:#f3dca5}
+.act-badge.st-done,.act-badge.eff-worked{border-color:rgba(120,230,170,.55);color:#9df0c1}
+.act-badge.st-cancelled{color:#8fa8b0}
+.act-badge.late,.act-badge.eff-not_worked{border-color:rgba(255,120,152,.6);color:#ff9bb0}
+.act-badge.eff-partial,.act-badge.basis-inferido{border-color:rgba(242,200,111,.55);color:#f3dca5}
+.act-badge.eff-uncertain{border-style:dashed}
+.act-badge.basis-dito{border-color:rgba(120,230,170,.45);color:#9df0c1}
+.act-full-text{margin:0 0 10px;font-size:15px;line-height:1.55;overflow-wrap:anywhere}
+.act-evidence blockquote{margin:0;padding:10px 12px;border-left:3px solid #62e9fa;background:rgba(98,233,250,.05);color:#d7edf1;font-size:13px;line-height:1.55}
+.act-outcome{display:grid;gap:6px;padding:11px 12px;margin-bottom:8px;border:1px solid rgba(105,205,230,.12);border-radius:10px}
+.act-outcome.latest{border-color:rgba(98,233,250,.35)}
+.act-outcome p{margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.act-outcome small,.act-event small{color:#7895a4;font-size:11.5px}
+.act-event{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:7px 0;border-bottom:1px solid rgba(105,205,230,.08);font-size:12.5px}
+.act-event span{color:#a9c1c6}
+.aura-form textarea{width:100%}
+.act-meeting-panel{margin:18px 0;padding:16px;border:1px solid rgba(98,233,250,.18);border-radius:14px;background:rgba(4,16,29,.6);display:grid;gap:12px}
+.act-meeting-head h3{margin:2px 0 0;font-size:16px}
+.act-add{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:center}
+.act-add input:first-child{grid-column:1/-1}
+@media (max-width:560px){.act-row{padding:12px}.act-stat b{font-size:20px}}
+.act-feedback-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.act-feedback-btns .aura-btn[aria-pressed=true]{box-shadow:0 0 0 2px rgba(98,233,250,.35)}
+.act-insight{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;padding:14px;border:1px solid rgba(98,233,250,.14);border-radius:12px;background:rgba(4,16,29,.5)}
+.act-insight h3{margin:0 0 8px;color:#7895a4;font:600 10.5px 'DM Mono',monospace;letter-spacing:.09em;text-transform:uppercase}
+.act-insight ul{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.act-insight li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:12.5px;color:#c3d8dc}
+.act-insight li b{color:#eaf8fa;font-size:15px}
+.act-insight li small{color:#7895a4}
+.act-client-panel{margin-top:18px}

@@ -1,0 +1,1198 @@
+/* AURA AI — tema claro: texto, fundos e bordas. GERADO por scripts/gen_light_theme.py (não edite à mão).
+   Cada regra de texto claro do tema escuro ganha a versão escurecida (mesma matiz) para o tema claro. */
+body.aura-light .aura-auth{color:#00748d!important;background:#fff!important}
+body.aura-light .aura-auth-card{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .aura-auth-card p.aura-auth-sub{color:#516b79!important}
+body.aura-light .aura-auth-form label{color:#4d6e74!important}
+body.aura-light .aura-auth-form input{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-auth-msg.error{color:#d40032!important}
+body.aura-light .aura-auth-msg.ok{color:#12785a!important}
+body.aura-light .aura-auth-link{color:#047482!important}
+body.aura-light .aura-user-chip{color:#4d6e74!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-user-out{color:#1e737f!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .aura-user-out:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-space-select{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .aura-space-manage{color:#1e737f!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .aura-space-manage:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-panel-backdrop{background:#fff!important}
+body.aura-light .aura-panel{color:#00748d!important;background:#fff!important;border-left:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .aura-panel-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-panel-head small{color:#516b79!important}
+body.aura-light .aura-panel-close{color:#1e737f!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .aura-section h3{color:#516b79!important}
+body.aura-light .aura-section p.aura-note{color:#516b79!important}
+body.aura-light .aura-form label{color:#4d6e74!important}
+body.aura-light .aura-form input{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-form select{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-row select{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-btn.ghost{color:#1e737f!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-btn.danger{color:#d3002c!important}
+body.aura-light .aura-row{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-row small{color:#516b79!important}
+body.aura-light .aura-badge{color:#047482!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .aura-badge.expired{color:#d3002c!important}
+body.aura-light .aura-msg.error{color:#d40032!important}
+body.aura-light .aura-msg.ok{color:#12785a!important}
+body.aura-light .aura-invite-result{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .aura-invite-result input{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-empty{color:#516b79!important}
+body.aura-light .aura-toast{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .act-head p{color:#536e76!important}
+body.aura-light .act-stat{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .act-stat span{color:#516b79!important}
+body.aura-light .act-stat b{color:#1e737f!important}
+body.aura-light .act-stat small{color:#516b79!important}
+body.aura-light .act-filters select{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .act-check{color:#4d6e74!important}
+body.aura-light .act-row{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .act-row:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-meta{color:#536e76!important}
+body.aura-light .act-chevron{color:#047482!important}
+body.aura-light .act-badge{color:#467078!important;border:1px solid rgba(8,45,57,0.22)!important}
+body.aura-light .act-badge.st-open{color:#007485!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-badge.st-in_progress{color:#876412!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-badge.st-done{color:#12773e!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-badge.eff-worked{color:#12773e!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-badge.st-cancelled{color:#536e76!important}
+body.aura-light .act-badge.late{color:#d3002c!important}
+body.aura-light .act-badge.eff-not_worked{color:#d3002c!important}
+body.aura-light .act-badge.eff-partial{color:#876412!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-badge.basis-inferido{color:#876412!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-badge.basis-dito{color:#12773e!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-evidence blockquote{color:#2c727e!important;border-left:3px solid rgba(8,45,57,0.30)!important}
+body.aura-light .act-outcome{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .act-outcome.latest{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .act-outcome small{color:#516b79!important}
+body.aura-light .act-event small{color:#516b79!important}
+body.aura-light .act-event{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .act-event span{color:#4d6e74!important}
+body.aura-light .act-meeting-panel{background:#fff!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .act-insight{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .act-insight h3{color:#516b79!important}
+body.aura-light .act-insight li{color:#467078!important}
+body.aura-light .act-insight li b{color:#1e737f!important}
+body.aura-light .act-insight li small{color:#516b79!important}
+body.aura-light .ev-badge.said{color:#007195!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .ev-badge.inferred{color:#89610c!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .ev-badge.ok{color:#12785a!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .ev-badge.partial{color:#89610c!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .ev-badge.missing{color:#d3002c!important}
+body.aura-light .ev-speaker{color:#536e76!important}
+body.aura-light .ev-confidence{color:#536e76!important}
+body.aura-light .ev-meta{color:#536e76!important}
+body.aura-light .ev-rationale{color:#7c6731!important;border-left:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .ev-warning{color:#d2002c!important}
+body.aura-light .ev-quote{color:#496f79!important;border-left:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .ev-banner{color:#1f7558!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .ev-banner.warn{color:#d1002d!important}
+body.aura-light .ev-banner.muted{color:#536e76!important;border-color:rgba(8,45,57,0.20)!important}
+body.aura-light #realAudioZone{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .real-audio-head strong{color:#32737d!important}
+body.aura-light .real-audio-head p{color:#576d74!important}
+body.aura-light .real-badge{color:#0d747d!important;border:1px solid rgba(8,45,57,0.22)!important}
+body.aura-light .real-audio-drop{background:#fff!important;border:1px dashed rgba(8,45,57,0.20)!important}
+body.aura-light .real-audio-drop:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .real-audio-drop.dragging{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .real-audio-icon{color:#0d727a!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .real-audio-drop strong{color:#3f7079!important}
+body.aura-light .real-audio-drop span{color:#546d76!important}
+body.aura-light .real-audio-status{color:#546d76!important}
+body.aura-light .chat-list{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .chat-conv{color:#00748d!important}
+body.aura-light .chat-conv.active{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .chat-conv small{color:#516b79!important}
+body.aura-light .chat-conv-del{color:#516b79!important}
+body.aura-light .chat-conv-del:hover{color:#d3002c!important}
+body.aura-light .chat-head small{color:#516b79!important}
+body.aura-light .chat-rename input{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.25)!important}
+body.aura-light .chat-thread{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .chat-empty p{color:#536e76!important}
+body.aura-light .chat-suggest{color:#2c727e!important;border:1px solid rgba(8,45,57,0.28)!important}
+body.aura-light .chat-bubble{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .chat-msg.user .chat-bubble{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .chat-note{color:#536e76!important}
+body.aura-light .chat-who{color:#047482!important}
+body.aura-light .chat-evidence{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .chat-evidence.lv-forte{color:#12773e!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .chat-evidence.lv-parcial{color:#876412!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .chat-evidence.lv-insuficiente{color:#d3002c!important}
+body.aura-light .chat-wait{color:#536e76!important}
+body.aura-light .chat-sources{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .chat-chip{color:#2c727e!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .chat-chip[aria-expanded=true]{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .chat-chip small{color:#516b79!important}
+body.aura-light .chat-source-card{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .chat-source-card blockquote{color:#2c727e!important;border-left:3px solid rgba(8,45,57,0.30)!important}
+body.aura-light .chat-source-card small{color:#516b79!important}
+body.aura-light .chat-composer textarea{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.25)!important}
+body.aura-light .chat-foot{color:#566c74!important}
+body.aura-light .chat-list .aura-note{color:#516b79!important}
+body.aura-light .client-link-chip{color:#2c727e!important;border:1px solid rgba(8,45,57,0.22)!important}
+body.aura-light .client-link-chip.suggested{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .client-link-chip.unlinked{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .client-link-text span{color:#536e76!important}
+body.aura-light .pending-clients{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .pending-clients h3{color:#876412!important}
+body.aura-light .client-manage-bar{background:#fff!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .client-manage-info span{color:#536e76!important}
+body.aura-light .aura-form textarea{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .int-h{color:#1e737f!important}
+body.aura-light .int-warn{color:#8e6100!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .int-empty{color:#546d76!important}
+body.aura-light .int-form{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .int-form label{color:#4f6c74!important}
+body.aura-light .int-form input[type=text]{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.25)!important}
+body.aura-light .int-form input[type=url]{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.25)!important}
+body.aura-light .int-form legend{color:#4f6c74!important}
+body.aura-light .int-check{color:#1e737f!important}
+body.aura-light .int-card{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .int-card b{color:#1e737f!important}
+body.aura-light .int-card small{color:#546d76!important}
+body.aura-light .int-reason{color:#d3002c!important}
+body.aura-light .int-badge{color:#4f6c74!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .int-badge.active{color:#137642!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .int-badge.disabled{color:#d3002c!important}
+body.aura-light .int-secret-box{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .int-secret-box b{color:#1e737f!important}
+body.aura-light .int-secret-box p{color:#4f6c74!important}
+body.aura-light .int-secret{color:#007487!important;background:#fff!important}
+body.aura-light .int-help{color:#546d76!important}
+body.aura-light .live-card{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .live-card .aura-note{color:#516b79!important}
+body.aura-light .live-check{color:#467078!important}
+body.aura-light .live-consent{color:#876412!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .live-recording{background:#fff!important}
+body.aura-light .live-recording.paused{background:#fff!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .live-status b{color:#d3002c!important}
+body.aura-light .live-recording.paused .live-status b{color:#876412!important}
+body.aura-light .live-title{color:#4d6e74!important}
+body.aura-light .live-timer{color:#1e737f!important}
+body.aura-light .live-stats{color:#536e76!important}
+body.aura-light .live-stats.warn{color:#876412!important}
+body.aura-light .live-done{color:#12773e!important}
+body.aura-light .live-finished{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .live-finished p{color:#467078!important}
+body.aura-light .live-row-main small{color:#516b79!important}
+body.aura-light .live-transcript{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .live-tr-head small{color:#516b79!important}
+body.aura-light .live-line{color:#00748d!important}
+body.aura-light .live-line time{color:#047482!important}
+body.aura-light .live-line.pending span{color:#566c74!important}
+body.aura-light .live-line.silent span{color:#566c74!important}
+body.aura-light .live-line.failed span{color:#d3002c!important}
+body.aura-light .live-tr-empty{color:#566c74!important}
+body.aura-light .live-tr-note{color:#536e76!important}
+body.aura-light .live-tr-note.warn{color:#876412!important}
+body.aura-light .live-alerts{background:#fff!important;border:1px solid rgba(8,45,57,0.28)!important}
+body.aura-light .live-al-count{color:#876412!important}
+body.aura-light .live-alert{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important;border-left:4px solid rgba(8,45,57,0.30)!important}
+body.aura-light .live-alert p{color:#00748d!important}
+body.aura-light .live-al-top time{color:#516b79!important}
+body.aura-light .live-al-check{color:#516b79!important}
+body.aura-light .live-al-quote{color:#2c727e!important;border-left:3px solid rgba(8,45,57,0.30)!important}
+body.aura-light .live-cons p{color:#467078!important}
+body.aura-light .live-cons.ok{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .live-cons.warn{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .live-cons.ok>b{color:#12773e!important}
+body.aura-light .live-cons.warn>b{color:#876412!important}
+body.aura-light .live-cons.error>b{color:#d3002c!important}
+body.aura-light .onb-chip{color:#007487!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .onb-step{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .onb-step b{color:#1e737f!important}
+body.aura-light .onb-step small{color:#546d76!important}
+body.aura-light .onb-status{color:#546d76!important}
+body.aura-light .onb-step.done .onb-status{color:#137642!important}
+body.aura-light .command-card{background:#fff!important}
+body.aura-light .command-item{background:#fff!important}
+body.aura-light .command-item small{color:#546d76!important}
+body.aura-light .priority{border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .priority.medium{border-color:rgba(8,45,57,0.20)!important}
+body.aura-light .radar span{color:#5b6c72!important}
+body.aura-light .context-tabs button.active{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .evidence-card{background:#fff!important}
+body.aura-light .quote{color:#4d6d76!important;background:#fff!important}
+body.aura-light .explain-pill{color:#566d73!important}
+body.aura-light .impact span{color:#546d76!important}
+body.aura-light .next-move{background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .client-card{background:#fff!important}
+body.aura-light .client-card:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .guide{background:#fff!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .guide-input input{background:#fff!important}
+body.aura-light .guide-answer{color:#536e75!important}
+body.aura-light .demo-note{color:#546d76!important}
+body.aura-light .transform-step{background:#fff!important}
+body.aura-light .transform-step span{color:#546d76!important}
+body.aura-light .transform-step small{color:#546d76!important}
+body.aura-light .transform-step.active{border-color:rgba(8,45,57,0.24)!important}
+body.aura-light .transform-step.final{background:#fff!important;border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .transform-arrow{color:#546d76!important}
+body.aura-light .value-bottom{background:#fff!important}
+body.aura-light .value-bottom span{color:#546d76!important}
+body.aura-light .value-divider{color:#546d76!important}
+body.aura-light .score-explain{background:#fff!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .score-explain p{color:#546d76!important}
+body.aura-light .score-factors span{color:#546d76!important}
+body.aura-light .guide{background:#fff!important}
+body.aura-light .guide-input input:focus{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .guide-answer{background:#fff!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .guide-response-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .guide-spark{border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .guide-response-text{color:#40717a!important}
+body.aura-light .guide-response-foot{color:#546d76!important;border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .guide:has(.guide-answer.show) .guide-input input{color:#546d76!important;background:#fff!important}
+body.aura-light .priority-center{background:#fff!important}
+body.aura-light .aura-pulse{background:#fff!important}
+body.aura-light .insight-day{background:#fff!important}
+body.aura-light .executive-brief{background:#fff!important}
+body.aura-light .priority-grid button{background:#fff!important}
+body.aura-light .priority-grid button:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .priority-grid .rank{color:#546d76!important}
+body.aura-light .priority-grid small{color:#546d76!important}
+body.aura-light .live-pill{border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .pulse-items span{color:#586b71!important}
+body.aura-light .insight-day-mark{border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .insight-day p{color:#546d76!important}
+body.aura-light .executive-brief p{color:#546d76!important}
+body.aura-light .brief-output{color:#4a6d76!important;background:#fff!important}
+body.aura-light .quality-strip{border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .quality-note{color:#546d76!important}
+body.aura-light .timeline-panel{background:#fff!important}
+body.aura-light .next-best{background:#fff!important}
+body.aura-light .evidence-mode{background:#fff!important}
+body.aura-light .human-loop{background:#fff!important}
+body.aura-light .signal-timeline>div{background:#fff!important}
+body.aura-light .signal-timeline small{color:#546d76!important}
+body.aura-light .next-best{background:#fff!important;border-color:rgba(8,45,57,0.15)!important}
+body.aura-light .next-best p{color:#586d73!important}
+body.aura-light .nba-meta span{color:#546d76!important}
+body.aura-light .evidence-mode p{color:#546d76!important}
+body.aura-light .evidence-highlight>div{background:#fff!important}
+body.aura-light .evidence-highlight span{color:#546d76!important}
+body.aura-light .evidence-highlight p{color:#4c6d74!important}
+body.aura-light .mini-actions button.selected{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .modal-backdrop{background:#fff!important}
+body.aura-light .client-modal{background:#fff!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .modal-close{color:#546d76!important}
+body.aura-light .client-modal-head p{color:#546d76!important}
+body.aura-light .client-mini-score{border:1px solid rgba(8,45,57,0.24)!important}
+body.aura-light .client-mini-score small{color:#546d76!important}
+body.aura-light .client-stats span{color:#546d76!important}
+body.aura-light .client-history>div{color:#566c73!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-next{border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .impact-panel{background:#fff!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .impact-card{background:#fff!important}
+body.aura-light .impact-card p{color:#546d76!important}
+body.aura-light .impact-story{border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .impact-story p{color:#546d76!important}
+body.aura-light .aura-top-status{color:#5b6d73!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-clean{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-clean-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-section-label{color:#546d76!important}
+body.aura-light .aura-clean-action{color:#23737b!important;border:1px solid rgba(8,45,57,0.24)!important}
+body.aura-light .aura-clean-action b{color:#087581!important}
+body.aura-light .aura-kpis>div{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-kpis span{color:#546d76!important}
+body.aura-light .aura-kpis small{color:#596a71!important}
+body.aura-light .aura-board-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-link{color:#147580!important}
+body.aura-light .aura-board-row{color:#3f717b!important;border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-board-row small{color:#546d76!important}
+body.aura-light .aura-board-row em{color:#586b71!important}
+body.aura-light .aura-date{color:#546d76!important}
+body.aura-light .aura-demo{color:#087581!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .aura-empty-row small{color:#546d76!important}
+body.aura-light .aura-mini-chart{border-top:1px solid rgba(8,45,57,0.12)!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-trend-value{color:#20747d!important}
+body.aura-light .aura-trend-label{color:#4c6f77!important}
+body.aura-light .aura-trend-item small{color:#546d76!important}
+body.aura-light .aura-chart-subtitle{color:#5a6c72!important}
+body.aura-light .aura-chart-empty{color:#546d76!important}
+body.aura-light .aura-chart-meta{color:#546d76!important}
+body.aura-light .aura-chart-meta b{color:#4b6f77!important}
+body.aura-light .intel-kpis>div{background:#fff!important}
+body.aura-light .intel-kpis span{color:#576b75!important}
+body.aura-light .intel-kpis b{color:#237194!important}
+body.aura-light .intel-grid h3{color:#256f86!important}
+body.aura-light .intel-reading b{color:#2c7184!important}
+body.aura-light .intel-reading small{color:#596c75!important}
+body.aura-light .intel-reading span{color:#596c75!important}
+body.aura-light .aura-history-list{background:#fff!important}
+body.aura-light .aura-history-row b{color:#2c7184!important}
+body.aura-light .aura-history-row small{color:#5a6d75!important}
+body.aura-light .aura-history-row time{color:#5a6d75!important}
+body.aura-light .aura-history-row small{color:#586b73!important}
+body.aura-light .aura-history-row time{color:#586b73!important}
+body.aura-light .aura-board-card:nth-child(2) .aura-date{color:#536c78!important}
+body.aura-light .aura-board-card:nth-child(2) .aura-date{color:#536d79!important}
+body.aura-light .aura-evolution .aura-trend-value{color:#187379!important}
+body.aura-light .aura-evolution .aura-trend-bar::before{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-evolution .aura-trend-label{color:#486e78!important}
+body.aura-light .aura-evolution .aura-trend-item small{color:#586b72!important}
+body.aura-light .aura-home-hero{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-kicker{color:#546d74!important}
+body.aura-light .aura-home-hero h1{color:#22737a!important}
+body.aura-light .aura-home-hero h1 em{color:#087581!important}
+body.aura-light .aura-home-hero p{color:#586d75!important}
+body.aura-light .aura-home-primary{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .aura-home-secondary{color:#4d6f77!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .aura-home-primary:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-home-secondary:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-orb-core{background:#fff!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .aura-orb-core span{color:#107178!important}
+body.aura-light .aura-orbit-ring{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-orbit-ring.ring-a{border-right-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-orbit-ring.ring-b{border-left-color:rgba(8,45,57,0.24)!important}
+body.aura-light .aura-home-context span{color:#546d76!important}
+body.aura-light .aura-home-context strong{color:#127857!important}
+body.aura-light .aura-home-context small{color:#546d76!important}
+body.aura-light .aura-command-strip{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-command-strip>div{border-right:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-command-intro span{color:#546d76!important}
+body.aura-light .aura-command-metric span{color:#546d76!important}
+body.aura-light .panel-label{color:#546d76!important}
+body.aura-light .aura-home-section-head>div>span{color:#546d76!important}
+body.aura-light .aura-command-intro strong{color:#38707a!important}
+body.aura-light .aura-command-intro p{color:#5a6d73!important}
+body.aura-light .aura-command-metric strong{color:#27747e!important}
+body.aura-light .aura-command-metric strong.critical{color:#d4002b!important}
+body.aura-light .aura-command-metric strong.positive{color:#157557!important}
+body.aura-light .aura-command-metric small{color:#546d76!important}
+body.aura-light .aura-home-link{color:#147580!important}
+body.aura-light .aura-home-panel{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-panel-head>div>p{color:#546d76!important}
+body.aura-light .panel-count{color:#d30026!important}
+body.aura-light .aura-home-row{color:#38707a!important;border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-row p{color:#526d75!important}
+body.aura-light .aura-home-row small{color:#5b6d73!important}
+body.aura-light .aura-home-row>b{color:#546d76!important}
+body.aura-light .aura-home-row.compact em{color:#576b71!important}
+body.aura-light .aura-row-date{color:#576d74!important}
+body.aura-light .aura-home-empty strong{color:#486e77!important}
+body.aura-light .aura-home-empty span{color:#546d76!important}
+body.aura-light .aura-trajectory-meta strong{color:#087581!important}
+body.aura-light .aura-trajectory-meta span{color:#546d76!important}
+body.aura-light .aura-pulse-chart{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-pulse-point>span{color:#566e74!important}
+body.aura-light .aura-pulse-point>small{color:#546d76!important}
+body.aura-light .aura-home-next{color:#38707a!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-next:hover{border-color:rgba(8,45,57,0.23)!important}
+body.aura-light .aura-home-next b{color:#147580!important}
+body.aura-light .aura-command-strip>div:nth-child(2){border-right:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-command-strip>div{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-hero{background:#fff!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-hero p{color:#5a6d74!important}
+body.aura-light .aura-home-context{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-facts{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-facts>div+div{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-home-facts b{color:#38707a!important}
+body.aura-light .aura-home-facts span{color:#546d76!important}
+body.aura-light .aura-home-context{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-overview{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-mini-avatar{color:#10737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .aura-profile-overview-main h3{color:#387075!important}
+body.aura-light .aura-profile-overview-main p{color:#596d74!important}
+body.aura-light .aura-profile-overview-facts div{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-overview-facts span{color:#546d76!important}
+body.aura-light .aura-profile-overview-facts b{color:#4e6d74!important}
+body.aura-light .aura-profile-open{color:#087581!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .aura-profile-open:hover{border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .aura-profile-overview{background:#fff!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-overview-main p{color:#566c73!important}
+body.aura-light .aura-profile-overview-facts span{color:#5a6b72!important}
+body.aura-light .aura-profile-overview-facts b{color:#436f76!important}
+body.aura-light .aura-line-chart{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-line-chart{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-inline-meeting-detail{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-inline-back{border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .meeting-back-button{border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .aura-v2-search{color:#546d76!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-v2-search input{color:#1e737f!important}
+body.aura-light .aura-v2-search input::placeholder{color:#546d76!important}
+body.aura-light .aura-v2-profile{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-v2-profile-avatar{color:#087581!important;background:#fff!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .aura-v2-profile small{color:#546d76!important}
+body.aura-light .aura-profile-panel{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .aura-profile-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-head p{color:#546d76!important}
+body.aura-light .aura-profile-row{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-profile-row span{color:#546d76!important}
+body.aura-light .rail-collapse{color:#546d76!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .shell-nav-label{color:#546d76!important}
+body.aura-light .shell-new-analysis{color:#087581!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .shell-page-head p{color:#546d76!important}
+body.aura-light .shell-empty{background:#fff!important;border:1px dashed rgba(8,45,57,0.13)!important}
+body.aura-light .shell-empty span{color:#546d76!important}
+body.aura-light .client-shell-card{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-shell-card:hover{border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .client-avatar{color:#087581!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .client-shell-card p{color:#546d76!important}
+body.aura-light .client-shell-card>div:last-child span{color:#546d76!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .shell-list{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .signal-shell-row{color:#1e737f!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-row{color:#1e737f!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .signal-shell-row small{color:#546d76!important}
+body.aura-light .meeting-row small{color:#546d76!important}
+body.aura-light .signal-shell-row em{color:#d4002c!important}
+body.aura-light .meeting-row time{color:#546d76!important}
+body.aura-light .meeting-filter span{color:#546d76!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-list{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-detail-head{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-detail-head p{color:#546d76!important}
+body.aura-light .detail-badge{color:#087581!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .detail-badge.danger{color:#d4002c!important}
+body.aura-light .detail-metrics>div{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .detail-metrics span{color:#546d76!important}
+body.aura-light .detail-micro-grid span{color:#546d76!important}
+body.aura-light .shell-local-tabs button{color:#546d76!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .shell-local-tabs button.active{color:#1e737f!important;border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .detail-panel{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .detail-panel>p{color:#526c73!important}
+body.aura-light .detail-muted{color:#546d76!important}
+body.aura-light .detail-evidence{color:#4d6d76!important;background:#fff!important;border-left:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .detail-line{color:#4d6d76!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .detail-micro-grid>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-timeline-item{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-timeline-item span{color:#546d76!important}
+body.aura-light .meeting-timeline-item p{color:#546d76!important}
+body.aura-light .evolution-client{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-head>strong{color:#087581!important}
+body.aura-light .evolution-track>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-track span{color:#546d76!important}
+body.aura-light .evolution-track small{color:#546d76!important}
+body.aura-light .evolution-note{color:#546d76!important;border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .context-picker{background:#fff!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .context-picker p{color:#546d76!important}
+body.aura-light .context-option{color:#546d76!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .context-option.selected{color:#1e737f!important;border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .aura-analysis-flow{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-source-card{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-source-card:hover{border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .aura-source-card.selected{background:#fff!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-source-card span{color:#546d76!important}
+body.aura-light .aura-demo-meta span{color:#087581!important}
+body.aura-light .aura-demo-select{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-demo-text{color:#416f78!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-search-results{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .aura-search-result{color:#1e737f!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-search-result small{color:#546d76!important}
+body.aura-light .aura-demo-badge{color:#087581!important;border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .hero{background:#fff!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .shell-nav{color:#546d76!important}
+body.aura-light .shell-nav i{color:#546d76!important}
+body.aura-light .shell-nav:hover{color:#2e727b!important}
+body.aura-light .shell-nav.active{color:#13737c!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .shell-new-analysis{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .rail-collapse{color:#546d76!important;background:#fff!important}
+body.aura-light .rail-collapse:hover{color:#3a7179!important;border-color:rgba(8,45,57,0.22)!important}
+body.aura-light .client-shell-card{background:#fff!important}
+body.aura-light .client-shell-card:hover{background:#fff!important;border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .client-avatar{border:1px solid rgba(8,45,57,0.15)!important}
+body.aura-light .client-shell-card>div:last-child{color:#576d75!important}
+body.aura-light .signal-shell-row{background:#fff!important}
+body.aura-light .action-shell-row{background:#fff!important}
+body.aura-light .signal-shell-row:hover{border-color:rgba(8,45,57,0.22)!important}
+body.aura-light .signal-shell-row small{color:#546d75!important}
+body.aura-light .signal-shell-row em{color:#4e6c76!important}
+body.aura-light .action-shell-row p{color:#546d76!important}
+body.aura-light .shell-empty{color:#546d76!important;background:#fff!important;border:1px dashed rgba(8,45,57,0.13)!important}
+body.aura-light .shell-empty strong{color:#37717e!important}
+body.aura-light .meeting-filter-risk{color:#d4001d!important}
+body.aura-light .meeting-filter-opportunity{color:#167656!important;border-color:rgba(8,45,57,0.24)!important}
+body.aura-light .meeting-filter span{color:#576b73!important}
+body.aura-light .meeting-row{background:#fff!important}
+body.aura-light .meeting-row:hover{background:#fff!important;border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .meeting-row small{color:#4e6c76!important}
+body.aura-light .meeting-row time{color:#4e6c76!important}
+body.aura-light .meeting-row time{color:#506d75!important}
+body.aura-light .meeting-detail{background:#fff!important}
+body.aura-light .detail-metrics>div{background:#fff!important}
+body.aura-light .detail-panel{background:#fff!important}
+body.aura-light .detail-panel p{color:#566d76!important}
+body.aura-light .detail-next{color:#31717b!important}
+body.aura-light .detail-evidence{color:#4f6f77!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .detail-line{color:#4f6f77!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .context-option{color:#546d76!important;background:#fff!important}
+body.aura-light .context-option.selected{color:#17727c!important;border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .evolution-client{background:#fff!important}
+body.aura-light .evolution-track>div{background:#fff!important}
+body.aura-light .evolution-note{color:#596d74!important;border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .shell-local-tabs{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .shell-local-tabs button{color:#546d76!important}
+body.aura-light .shell-local-tabs button:hover{color:#3a7179!important}
+body.aura-light .shell-local-tabs button.active{color:#0b747f!important;border-color:rgba(8,45,57,0.20)!important}
+body.aura-light .detail-micro-grid>div{background:#fff!important}
+body.aura-light .client-detail-shell{background:#fff!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .insight-head p{color:#546d76!important}
+body.aura-light .insight-count{color:#566c73!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .meeting-insight{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .insight-index{color:#546d76!important}
+body.aura-light .insight-type{color:#556e75!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .meeting-insight.risco .insight-type{color:#d50027!important}
+body.aura-light .meeting-insight.oportunidade .insight-type{color:#197757!important;border-color:rgba(8,45,57,0.20)!important}
+body.aura-light .insight-time{color:#0e757a!important;border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .insight-time.muted{color:#546d76!important}
+body.aura-light .meeting-insight h4{color:#31717b!important}
+body.aura-light .meeting-insight blockquote{color:#4f6f77!important;border-left:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .meeting-insight.oportunidade blockquote{border-left-color:rgba(8,45,57,0.30)!important}
+body.aura-light .insight-meta{color:#546d76!important}
+body.aura-light .insight-empty strong{color:#416f78!important}
+body.aura-light .impact-overview{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .impact-overview>div{border-right:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .impact-overview>div span{color:#546d76!important}
+body.aura-light .impact-overview label>span{color:#546d76!important}
+body.aura-light .impact-overview>div b{color:#17737b!important}
+body.aura-light .insight-sort{color:#307279!important;background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .meeting-insight:hover{background:#fff!important;border-color:rgba(8,45,57,0.20)!important}
+body.aura-light .insight-impact-badge{color:#556e75!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .insight-impact-badge b{color:#17737b!important}
+body.aura-light .insight-impact-badge.critical{color:#d4001d!important}
+body.aura-light .insight-impact-badge.critical b{color:#d4001d!important}
+body.aura-light .insight-impact-badge.high{color:#965b00!important;border-color:rgba(8,45,57,0.18)!important}
+body.aura-light .insight-impact-badge.high b{color:#965b00!important}
+body.aura-light .insight-impact-badge.medium{color:#14747c!important;border-color:rgba(8,45,57,0.16)!important}
+body.aura-light .insight-impact-badge.context{color:#5a6d73!important}
+body.aura-light .insight-evidence-text{color:#566d76!important;border-left:2px solid rgba(8,45,57,0.18)!important}
+body.aura-light .client-demo-banner{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .client-demo-banner span{color:#18775c!important}
+body.aura-light .client-demo-banner p{color:#556e77!important}
+body.aura-light .client-shell-card:hover{border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .client-demo-note{border:1px dashed rgba(8,45,57,0.16)!important}
+body.aura-light .client-demo-note span{color:#15717c!important}
+body.aura-light .client-demo-note p{color:#566c74!important}
+body.aura-light .client-panel-head h3{color:#29717c!important}
+body.aura-light .client-panel-head>span{color:#5a6d74!important}
+body.aura-light .client-risk-chart{border-top:1px solid rgba(8,45,57,0.12)!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-risk-bar b{color:#20747c!important}
+body.aura-light .client-risk-bar small{color:#546d76!important}
+body.aura-light .client-chart-meta{color:#546d76!important}
+body.aura-light .client-chart-meta b{color:#347279!important}
+body.aura-light .client-focus{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-focus span{color:#5a6d75!important}
+body.aura-light .client-focus strong{color:#2b727d!important}
+body.aura-light .client-focus small{color:#5a6d75!important}
+body.aura-light .client-insight{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-insight b{color:#1b747b!important}
+body.aura-light .client-insight span{color:#5a6d75!important}
+body.aura-light .client-insight p{color:#4a6d76!important}
+body.aura-light .client-insight small{color:#5a6d75!important}
+body.aura-light .client-insight.oportunidade b{color:#18775c!important}
+body.aura-light .client-insight.risco b{color:#d2001c!important}
+body.aura-light .client-insight.financeiro b{color:#6342ff!important}
+body.aura-light .client-context-row{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-context-row b{color:#3d717e!important}
+body.aura-light .client-context-row span{color:#5a6d75!important}
+body.aura-light .client-detail-shell .detail-panel>p{color:#536e76!important}
+body.aura-light .client-back-button{color:#09717c!important}
+body.aura-light .client-back-button:hover{color:#05737d!important}
+body.aura-light .signal-back-button{color:#09717c!important}
+body.aura-light .signal-back-button:hover{color:#05737d!important}
+body.aura-light .risk-hero{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-hero h2{color:#247382!important}
+body.aura-light .risk-hero p{color:#576b72!important}
+body.aura-light .risk-summary-card{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-summary-card>span{color:#5a6d74!important}
+body.aura-light .risk-reading-block>span{color:#5a6d74!important}
+body.aura-light .risk-status-strip span{color:#5a6d74!important}
+body.aura-light .risk-context-grid span{color:#5a6d74!important}
+body.aura-light .risk-summary-card strong{color:#2d737d!important}
+body.aura-light .risk-summary-card small{color:#5a6d73!important}
+body.aura-light .risk-attention-card strong{color:#d20021!important}
+body.aura-light .risk-section{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-section-head h3{color:#29717c!important}
+body.aura-light .risk-reading-block{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-reading-block p{color:#536e76!important}
+body.aura-light .risk-owner-line{color:#5a6d75!important}
+body.aura-light .risk-status-strip{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-status-strip strong{color:#31717b!important}
+body.aura-light .risk-evidence-item{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-item-index{color:#5a6d74!important}
+body.aura-light .risk-evidence-item p{color:#536e76!important}
+body.aura-light .risk-insight{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-insight-head b{color:#d2001c!important}
+body.aura-light .risk-insight-head span{color:#556b72!important}
+body.aura-light .risk-insight strong{color:#31717b!important}
+body.aura-light .risk-insight p{color:#566d76!important}
+body.aura-light .risk-timeline-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-timeline-row span{color:#5a6d75!important}
+body.aura-light .risk-timeline-row b{color:#397078!important}
+body.aura-light .risk-timeline-row small{color:#576b72!important}
+body.aura-light .risk-action-item{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-action-item>span{color:#09717c!important}
+body.aura-light .risk-action-item p{color:#526e76!important}
+body.aura-light .risk-context-grid>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-context-grid b{color:#38707a!important}
+body.aura-light .action-shell-row:hover{border-color:rgba(8,45,57,0.22)!important}
+body.aura-light .action-back-button{color:#09717c!important}
+body.aura-light .action-back-button:hover{color:#05737d!important}
+body.aura-light .action-detail-hero{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-detail-hero h2{color:#247382!important}
+body.aura-light .action-detail-hero p{color:#576b72!important}
+body.aura-light .action-focus-card{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-focus-card h3{color:#29717c!important}
+body.aura-light .action-focus-card>p{color:#536e76!important}
+body.aura-light .action-deadline{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-deadline span{color:#5a6d74!important}
+body.aura-light .action-outcome span{color:#5a6d74!important}
+body.aura-light .action-deadline strong{color:#2e727d!important}
+body.aura-light .action-section h3{color:#29717c!important}
+body.aura-light .action-section>p{color:#536e76!important}
+body.aura-light .action-outcome{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-outcome strong{color:#167656!important}
+body.aura-light .action-outcome small{color:#5a6d74!important}
+body.aura-light .action-context-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-context-row span{color:#5a6d74!important}
+body.aura-light .action-context-row b{color:#397078!important}
+body.aura-light .action-evidence{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-evidence i{color:#09717c!important}
+body.aura-light .action-evidence p{color:#536e76!important}
+body.aura-light .action-subhead{color:#5a6d74!important}
+body.aura-light .action-decision{color:#526e76!important}
+body.aura-light .action-plan>div{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-plan span{color:#09717c!important}
+body.aura-light .action-plan p{color:#536e76!important}
+body.aura-light .action-list-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-list-head h2{color:#247382!important}
+body.aura-light .action-list-head p{color:#576b72!important}
+body.aura-light .action-count{color:#1b747b!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-shell-row{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-row-index{color:#526c73!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-priority{color:#09717c!important}
+body.aura-light .action-date{color:#566e74!important}
+body.aura-light .action-shell-row h3{color:#32727c!important}
+body.aura-light .action-shell-row p{color:#576b72!important}
+body.aura-light .action-row-meta span{color:#576b72!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-row-chevron{border-top:1.5px solid rgba(8,45,57,0.30)!important;border-right:1.5px solid rgba(8,45,57,0.30)!important}
+body.aura-light .action-back-button span{border-left:2px solid rgba(8,45,57,0.30)!important;border-bottom:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .action-back-button:hover span{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .action-focus-card>p{color:#506f77!important}
+body.aura-light .action-section>p{color:#506c74!important}
+body.aura-light .action-evidence p{color:#506c74!important}
+body.aura-light .action-decision{color:#4f6f77!important}
+body.aura-light .action-plan p{color:#506c74!important}
+body.aura-light .action-evidence p{color:#4b6d76!important}
+body.aura-light .action-plan p{color:#4b6d76!important}
+body.aura-light .evolution-intro{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-intro h2{color:#247382!important}
+body.aura-light .evolution-intro p{color:#576d74!important}
+body.aura-light .evolution-intro-chips span{color:#1b7179!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-client-head h3{color:#247382!important}
+body.aura-light .evolution-client-head p{color:#586c72!important}
+body.aura-light .evolution-client-index b{color:#09717c!important}
+body.aura-light .evolution-client-index span{color:#5a6d75!important}
+body.aura-light .evolution-curve-panel{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-current-panel{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-value-strip>div{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-section-head h4{color:#29717c!important}
+body.aura-light .evolution-history-head h4{color:#29717c!important}
+body.aura-light .evolution-section-head>span{color:#5a6d75!important}
+body.aura-light .evolution-line-chart{border-top:1px solid rgba(8,45,57,0.12)!important;border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-axis span{color:#5a6d75!important}
+body.aura-light .evolution-axis small{color:#546d76!important}
+body.aura-light .evolution-chart-note{color:#5a6b71!important}
+body.aura-light .evolution-current-panel>h4{color:#2e727d!important}
+body.aura-light .evolution-current-grid>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-current-grid span{color:#5a6d75!important}
+body.aura-light .evolution-fields span{color:#5a6d75!important}
+body.aura-light .evolution-meeting-metrics span{color:#5a6d75!important}
+body.aura-light .evolution-current-grid b{color:#38727b!important}
+body.aura-light .evolution-value-strip strong{color:#2d7178!important}
+body.aura-light .evolution-value-strip p{color:#576d74!important}
+body.aura-light .evolution-history-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-history-head p{color:#586c72!important}
+body.aura-light .evolution-meeting-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-meeting-top{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-meeting-top h4{color:#2d717c!important}
+body.aura-light .evolution-meeting-top p{color:#586b72!important}
+body.aura-light .evolution-meeting-badges b{color:#d6001f!important}
+body.aura-light .evolution-meeting-badges span{color:#586c74!important}
+body.aura-light .evolution-reading{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-economic-card{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-reading strong{color:#2e727d!important}
+body.aura-light .evolution-reading p{color:#546c74!important}
+body.aura-light .evolution-economic-card p{color:#546c74!important}
+body.aura-light .evolution-economic-card strong{color:#18775c!important}
+body.aura-light .evolution-money{color:#2e717a!important;border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-meeting-metrics>div{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-meeting-metrics b{color:#397078!important}
+body.aura-light .evolution-insights-section{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-section-head h5{color:#317178!important}
+body.aura-light .evolution-insight-item{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-insight-item>span{color:#09717c!important}
+body.aura-light .evolution-insight-item b{color:#2e727d!important}
+body.aura-light .evolution-insight-item p{color:#4f6e76!important}
+body.aura-light .evolution-insight-item small{color:#5a6c72!important}
+body.aura-light .evolution-evidence-decision{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-evidence-decision p{color:#526e76!important}
+body.aura-light .evolution-muted{color:#5a6d75!important}
+body.aura-light .evolution-client-list-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .evolution-client-list-card:hover{border-color:rgba(8,45,57,0.24)!important}
+body.aura-light .evolution-list-arrow{color:#09717c!important}
+body.aura-light .evolution-back-button{color:#09717c!important}
+body.aura-light .evolution-financial-impact{border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .evolution-financial-impact strong{color:#167656!important}
+body.aura-light .evolution-financial-impact p{color:#586e72!important}
+body.aura-light .evolution-back-button:hover{color:#05737d!important}
+body.aura-light .opportunity-list-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-list-head h2{color:#247382!important}
+body.aura-light .opportunity-list-head p{color:#586c72!important}
+body.aura-light .opportunity-count{color:#18737a!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .opportunity-list-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-list-card:hover{background:#fff!important;border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .opportunity-class{color:#18737b!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .opportunity-card-arrow{color:#09717c!important}
+body.aura-light .opportunity-list-card h3{color:#247382!important}
+body.aura-light .opportunity-list-card>strong{color:#1b745e!important}
+body.aura-light .opportunity-list-card>p{color:#536e76!important}
+body.aura-light .opportunity-card-meta{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-card-meta span{color:#586c72!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-card-foot{color:#5a6d74!important}
+body.aura-light .opportunity-back-button{color:#09717c!important}
+body.aura-light .opportunity-back-button:hover{color:#05737d!important}
+body.aura-light .opportunity-hero{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-hero h2{color:#247382!important}
+body.aura-light .opportunity-hero p{color:#586c72!important}
+body.aura-light .opportunity-hero-badge{border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .opportunity-hero-badge b{color:#167656!important}
+body.aura-light .opportunity-hero-badge span{color:#3a717b!important}
+body.aura-light .opportunity-kpis>div{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-kpis span{color:#5a6d74!important}
+body.aura-light .opportunity-reading-grid span{color:#5a6d74!important}
+body.aura-light .opportunity-memory span{color:#5a6d74!important}
+body.aura-light .opportunity-kpis strong{color:#2d7178!important}
+body.aura-light .opportunity-kpis small{color:#5a6d74!important}
+body.aura-light .opportunity-section-head h3{color:#29717c!important}
+body.aura-light .opportunity-section-head>span{color:#5a6d74!important}
+body.aura-light .opportunity-focus{border-color:rgba(8,45,57,0.13)!important}
+body.aura-light .opportunity-reading-grid>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-reading-grid p{color:#4e6f77!important}
+body.aura-light .opportunity-money-list>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-money-list strong{color:#167656!important}
+body.aura-light .opportunity-money-list span{color:#5a6d74!important}
+body.aura-light .opportunity-empty-value{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-empty-value strong{color:#2e727d!important}
+body.aura-light .opportunity-empty-value p{color:#566e75!important}
+body.aura-light .opportunity-data-note{color:#566e75!important}
+body.aura-light .opportunity-data-note{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-next-card{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-next-card span{color:#5a6d74!important}
+body.aura-light .opportunity-next-card strong{color:#2e727d!important}
+body.aura-light .opportunity-next-card small{color:#586c74!important}
+body.aura-light .opportunity-stage{border-top:2px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-stage span{color:#546d76!important}
+body.aura-light .opportunity-stage b{color:#5a6d73!important}
+body.aura-light .opportunity-stage.done{border-top-color:rgba(8,45,57,0.30)!important}
+body.aura-light .opportunity-stage.current{border-top-color:rgba(8,45,57,0.30)!important}
+body.aura-light .opportunity-stage.done b{color:#1b7179!important}
+body.aura-light .opportunity-stage.current b{color:#1b7179!important}
+body.aura-light .opportunity-stage.current b{color:#167656!important}
+body.aura-light .opportunity-evidence-item{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-evidence-item>div span{color:#09717c!important}
+body.aura-light .opportunity-evidence-item>div b{color:#5a6d74!important}
+body.aura-light .opportunity-evidence-item button{color:#16747b!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .opportunity-evidence-item strong{color:#2e727d!important}
+body.aura-light .opportunity-evidence-item p{color:#4e6f77!important}
+body.aura-light .opportunity-evidence-item small{color:#5a6d74!important}
+body.aura-light .opportunity-blocker{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-action{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-blocker>span{color:#d40021!important}
+body.aura-light .opportunity-action>span{color:#d40021!important}
+body.aura-light .opportunity-blocker p{color:#4f6f77!important}
+body.aura-light .opportunity-action p{color:#4f6f77!important}
+body.aura-light .opportunity-safe{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-safe strong{color:#167656!important}
+body.aura-light .opportunity-safe p{color:#566b72!important}
+body.aura-light .opportunity-chart-line{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-chart-line i{background:#fff!important;border:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .opportunity-chart-line i b{color:#1b757c!important}
+body.aura-light .opportunity-chart-axis span{color:#5a6d74!important}
+body.aura-light .opportunity-signal-chart>p{color:#5a6d74!important}
+body.aura-light .opportunity-timeline{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-timeline-row{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-timeline-row>span{color:#5a6d74!important}
+body.aura-light .opportunity-timeline-row b{color:#2e727d!important}
+body.aura-light .opportunity-timeline-row p{color:#556d76!important}
+body.aura-light .opportunity-timeline-row.current{border-left:2px solid rgba(8,45,57,0.30)!important}
+body.aura-light .opportunity-subhead{color:#5a6d74!important}
+body.aura-light .opportunity-decision{color:#4f6f77!important}
+body.aura-light .opportunity-memory>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .opportunity-memory strong{color:#2e727d!important}
+body.aura-light .opportunity-memory-note{color:#566b72!important}
+body.aura-light .risk-hero p{color:#586c72!important}
+body.aura-light .risk-hero-badge b{color:#d6001f!important}
+body.aura-light .risk-hero-badge span{color:#3a717b!important}
+body.aura-light .risk-summary-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-summary-card span{color:#5a6d74!important}
+body.aura-light .risk-executive-chain span{color:#5a6d74!important}
+body.aura-light .risk-exposure-grid span{color:#5a6d74!important}
+body.aura-light .risk-before-after span{color:#5a6d74!important}
+body.aura-light .risk-origin-grid span{color:#5a6d74!important}
+body.aura-light .risk-containment span{color:#5a6d74!important}
+body.aura-light .risk-memory-grid span{color:#5a6d74!important}
+body.aura-light .risk-summary-card strong{color:#2d7178!important}
+body.aura-light .risk-summary-card small{color:#5a6d74!important}
+body.aura-light .risk-section-head>span{color:#5a6d74!important}
+body.aura-light .risk-executive>p{color:#4f6f77!important}
+body.aura-light .risk-body-copy{color:#4f6f77!important}
+body.aura-light .risk-executive-chain>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-executive-chain b{color:#2e727d!important}
+body.aura-light .risk-executive-chain i{color:#09717c!important}
+body.aura-light .risk-exposure-grid b{color:#2e727d!important}
+body.aura-light .risk-exposure-grid small{color:#5a6d74!important}
+body.aura-light .risk-empty-exposure{color:#5a6d74!important}
+body.aura-light .risk-before-after>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-before-after strong{color:#2e727d!important}
+body.aura-light .risk-note{color:#566b72!important}
+body.aura-light .risk-inference-note{color:#566b72!important}
+body.aura-light .risk-evidence-item>div span{color:#09717c!important}
+body.aura-light .risk-evidence-item>div b{color:#5a6d74!important}
+body.aura-light .risk-evidence-item button{color:#16747b!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .risk-evidence-item strong{color:#2e727d!important}
+body.aura-light .risk-evidence-item p{color:#4e6f77!important}
+body.aura-light .risk-evidence-item small{color:#5a6d74!important}
+body.aura-light .risk-origin-grid>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-origin-grid p{color:#506f77!important}
+body.aura-light .risk-trajectory-line{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-trajectory-line i{background:#fff!important}
+body.aura-light .risk-trajectory-line i b{color:#d6001f!important}
+body.aura-light .risk-chart-axis span{color:#5a6d74!important}
+body.aura-light .risk-trajectory-chart>p{color:#5a6d74!important}
+body.aura-light .risk-timeline{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-timeline-row{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-timeline-row>span{color:#5a6d74!important}
+body.aura-light .risk-timeline-row b{color:#2e727d!important}
+body.aura-light .risk-timeline-row p{color:#556d76!important}
+body.aura-light .risk-containment strong{color:#2e727d!important}
+body.aura-light .risk-containment small{color:#5a6d74!important}
+body.aura-light .risk-action-item p{color:#4f6f77!important}
+body.aura-light .risk-linked-card{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-linked-card span{color:#5a6d74!important}
+body.aura-light .risk-linked-card strong{color:#167656!important}
+body.aura-light .risk-linked-card p{color:#576d74!important}
+body.aura-light .risk-memory-grid>div{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-memory-grid b{color:#2e727d!important}
+body.aura-light .risk-safe{color:#167656!important}
+body.aura-light .signal-client-chip{color:#1f737b!important;border:1px solid rgba(8,45,57,0.16)!important}
+body.aura-light .risk-list-card{background:#fff!important}
+body.aura-light .risk-list-card:hover{background:#fff!important}
+body.aura-light .risk-class{color:#d40021!important}
+body.aura-light .risk-card-arrow{color:#d3002c!important}
+body.aura-light .risk-list-card h3{color:#247382!important}
+body.aura-light .risk-list-card>strong{color:#d4001d!important}
+body.aura-light .risk-list-card>p{color:#536e76!important}
+body.aura-light .risk-card-meta{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-card-meta span{color:#586c72!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .risk-card-foot{color:#5a6d74!important}
+body.aura-light .client-360-hero{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-360-hero h2{color:#247382!important}
+body.aura-light .client-360-hero p{color:#586b72!important}
+body.aura-light .client-executive-read{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-executive-read>div+div{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-executive-read h3{color:#247382!important}
+body.aura-light .client-executive-read p{color:#506e76!important}
+body.aura-light .client-executive-tags span{color:#546d74!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-now-focus>span{color:#5a6d74!important}
+body.aura-light .client-next-move>div:last-child span{color:#5a6d74!important}
+body.aura-light .client-now-focus>strong{color:#d2001c!important}
+body.aura-light .client-now-focus>small{color:#5a6d74!important}
+body.aura-light .client-now-focus>b{color:#27747b!important}
+body.aura-light .client-health-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-health-row span{color:#576b73!important}
+body.aura-light .client-health-row b{color:#37717b!important}
+body.aura-light .client-change{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-change span{color:#5a6d74!important}
+body.aura-light .client-change b{color:#3a7179!important}
+body.aura-light .client-change b i{color:#5a6d74!important}
+body.aura-light .client-change.risk b{color:#d4001d!important}
+body.aura-light .client-change.opportunity b{color:#1b775b!important}
+body.aura-light .client-change.positive b{color:#1d775b!important}
+body.aura-light .client-section-intro{color:#5a6d74!important}
+body.aura-light .client-attention-list>div{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-attention-list span{color:#5a6d74!important}
+body.aura-light .client-attention-list b{color:#32737d!important}
+body.aura-light .client-dossier-section{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-section-head h3{color:#29717c!important}
+body.aura-light .client-section-head p{color:#5a6d74!important}
+body.aura-light .client-insight blockquote{color:#526d74!important;border-left:2px solid rgba(8,45,57,0.22)!important}
+body.aura-light .client-insight.oportunidade blockquote{border-left-color:rgba(8,45,57,0.28)!important}
+body.aura-light .client-dossier-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-dossier-row b{color:#38707c!important}
+body.aura-light .client-dossier-row p{color:#556b72!important}
+body.aura-light .client-dossier-row>span{color:#546d76!important}
+body.aura-light .client-dossier-row.risk b{color:#d4001d!important}
+body.aura-light .client-dossier-row.opportunity b{color:#1b775b!important}
+body.aura-light .client-action-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-action-row>span{color:#546d76!important}
+body.aura-light .client-action-row p{color:#4b6e76!important}
+body.aura-light .client-next-move{background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .client-next-move h3{color:#2d7755!important}
+body.aura-light .client-next-move p{color:#546d73!important}
+body.aura-light .client-next-move>div:last-child{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-next-move>div:last-child b{color:#38707a!important}
+body.aura-light .client-history-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-history-row.current{border-top-color:rgba(8,45,57,0.13)!important}
+body.aura-light .client-history-date b{color:#34737a!important}
+body.aura-light .client-history-date span{color:#546d76!important}
+body.aura-light .client-history-row>div:nth-child(2)>b{color:#38707c!important}
+body.aura-light .client-history-row>div:nth-child(2)>p{color:#586d75!important}
+body.aura-light .client-history-row>div:nth-child(2)>div span{color:#586b71!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-open-meeting{color:#1b747b!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .client-open-meeting:hover{color:#0e7376!important;border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .client-executive-read>div+div{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-insights-grid .client-insight:nth-child(2){border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-next-move>div:last-child{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-shell-card p{color:#586b72!important}
+body.aura-light .client-card-arrow{color:#117179!important}
+body.aura-light .client-card-reading{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .client-card-reading span{color:#546d76!important}
+body.aura-light .client-card-reading b{color:#4d6f77!important}
+body.aura-light .client-card-meta{color:#576b73!important}
+body.aura-light .meeting-memory-toolbar p{color:#546d76!important}
+body.aura-light .meeting-memory-kpis>div{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-memory-kpis b{color:#2d7178!important}
+body.aura-light .meeting-memory-kpis span{color:#546d76!important}
+body.aura-light .meeting-memory-kpis .risk b{color:#d40021!important}
+body.aura-light .meeting-memory-kpis .opp{border-color:rgba(8,45,57,0.13)!important}
+body.aura-light .meeting-memory-kpis .opp b{color:#197656!important}
+body.aura-light .meeting-memory-controls{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-memory-search{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-memory-search>span{color:#546d76!important}
+body.aura-light .meeting-memory-search input{color:#327278!important}
+body.aura-light .meeting-memory-search input::placeholder{color:#546d76!important}
+body.aura-light .meeting-memory-filters button{color:#546d76!important}
+body.aura-light .meeting-memory-filters button:hover{color:#3a7179!important}
+body.aura-light .meeting-memory-filters button.active{color:#0b747f!important;border-color:rgba(8,45,57,0.18)!important}
+body.aura-light .meeting-memory-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-memory-card:hover{border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .meeting-card-kind{color:#546d76!important}
+body.aura-light .meeting-card-arrow{color:#117179!important}
+body.aura-light .meeting-card-avatar{color:#11757c!important;border:1px solid rgba(8,45,57,0.13)!important}
+body.aura-light .meeting-card-title h3{color:#247382!important}
+body.aura-light .meeting-card-title p{color:#5a6b71!important}
+body.aura-light .meeting-card-status{color:#596c72!important}
+body.aura-light .meeting-status{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-status.high{color:#d40021!important}
+body.aura-light .meeting-status.medium{color:#8a631a!important;border-color:rgba(8,45,57,0.13)!important}
+body.aura-light .meeting-status.low{color:#197656!important;border-color:rgba(8,45,57,0.13)!important}
+body.aura-light .meeting-card-reading{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-card-reading span{color:#546d76!important}
+body.aura-light .meeting-card-reading b{color:#4d6f77!important}
+body.aura-light .meeting-card-bottom{color:#546d76!important}
+body.aura-light .meeting-select-icon{color:#12757d!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-select-state h3{color:#2e727d!important}
+body.aura-light .meeting-select-state p{color:#546d76!important}
+body.aura-light .meeting-back-button{color:#117179!important}
+body.aura-light .meeting-back-button:hover{color:#0d7479!important}
+body.aura-light .meeting-memory-detail .meeting-detail-head{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-memory-result-count{color:#546d76!important}
+body.aura-light .meeting-filter-empty{background:#fff!important;border:1px dashed rgba(8,45,57,0.12)!important}
+body.aura-light .meeting-filter-empty span{color:#117179!important}
+body.aura-light .meeting-filter-empty b{color:#2e727d!important}
+body.aura-light .meeting-filter-empty p{color:#546d76!important}
+body.aura-light .meeting-memory-card.is-selected{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .rail{background:#fff!important;border-right:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .rail-toggle{color:#556c74!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .rail-toggle:hover{color:#2e727d!important;border-color:rgba(8,45,57,0.20)!important}
+body.aura-light .shell-nav{color:#5a6c73!important}
+body.aura-light .shell-nav i{color:#5b6d73!important}
+body.aura-light .shell-nav:hover{color:#406f79!important}
+body.aura-light .shell-nav:hover i{color:#4f6f77!important}
+body.aura-light .shell-nav.active{color:#247382!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .shell-nav.active i{color:#087581!important}
+body.aura-light .shell-nav-primary .shell-nav{color:#436e78!important}
+body.aura-light .shell-nav-primary .shell-nav i{color:#087581!important}
+body.aura-light .rail-collapsed .rail .rail-toggle{background:#fff!important}
+body.aura-light .rail-toggle{color:#596c73!important}
+body.aura-light .rail-close{color:#596c73!important}
+body.aura-light .rail-toggle:hover{color:#367079!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .rail-close:hover{color:#367079!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .rail-collapsed .rail-toggle{border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .rail-toggle{color:#566c74!important}
+body.aura-light .rail-toggle:hover{color:#35707b!important;border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .profile-hero{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-back{color:#556c74!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-back:hover{color:#35707b!important;border-color:rgba(8,45,57,0.18)!important}
+body.aura-light .profile-avatar{color:#10737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.22)!important}
+body.aura-light .profile-hero h2{color:#387179!important}
+body.aura-light .profile-hero p{color:#566c74!important}
+body.aura-light .profile-state{color:#556d75!important}
+body.aura-light .profile-hero-side{border-left:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-hero-side span{color:#5b6d73!important}
+body.aura-light .profile-fields span{color:#5b6d73!important}
+body.aura-light .profile-access span{color:#5b6d73!important}
+body.aura-light .profile-stat-grid span{color:#5b6d73!important}
+body.aura-light .profile-hero-side strong{color:#40707c!important}
+body.aura-light .profile-hero-side small{color:#576c73!important}
+body.aura-light .profile-stat-grid>div{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-stat-grid b{color:#327178!important}
+body.aura-light .profile-stat-grid small{color:#596d74!important}
+body.aura-light .profile-card{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-section-head h3{color:#3b6f76!important}
+body.aura-light .profile-section-head p{color:#586b72!important}
+body.aura-light .profile-live{color:#1e7645!important;border:1px solid rgba(8,45,57,0.15)!important}
+body.aura-light .profile-secure{color:#1e7645!important;border:1px solid rgba(8,45,57,0.15)!important}
+body.aura-light .profile-secure{color:#1e7283!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .profile-fields{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-fields>div{background:#fff!important}
+body.aura-light .profile-fields strong{color:#436f79!important}
+body.aura-light .profile-setting{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-setting b{color:#476f76!important}
+body.aura-light .profile-setting small{color:#5a6d74!important}
+body.aura-light .profile-setting i{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-setting input:checked+i{border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .profile-access{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-access>div{background:#fff!important}
+body.aura-light .profile-access strong{color:#436f79!important}
+body.aura-light .profile-workspace-list>div{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-workspace-list i{color:#087581!important}
+body.aura-light .profile-workspace-list b{color:#476f76!important}
+body.aura-light .profile-workspace-list small{color:#5a6d74!important}
+body.aura-light .profile-workspace-list em{color:#1e7645!important}
+body.aura-light .profile-link{color:#087581!important}
+body.aura-light .profile-activity-list{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-activity-list>div{border-bottom:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .profile-activity-index{color:#546d76!important}
+body.aura-light .profile-activity-list b{color:#476f76!important}
+body.aura-light .profile-activity-list small{color:#5a6d74!important}
+body.aura-light .profile-activity-list em{color:#586c72!important}
+body.aura-light .profile-no-activity b{color:#546d74!important}
+body.aura-light .profile-no-activity span{color:#546d76!important}
+body.aura-light .profile-footer{color:#546d76!important}
+body.aura-light .shell-nav-profile .shell-nav i{color:#556c74!important}
+body.aura-light .shell-nav-profile .shell-nav.active i{color:#087581!important}
+body.aura-light .profile-hero-side{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light body[data-aura-view="profile"] .profile-back{color:#087581!important}
+body.aura-light body[data-aura-view="profile"] .profile-back:hover{color:#007184!important}
+body.aura-light body[data-aura-view="profile"] .profile-card{border-color:rgba(8,45,57,0.12)!important}
+body.aura-light .profile-workspace>.profile-back{border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .evolution-line-chart{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .financial-item-context p{color:#546d76!important}
+body.aura-light .financial-intelligence-panel .financial-item{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .financial-intelligence-panel .financial-item-main strong{color:#0c7480!important}
+body.aura-light .financial-intelligence-panel .financial-item-main span{color:#556d76!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .financial-intelligence-panel .financial-item-context b{color:#397079!important}
+body.aura-light .financial-intelligence-panel .financial-item-context p{color:#566d74!important}
+body.aura-light .financial-intelligence-panel .financial-item-context small{color:#546d76!important}
+body.aura-light .client-detail-shell .financial-intelligence-panel .financial-item{background:#fff!important}
+body.aura-light{background:#fff!important}
+body.aura-light .rail{background:#fff!important}
+body.aura-light .brand strong{color:#007186!important}
+body.aura-light .brand span{color:#047483!important}
+body.aura-light .hero{background:#fff!important;border-color:rgba(8,45,57,0.17)!important}
+body.aura-light .orbit{border-color:rgba(8,45,57,0.20)!important}
+body.aura-light .primary{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .metric{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .panel{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .insight-card{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .model-card{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .recommendation{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .model-hero{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .matrix-wrap{background:#fff!important;border-color:rgba(8,45,57,0.14)!important}
+body.aura-light .flow>div:not(.arrow){background:#fff!important}
+body.aura-light .flow>div:not(.arrow):hover{background:#fff!important}
+body.aura-light .analysis-head h2{color:#00709b!important}
+body.aura-light .section-head h2{color:#00709b!important}
+body.aura-light .textarea{background:#fff!important}
+body.aura-light textarea{background:#fff!important}
+body.aura-light .suggestions button{background:#fff!important}
+body.aura-light .chip{color:#047483!important;border-color:rgba(8,45,57,0.26)!important}
+body.aura-light .best{color:#047483!important;border-color:rgba(8,45,57,0.26)!important}
+body.aura-light .result-panel{background:#fff!important}
+body.aura-light .scan-ring{border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .line{background:#fff!important}
+body.aura-light .insight-box{border-left-color:rgba(8,45,57,0.30)!important}
+body.aura-light .next-action{border-color:rgba(8,45,57,0.13)!important}
+body.aura-light .recommendation{background:#fff!important}
+body.aura-light .mark{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .nav{color:#546d76!important}
+body.aura-light .rail-bottom{color:#546d76!important}
+body.aura-light .eyebrow{color:#586c73!important}
+body.aura-light h1{color:#4f6c74!important}
+body.aura-light .live{color:#5b6d74!important}
+body.aura-light .avatar{color:#456f79!important;background:#fff!important}
+body.aura-light .hero{background:#fff!important}
+body.aura-light .hero h2 em{color:#0c727c!important}
+body.aura-light .primary{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .orbit{border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .metric{background:#fff!important}
+body.aura-light .panel{background:#fff!important}
+body.aura-light .insight-card{background:#fff!important}
+body.aura-light .model-card{background:#fff!important}
+body.aura-light .model-hero{background:#fff!important}
+body.aura-light .matrix-wrap{background:#fff!important}
+body.aura-light .metric:hover{border-color:rgba(8,45,57,0.24)!important}
+body.aura-light .insight-card:hover{border-color:rgba(8,45,57,0.24)!important}
+body.aura-light .model-card:hover{border-color:rgba(8,45,57,0.24)!important}
+body.aura-light .metric span{color:#546d76!important}
+body.aura-light .metric small{color:#546d76!important}
+body.aura-light .metric small{color:#30725d!important}
+body.aura-light .ghost{color:#546c73!important}
+body.aura-light .ghost:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .flow>div:not(.arrow):hover{background:#fff!important;border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .arrow{color:#546d76!important}
+body.aura-light .chip{border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .best{border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .panel-top{color:#546d76!important}
+body.aura-light textarea{color:#3d7179!important;background:#fff!important}
+body.aura-light textarea:focus{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .suggestions button{color:#5b6c72!important;background:#fff!important}
+body.aura-light .suggestions button:hover{border-color:rgba(8,45,57,0.22)!important}
+body.aura-light .result-empty{color:#546d76!important}
+body.aura-light .result-empty strong{color:#506f77!important}
+body.aura-light .pulse{border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .processing strong{color:#3b6f78!important}
+body.aura-light .processing>div>span:last-child{color:#546d76!important}
+body.aura-light .scan-ring{border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .scan-ring:before{border:1px dashed rgba(8,45,57,0.30)!important}
+body.aura-light .steps span{color:#546d76!important}
+body.aura-light .steps .active{border-color:rgba(8,45,57,0.25)!important}
+body.aura-light .steps .done{color:#3b7268!important}
+body.aura-light .result-meta{color:#546d76!important}
+body.aura-light .r-card{background:#fff!important}
+body.aura-light .r-card span{color:#546d76!important}
+body.aura-light .confidence-top{color:#576b73!important}
+body.aura-light .signal-list span{color:#546d76!important}
+body.aura-light .next-action{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .next-action strong{color:#447079!important}
+body.aura-light .table{background:#fff!important}
+body.aura-light .tr{color:#556e75!important}
+body.aura-light .tr.th{color:#546d76!important;background:#fff!important}
+body.aura-light .donut:before{background:#fff!important}
+body.aura-light .legend{color:#5a6d73!important}
+body.aura-light .riskline{color:#5a6d73!important}
+body.aura-light .score span{color:#546d76!important}
+body.aura-light .model-title>span:not(.best){color:#546d76!important}
+body.aura-light .scores span{color:#546d76!important}
+body.aura-light .matrix b{color:#546d76!important}
+body.aura-light .matrix strong{color:#20727b!important;background:#fff!important}
+body.aura-light .matrix strong:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .action-row{background:#fff!important}
+body.aura-light .action-row:hover{border-color:rgba(8,45,57,0.18)!important}
+body.aura-light .action-main strong{color:#3f6f79!important}
+body.aura-light .action-main span{color:#546d76!important}
+body.aura-light .action-owner span{color:#546d76!important}
+body.aura-light .action-deadline span{color:#546d76!important}
+body.aura-light .action-owner b{color:#506d75!important}
+body.aura-light .action-deadline b{color:#506d75!important}
+body.aura-light .live-pill{border:1px solid rgba(8,45,57,0.20)!important}
+body.aura-light .action-done-btn{color:#586c73!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .action-done-btn:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .action-done .action-main strong{color:#5a6d73!important}
+body.aura-light .action-done .action-done-btn{border-color:rgba(8,45,57,0.18)!important}
+body.aura-light .customer360-empty{color:#546d76!important;border:1px dashed rgba(8,45,57,0.12)!important}
+body.aura-light .customer360-empty strong{color:#506f77!important}
+body.aura-light .customer360-head>div:first-child>span:last-child{color:#546d76!important}
+body.aura-light .c360-status{border:1px solid rgba(8,45,57,0.18)!important}
+body.aura-light .c360-event span{color:#546d76!important}
+body.aura-light .c360-event p{color:#596c73!important}
+body.aura-light .client-card:hover{border-color:rgba(8,45,57,0.28)!important}
+body.aura-light .decision-summary>div{background:#fff!important}
+body.aura-light .decision-summary span{color:#546d76!important}
+body.aura-light .decision-summary b{color:#3a7179!important}
+body.aura-light .decision-focus{border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .decision-focus strong{color:#38727c!important}
+body.aura-light .decision-focus p{color:#596c73!important}
+body.aura-light .aura-muted{color:#546d76!important}
+body.aura-light #auraOverviewClean .aura-memory-panel .aura-row-date{color:#586b72!important}
+body.aura-light #auraOverviewClean .aura-memory-panel .aura-home-row.compact strong{color:#33727b!important}
+body.aura-light #auraOverviewClean .aura-memory-panel .aura-home-row.compact small{color:#5a6d74!important}
+body.aura-light #auraOverviewClean .aura-memory-panel .aura-home-row.compact em{color:#4d6e74!important}

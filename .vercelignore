@@ -1,0 +1,11 @@
+# Não vai para o deploy: ambiente local, testes e arquivos só de desenvolvimento.
+.venv
+node_modules
+tests
+supabase
+.git
+__pycache__
+*.pyc
+*.md
+docs
+scripts

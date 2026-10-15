@@ -1,0 +1,5 @@
+{
+  "context": "Comercial",
+  "must_find": ["prazo", "orçamento", "piloto", "terça-feira", "quinta", "2 milhões"],
+  "must_not": ["cancelamento", "concorrente", "desconto", "contrato assinado"]
+}

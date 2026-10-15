@@ -1,0 +1,20 @@
+/* AURA AI — telas de clientes (confirmar sugestões, renomear, fundir) */
+.client-link-chip{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:12px 0;padding:12px 14px;border:1px solid rgba(98,233,250,.22);border-radius:12px;background:rgba(98,233,250,.05);color:#d7edf1}
+.client-link-chip.suggested{border-color:rgba(242,200,111,.5);background:rgba(242,200,111,.07)}
+.client-link-chip.unlinked{border-style:dashed;border-color:rgba(170,220,230,.3);background:transparent}
+.client-link-text{display:grid;gap:3px;min-width:0;flex:1 1 260px}
+.client-link-text b{font-size:13px}
+.client-link-text span{color:#8fa8b0;font-size:12px;line-height:1.5}
+.client-link-actions,.pending-actions,.client-manage-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.pending-clients{margin:0 0 22px;padding:16px;border:1px solid rgba(242,200,111,.45);border-radius:14px;background:rgba(242,200,111,.05)}
+.pending-clients h3{margin:0 0 4px;font-size:15px;color:#f3dca5}
+.pending-client-row{grid-template-columns:1fr}
+.pending-client-row .pending-actions{margin-top:2px}
+
+.client-manage-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:10px 0 16px;padding:12px 14px;border:1px solid rgba(98,233,250,.18);border-radius:12px;background:rgba(4,16,29,.7)}
+.client-manage-info{display:grid;gap:3px;min-width:0}
+.client-manage-info span{color:#8fa8b0;font-size:12px;overflow-wrap:anywhere}
+.aura-form textarea{width:100%;padding:11px 12px;border:1px solid rgba(105,205,230,.2);border-radius:10px;background:#04101d;color:#e9fbff;font:500 13px Manrope,system-ui,sans-serif;resize:vertical}
+.aura-form textarea:focus-visible{outline:2px solid #62e9fa;outline-offset:1px}
+.pending-clients .aura-note{font-size:12px;line-height:1.55}
