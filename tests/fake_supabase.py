@@ -615,6 +615,9 @@ class FakeSupabase:
         if table == "integrations" and method == "DELETE":
             ids = [r["id"] for r in self.tables[table] if match(r)]
             self.tables["integration_deliveries"] = [d for d in self.tables["integration_deliveries"] if d["integration_id"] not in ids]
+        if table == "integration_events" and method == "DELETE":
+            ids = [r["id"] for r in self.tables[table] if match(r)]
+            self.tables["integration_deliveries"] = [d for d in self.tables["integration_deliveries"] if d["event_id"] not in ids]
         if method == "POST":
             row = dict(payload)
             row.setdefault("created_at", self._ts())

@@ -642,3 +642,20 @@ queda de rede não perdeu áudio · apagar o áudio preservou a reunião · aval
 - **Dependência nova:** `cryptography` em `requirements.txt` (o deploy precisa reconstruir).
 - **Eventos já ligados:** `meeting.analyzed`, `action.completed`, `live.consolidated`. Com a migração aplicada e nenhuma integração cadastrada eles apenas ficam registrados; sem a migração, o registro falha em silêncio e nada muda para quem usa o app (testado).
 - **Atenção:** o registro de eventos já cresce a cada reunião analisada; uma política de retenção (apagar eventos antigos) entra junto com a 7.5.
+
+---
+
+## Fase 7.5 — webhooks de saída assinados (migração 14 JÁ APLICADA no Supabase)
+- **Banco:** a migração 14 foi aplicada e conferida (RLS ligado nas 3 tabelas, `secret_ct` sem permissão de leitura para o navegador, 0 linhas, 5 reuniões intactas).
+- **Código novo:** `api/webhook_provider.py`, `integrations-ui.js`, `integrations-ui.css`; botão **Integrações** no painel de perfil (só para quem tem `integrations.manage`; na conta pessoal, o dono). `cryptography` entra no `requirements.txt` (o deploy reconstrói).
+- **Variáveis de ambiente (Vercel, preview e depois produção):**
+  | Nome | Para quê |
+  |---|---|
+  | `AURA_INTEGRATIONS_KEY` | **Obrigatória** para criar integrações. 32 bytes em base64: `python -c "import os,base64;print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`. Guarde também num cofre: sem ela os segredos cadastrados ficam ilegíveis. |
+  | `AURA_INTEGRATIONS_KEY_VERSION` | Número da chave atual (padrão 1). Para trocar a chave: ponha a nova em `AURA_INTEGRATIONS_KEY`, a antiga em `AURA_INTEGRATIONS_KEY_PREV` e suba a versão para 2. |
+  | `AURA_CRON_SECRET` (ou `CRON_SECRET`, que a Vercel envia sozinha como `Authorization: Bearer`) | Protege `/api/integrations/dispatch`, que entrega o que está pendente e apaga eventos antigos. |
+  | `AURA_INTEGRATION_EVENT_RETENTION_DAYS` | Opcional (30): eventos mais antigos, já resolvidos, são apagados. |
+- **Quando as entregas saem:** o botão "Testar" entrega na hora. Entregas de eventos reais (reunião analisada etc.) saem quando o agendador chama `/api/integrations/dispatch`. **Eu NÃO coloquei `crons` no `vercel.json`** (no plano Hobby, cron mais frequente que 1 vez por dia faz o deploy falhar). Escolha: no plano Pro, acrescente `"crons": [{"path": "/api/integrations/dispatch", "schedule": "*/5 * * * *"}]` e defina `CRON_SECRET`; no Hobby, use um agendador externo (cron-job.org, GitHub Actions) com `curl -X POST -H "X-Cron-Secret: ..." https://SEU-SITE/api/integrations/dispatch`, ou use "Entregas → Enviar pendentes agora". Sem agendador, os eventos ficam registrados e pendentes (nada se perde, só atrasa).
+- **Verificar no preview:** (1) defina `AURA_INTEGRATIONS_KEY`; (2) Perfil → Integrações → crie um webhook apontando para um receptor seu (ex.: um endereço do webhook.site); (3) "Testar": deve aparecer lá um POST JSON com os cabeçalhos `X-Aura-Event`, `X-Aura-Delivery`, `X-Aura-Timestamp`, `X-Aura-Signature`; (4) confira a assinatura (HMAC-SHA256 de `"<timestamp>.<corpo>"`, hex, prefixo `v1=`); (5) analise uma reunião e rode o dispatch; (6) gire o segredo e confirme que o antigo deixa de validar; (7) tente cadastrar `https://127.0.0.1/x` e `https://169.254.169.254/x`: devem ser recusados.
+- **Segurança embutida:** só https; nome resolvido no envio e recusado se algum endereço não for público; conexão direta ao IP validado; sem redirecionamentos; resposta do destino descartada; segredo cifrado (AES-256-GCM) e mostrado uma vez. Limites: 20 integrações por pessoa/espaço, 6 tentativas com espera crescente, desligamento após 10 falhas seguidas.
+- **Desfazer:** pausar ou apagar a integração na tela; rollback do banco em `supabase/rollbacks/20261014240000_etapa7_integracoes.down.sql` (antes do da 13).

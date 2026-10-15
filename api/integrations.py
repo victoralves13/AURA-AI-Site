@@ -430,12 +430,79 @@ def test_integration(integration_id: str, user=Depends(sec.current_user)):
     return {"ok": True, "delivery": rows[0], "summary": summary}
 
 
-@router.post("/api/integrations/dispatch")
-def dispatch_endpoint(x_cron_secret: str | None = Header(default=None)):
-    """Chamada pelo agendador (cron) da hospedagem para entregar o que está vencido. Exige o segredo AURA_CRON_SECRET."""
-    expected = os.getenv("AURA_CRON_SECRET") or ""
+@router.post("/api/integrations/{integration_id}/deliveries/{delivery_id}/retry")
+def retry_delivery(integration_id: str, delivery_id: str, user=Depends(sec.current_user)):
+    """Reenvia uma entrega encerrada ('dead') ou com falha: volta ao início da fila, com as tentativas zeradas."""
+    user = _need_user(user)
+    iid = _uuid(integration_id, "Integração")
+    did = _uuid(delivery_id, "Entrega")
+    current = _get_integration(user, iid)
+    sec.require_org_permission(user, current.get("org_id"), PERMISSION)
+    rows = _db(lambda: sec.user_rest(user, "GET", f"integration_deliveries?select=id,status&id=eq.{did}&integration_id=eq.{iid}&limit=1")) or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Entrega não encontrada.")
+    if rows[0]["status"] == "succeeded":
+        raise HTTPException(status_code=409, detail="Esta entrega já foi concluída.")
+    if current["status"] == "disabled":
+        raise HTTPException(status_code=409, detail="Reative a integração antes de reenviar.")
+    _db(lambda: sec.service_rest("PATCH", f"integration_deliveries?id=eq.{did}&status=in.(pending,failed,dead)",
+                                 {"status": "pending", "attempts": 0, "next_attempt_at": _iso(_now()), "last_error": None}))
+    sec.audit(user, "integration.retry", current.get("org_id"), "integration", iid)
+    return {"ok": True}
+
+
+@router.post("/api/integrations/{integration_id}/flush")
+def flush_integration(integration_id: str, user=Depends(sec.current_user)):
+    """Entrega agora o que já está vencido DESTA integração (botão 'enviar pendentes'). O agendador faz o mesmo para todas."""
+    user = _need_user(user)
+    iid = _uuid(integration_id, "Integração")
+    current = _get_integration(user, iid)
+    sec.require_org_permission(user, current.get("org_id"), PERMISSION)
+    due = sec.service_rest("GET", f"integration_deliveries?select=id,integration_id,event_id,attempts&integration_id=eq.{iid}&status=in.(pending,failed)&next_attempt_at=lte.{_iso(_now())}&order=next_attempt_at.asc&limit=10") or []
+    summary = {"found": len(due), "succeeded": 0, "failed": 0, "dead": 0, "skipped": 0}
+    for row in due:
+        outcome = deliver_one(row)
+        summary["skipped" if outcome is None else outcome] += 1
+    return {"ok": True, **summary}
+
+
+def retention_days() -> int:
+    try:
+        return max(1, int(os.getenv("AURA_INTEGRATION_EVENT_RETENTION_DAYS", "30")))
+    except ValueError:
+        return 30
+
+
+def prune_old_events() -> None:
+    """Apaga eventos (e, em cascata, as entregas) mais antigos que a retenção. Eventos ainda com entrega pendente ficam."""
+    cutoff = _iso(_now() - timedelta(days=retention_days()))
+    old = sec.service_rest("GET", f"integration_events?select=id&created_at=lt.{cutoff}&limit=500") or []
+    if not old:
+        return
+    ids = ",".join(e["id"] for e in old)
+    open_ids = {d["event_id"] for d in sec.service_rest("GET", f"integration_deliveries?select=event_id&event_id=in.({ids})&status=in.(pending,failed)") or []}
+    removable = [e["id"] for e in old if e["id"] not in open_ids]
+    if removable:
+        sec.service_rest("DELETE", f"integration_events?id=in.({','.join(removable)})")
+
+
+def _cron_allowed(authorization: str | None, x_cron_secret: str | None) -> None:
+    """O agendador da Vercel envia 'Authorization: Bearer <CRON_SECRET>'; outros agendadores podem usar X-Cron-Secret."""
+    expected = [v for v in (os.getenv("AURA_CRON_SECRET"), os.getenv("CRON_SECRET")) if v]
     if not expected:
         raise HTTPException(status_code=503, detail="Entrega agendada não configurada.")
-    if not x_cron_secret or not hmac.compare_digest(x_cron_secret.encode(), expected.encode()):
+    given = x_cron_secret or (authorization[7:] if authorization and authorization.lower().startswith("bearer ") else "")
+    if not given or not any(hmac.compare_digest(given.encode(), e.encode()) for e in expected):
         raise HTTPException(status_code=401, detail="Não autorizado.")
-    return {"ok": True, **dispatch_due()}
+
+
+@router.api_route("/api/integrations/dispatch", methods=["GET", "POST"])
+def dispatch_endpoint(authorization: str | None = Header(default=None), x_cron_secret: str | None = Header(default=None)):
+    """Chamada pelo agendador (cron) da hospedagem: entrega o que está vencido e limpa eventos antigos."""
+    _cron_allowed(authorization, x_cron_secret)
+    summary = dispatch_due()
+    try:
+        prune_old_events()
+    except Exception as exc:  # noqa: BLE001 — a limpeza nunca impede as entregas
+        log.warning("Falha ao limpar eventos antigos: %s", type(exc).__name__)
+    return {"ok": True, **summary}

@@ -1,0 +1,27 @@
+.int-h{margin:6px 0 0;font:800 14px Manrope,system-ui,sans-serif;color:#eaf8fa}
+.int-warn{margin:0;padding:12px 14px;border:1px solid rgba(255,200,98,.45);border-radius:12px;background:rgba(255,200,98,.08);color:#ffe3a8;font-size:13px;line-height:1.5}
+.int-empty{margin:0;color:#8aa3ab;font-size:13px}
+.int-form{display:grid;gap:8px;padding:14px;border:1px solid rgba(170,220,230,.16);border-radius:12px;background:rgba(8,17,23,.6)}
+.int-form label{font:700 12px Manrope,system-ui,sans-serif;color:#b7c9ce}
+.int-form input[type=text],.int-form input[type=url]{padding:10px 12px;border-radius:10px;border:1px solid rgba(170,220,230,.25);background:#071116;color:#eaf8fa;font:500 14px Manrope,system-ui,sans-serif}
+.int-form fieldset{margin:0;padding:8px 0 0;border:0;display:grid;gap:4px}
+.int-form legend{padding:0;font:700 12px Manrope,system-ui,sans-serif;color:#b7c9ce}
+.int-check{display:flex!important;align-items:center;gap:8px;font-weight:600!important;color:#eaf8fa!important}
+.int-card{display:grid;gap:6px;padding:14px;border:1px solid rgba(170,220,230,.16);border-radius:12px;background:rgba(8,17,23,.6)}
+.int-card.disabled,.int-card.dead{border-color:rgba(255,120,152,.4)}
+.int-card.paused{opacity:.85}
+.int-card b{color:#eaf8fa;font-size:14px}
+.int-card small{color:#8aa3ab;font-size:12.5px;line-height:1.5;word-break:break-word}
+.int-card-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.int-url{font-family:ui-monospace,Consolas,monospace}
+.int-reason{color:#ff9bb0!important}
+.int-badge{padding:3px 9px;border-radius:99px;font:800 11px Manrope,system-ui,sans-serif;border:1px solid rgba(170,220,230,.3);color:#b7c9ce}
+.int-badge.active{color:#6ee7a8;border-color:rgba(110,231,168,.5)}
+.int-badge.disabled{color:#ff9bb0;border-color:rgba(255,120,152,.5)}
+.int-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.int-secret-box{display:grid;gap:8px;padding:14px;border:1px solid rgba(98,233,250,.5);border-radius:12px;background:rgba(98,233,250,.08)}
+.int-secret-box b{color:#eaf8fa}
+.int-secret-box p{margin:0;color:#b7c9ce;font-size:12.5px;line-height:1.5}
+.int-secret-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.int-secret{flex:1;min-width:0;padding:9px 10px;border-radius:8px;background:#071116;color:#bff6ff;font:600 12.5px ui-monospace,Consolas,monospace;word-break:break-all;user-select:all}
+.int-help{color:#8aa3ab!important}

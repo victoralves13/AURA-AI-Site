@@ -30,6 +30,8 @@ from actions import router as actions_router
 from clients import router as clients_router
 from conversations import router as conversations_router
 from onboarding import router as onboarding_router
+import integrations
+from webhook_provider import WebhookProvider
 from integrations import emit_safe as emit_integration_event, router as integrations_router
 from live import router as live_router
 from live_alerts import router as live_alerts_router
@@ -46,6 +48,13 @@ app.include_router(actions_router)
 app.include_router(conversations_router)
 app.include_router(onboarding_router)
 app.include_router(integrations_router)
+
+
+def register_default_providers() -> None:
+    integrations.register_provider(WebhookProvider())
+
+
+register_default_providers()
 app.include_router(live_router)
 app.include_router(live_transcribe_router)
 app.include_router(live_alerts_router)
