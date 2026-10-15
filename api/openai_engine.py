@@ -173,7 +173,7 @@ def _transcribe_one(path: str, prompt: str = "", offset_seconds: float = 0) -> t
             result = _client().audio.transcriptions.create(
                 model=TRANSCRIPTION_MODEL,
                 file=audio,
-                languages=["pt"],
+                language="pt",
                 prompt=prompt or (
                     "Reunião de trabalho em português do Brasil. "
                     "Preserve nomes, siglas, sistemas, números, decisões e termos técnicos."
@@ -187,12 +187,20 @@ def _transcribe_one(path: str, prompt: str = "", offset_seconds: float = 0) -> t
 
     segments = []
     for segment in (getattr(result, "segments", None) or []):
-        start = float(getattr(segment, "start", 0) or 0) + offset_seconds
-        end = float(getattr(segment, "end", start) or start) + offset_seconds
-        text = (getattr(segment, "text", "") or "").strip()
-        speaker = getattr(segment, "speaker", None)
+        # SDK responses may expose diarized segments as dictionaries or objects.
         if isinstance(segment, dict):
-            speaker = segment.get("speaker")
+            raw_start = segment.get("start", 0)
+            raw_end = segment.get("end", raw_start)
+            raw_text = segment.get("text", "")
+            speaker = segment.get("speaker") or segment.get("speaker_id")
+        else:
+            raw_start = getattr(segment, "start", 0)
+            raw_end = getattr(segment, "end", raw_start)
+            raw_text = getattr(segment, "text", "")
+            speaker = getattr(segment, "speaker", None) or getattr(segment, "speaker_id", None)
+        start = float(raw_start or 0) + offset_seconds
+        end = float(raw_end or start) + offset_seconds
+        text = (raw_text or "").strip()
         item = {"start": round(start, 2), "end": round(end, 2), "text": text}
         if speaker:
             item["speaker"] = str(speaker)
