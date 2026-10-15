@@ -5,7 +5,7 @@
 
 ## Resumo
 Evolui o AURA de um app de reunião única para uma plataforma multiusuário com dados isolados por pessoa/organização, em 7 etapas incrementais e reversíveis
-(31 commits, 15 migrações aditivas, 613 testes de backend + 439 de banco). Cada afirmação gerada pela IA continua ligada ao trecho que a comprova.
+(31 commits, 15 migrações aditivas, 621 testes de backend + 439 de banco). Cada afirmação gerada pela IA continua ligada ao trecho que a comprova.
 
 ## O que muda, por etapa
 1. **Estabilização:** sincronização e carregamento de scripts corrigidos.
@@ -18,7 +18,7 @@ Evolui o AURA de um app de reunião única para uma plataforma multiusuário com
    e "Perguntar ao AURA" dentro da reunião, do cliente e da ação.
 6. **Reuniões ao vivo:** gravação no navegador em pedaços de 30 s com consentimento obrigatório e fila durável (recupera queda de rede e aba fechada), transcrição contínua com
    limites de custo, alertas visuais silenciosos com trecho comprovado, consolidação em reunião completa e retenção/exclusão do áudio.
-7. **Produto e plataforma:** acessibilidade (Lighthouse 100, axe sem violações no tema escuro), identidade real no perfil, fim dos exemplos para quem está logado,
+7. **Produto e plataforma:** acessibilidade (Lighthouse 100, axe sem violações nos temas escuro e claro), identidade real no perfil, fim dos exemplos para quem está logado,
    telas por cliente cadastrado, **onboarding com progresso no servidor** e **integrações com webhooks de saída assinados** (HMAC-SHA256, proteção SSRF, entrega idempotente com tentativas).
 
 ## Banco de dados (14 aplicadas no Supabase `aura-ai`; a 15, de permissões do backend, aguarda aprovação; é o MESMO projeto da produção)
@@ -49,7 +49,7 @@ A 15 corrige a falta de permissões de tabela do `service_role` (o padrão do pr
 - [ ] (Opcional) ligar a proteção contra senhas vazadas no Supabase Auth.
 
 ## Limitações conhecidas
-Tema claro com contraste incompleto; telas agregadas ainda agrupam por nome do cliente cadastrado; apagar reunião não apaga o áudio da gravação; áudios órfãos de ex-membros;
+Telas agregadas ainda agrupam por nome do cliente cadastrado; apagar reunião não apaga o áudio da gravação; áudios órfãos de ex-membros;
 possíveis timeouts em análises muito longas; só o provedor `webhook` (Slack e Google Agenda ficam para depois).
 
 ## Reversão

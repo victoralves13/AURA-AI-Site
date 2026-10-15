@@ -6,11 +6,13 @@
   const ui = () => window.AURA_UI;
   let state = null;
   let chip = null;
+  let lastLoad = 0;
 
   const enabled = () => !!(window.AURA_USER && window.AURA_UI);
 
   async function load() {
     if (!enabled()) return null;
+    lastLoad = Date.now();
     try { state = await ui().api('GET', '/api/onboarding'); } catch { state = null; }
     paint();
     return state;
@@ -81,7 +83,12 @@
 
   window.addEventListener('aura:user-ready', boot);
   // Ao concluir algo que faz um passo valer, o servidor recalcula na próxima leitura.
-  window.addEventListener('aura:meetings-synced', () => { if (enabled()) load(); });
+  // Releitura espaçada: o evento dispara em toda sincronização e cada leitura faz algumas consultas. Dispensado/concluído não relê.
+  window.addEventListener('aura:meetings-synced', () => {
+    if (!enabled() || Date.now() - lastLoad < 30000 || (state && !state.visible)) return;
+    lastLoad = Date.now();
+    load();
+  });
   window.AURA_ONBOARDING_UI = { reload: load };
   if (window.AURA_USER) boot();
 })();

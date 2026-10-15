@@ -10,7 +10,7 @@ o preview é descartável e sai direto da pasta, sem Git. Produção e push **s�
 | Item | Estado |
 |---|---|
 | Branch | `etapa1-estabilizacao`, 31 commits à frente de `main`, **nada enviado ao GitHub** |
-| Testes de backend | 611 passam (`python -m unittest discover -s tests`) |
+| Testes de backend | 621 passam (`python -m unittest discover -s tests`) |
 | Testes de banco (PGlite, sem tocar no Supabase) | 439 passam: rls 89 · actions 108 · chat 44 · live 81 · onboarding 22 · integrations 67 · service_role 28 |
 | Navegador (Supabase simulado) | Etapas 4 a 7 verificadas; axe sem violações nas 11 telas no tema escuro |
 | Migrações no Supabase `aura-ai` | 14 aplicadas (conferido com `list_migrations`); reuniões antigas intactas (5). **A 15 (`etapa7_grants_service_role`, permissões do backend) está escrita e AGUARDA a sua aprovação**: sem ela o backend falha com "permission denied" ao usar a chave de serviço |
@@ -131,7 +131,7 @@ Teste também trocar entre espaço pessoal e organização: nada se mistura.
 - O canto superior e o painel de perfil mostram o SEU nome/e-mail e o espaço atual (nunca "Victor Alves"); não há clientes de exemplo (Grupo Atlas fictício, NovaTech, LogiSul…).
 - Renomeie ou funda um cliente em Clientes: o nome novo aparece em Evolução, Riscos, Oportunidades e Visão geral.
 - Rode o Lighthouse no celular (DevTools → Lighthouse → Mobile): **não medi no celular** depois das correções.
-- **Tema claro** (Perfil → Alternar tema) ainda tem falhas de contraste conhecidas; o escuro (padrão) está limpo.
+- **Tema claro** (Perfil → Alternar tema): corrigido e medido (axe 0 nos dois temas). Percorra as telas nele, inclusive os painéis e o login, e me diga se algum texto ficou ilegível.
 
 ### 4.5 Etapa 7.3 — Onboarding (conta NOVA)
 - Botão **Primeiros passos 0/5** no topo. Analisar uma reunião faz o passo 1 virar "Concluído" sozinho (detectado pelos dados, não por clique).
@@ -181,7 +181,6 @@ O que olhar: evidências comprovadas × inventadas; perguntas sem dado em "insuf
 - **Chave de cifra:** perder `AURA_INTEGRATIONS_KEY` não derruba o app, mas as integrações existentes ficam sem segredo legível (gire o segredo de cada uma depois de definir a nova chave).
 
 ## 8. Limitações conhecidas (não são regressões)
-- Tema claro com contraste incompleto (`ACESSIBILIDADE.md`).
 - Visão geral/Riscos/Oportunidades/Evolução ainda agrupam por **nome** do cliente cadastrado (entidade renomeada/fundida já reflete; duas entidades com o mesmo nome se misturam).
 - Apagar uma reunião **não** apaga o áudio da gravação ao vivo; áudios órfãos de ex-membros ficam no Storage.
 - Possíveis timeouts de função em análises muito longas (passo 1.2).

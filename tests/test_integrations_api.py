@@ -518,6 +518,29 @@ class Teste(Base):
         self.assertEqual(rows[0]["status"], "succeeded")
 
 
+class Limites(Base):
+    def test_botao_de_teste_tem_limite_por_hora(self):
+        a = self.new()["integration"]["id"]
+        for _ in range(integ.MAX_TESTS_PER_HOUR):
+            self.assertEqual(self.client.post(f"/api/integrations/{a}/test", headers=self.h()).status_code, 200)
+        for e in self.rows("integration_events"):  # o relógio do banco simulado é fixo: põe os eventos "agora"
+            e["created_at"] = integ._iso(integ._now())
+        r = self.client.post(f"/api/integrations/{a}/test", headers=self.h())
+        self.assertEqual(r.status_code, 429)
+        other = self.new(name="Outra")["integration"]["id"]  # o limite é por integração
+        self.assertEqual(self.client.post(f"/api/integrations/{other}/test", headers=self.h()).status_code, 200)
+
+    def test_rodada_de_entregas_respeita_o_tempo(self):
+        self.new()
+        for k in range(5):
+            self.emit(key=f"k{k}")
+        with mock.patch.object(integ, "BUDGET_SECONDS", 0):
+            s = integ._run(self.rows("integration_deliveries"), budget=-1)
+        self.assertEqual((s["deferred"], s["succeeded"]), (5, 0))
+        self.assertEqual(len(self.provider.calls), 0)
+        self.assertEqual(integ.dispatch_due()["succeeded"], 5)  # o que ficou para depois sai na rodada seguinte
+
+
 class Agendador(Base):
     def test_sem_segredo_configurado(self):
         with mock.patch.dict(os.environ, {}, clear=False):

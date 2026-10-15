@@ -27,3 +27,19 @@ input[type=checkbox],input[type=radio]{min-width:24px;min-height:24px}
   .live-dot,.chat-chip-n{forced-color-adjust:none}
   .act-badge,.chat-evidence,.live-alert,.chat-bubble{border:1px solid CanvasText}
 }
+
+/* Tema claro: a página inteira (não só os painéis) precisa ficar clara; o restante vem de a11y-light.css (gerado) */
+html:has(body.aura-light){background:#eef4f6}
+body.aura-light{background-color:#eef4f6!important;background-image:none!important;color:#0c2630}
+
+/* Tema claro: a barra lateral também fica clara (várias regras do tema escuro a prendem com !important) */
+body.aura-light .rail{background:#fff!important;border-right:1px solid rgba(8,45,57,.14)!important;backdrop-filter:none!important}
+body.aura-light .rail button,body.aura-light .rail a,body.aura-light .rail span,body.aura-light .rail small,body.aura-light .rail div{color:#26454f}
+body.aura-light .rail .active,body.aura-light .rail [aria-current="page"],body.aura-light .rail button.active{color:#00525f;background:rgba(0,113,134,.1)}
+body.aura-light .rail svg{stroke:currentColor}
+
+/* Texto secundário (antes escrito direto no HTML gerado) e filtros de reuniões no tema claro */
+.aura-muted{color:#8aa3ab}
+body.aura-light .aura-muted{color:#3d5963!important}
+body.aura-light .meeting-memory-filters button{background:#fff!important;color:#26454f!important;border-color:rgba(8,45,57,.2)!important}
+body.aura-light .meeting-memory-filters button.active{background:rgba(0,113,134,.12)!important;color:#00525f!important}

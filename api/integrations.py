@@ -18,6 +18,7 @@ import hmac
 import logging
 import os
 import secrets
+import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -39,6 +40,8 @@ MAX_ATTEMPTS = 6
 BACKOFF_MINUTES = (1, 5, 30, 120, 360)  # espera depois da 1ª, 2ª, ... falha
 LEASE_MINUTES = 5  # reserva de uma entrega em andamento (se a função cair, ela volta a valer depois)
 DISABLE_AFTER = 10  # falhas seguidas que desligam a integração
+BUDGET_SECONDS = 40  # tempo máximo de uma rodada de entregas (a função da hospedagem tem limite); o resto fica para a próxima
+MAX_TESTS_PER_HOUR = 10  # botão 'Testar' por integração (evita usar o servidor como disparador de requisições)
 SAFE_COLUMNS = ("id,org_id,provider,name,status,config,events,secret_hint,consecutive_failures,last_success_at,last_failure_at,"
                 "disabled_reason,created_at,updated_at")
 ERRORS = {
@@ -268,8 +271,17 @@ def dispatch_due(limit: int = 25) -> dict:
     now = _iso(_now())
     query = f"integration_deliveries?select=id,integration_id,event_id,attempts&status=in.(pending,failed)&next_attempt_at=lte.{now}&order=next_attempt_at.asc&limit={int(limit)}"
     rows = sec.service_rest("GET", query) or []
-    summary = {"found": len(rows), "succeeded": 0, "failed": 0, "dead": 0, "skipped": 0}
-    for row in rows:
+    return _run(rows)
+
+
+def _run(rows: list[dict], budget: float = BUDGET_SECONDS) -> dict:
+    """Entrega em sequência, parando ao esgotar o tempo: o que sobrar continua pendente para a próxima rodada."""
+    summary = {"found": len(rows), "succeeded": 0, "failed": 0, "dead": 0, "skipped": 0, "deferred": 0}
+    start = time.monotonic()
+    for i, row in enumerate(rows):
+        if time.monotonic() - start > budget:
+            summary["deferred"] = len(rows) - i
+            break
         try:
             outcome = deliver_one(row)
         except Exception as exc:  # noqa: BLE001
@@ -419,6 +431,10 @@ def test_integration(integration_id: str, user=Depends(sec.current_user)):
     if current["status"] != "active":
         raise HTTPException(status_code=409, detail="Reative a integração antes de testar.")
     _need_provider(current["provider"])
+    since = _iso(_now() - timedelta(hours=1))
+    recent = _db(lambda: sec.service_rest("GET", f"integration_events?select=id&type=eq.integration.test&entity_id=eq.{iid}&created_at=gte.{since}&limit={MAX_TESTS_PER_HOUR}")) or []
+    if len(recent) >= MAX_TESTS_PER_HOUR:
+        raise HTTPException(status_code=429, detail="Muitos testes seguidos. Tente de novo daqui a pouco.")
     event = (_db(lambda: sec.service_rest("POST", "integration_events", {
         "org_id": current.get("org_id"), "owner_id": user.id, "type": "integration.test", "entity_type": "integration", "entity_id": iid,
         "data": {"message": "Evento de teste do AURA AI."}})) or [{}])[0]
@@ -459,11 +475,7 @@ def flush_integration(integration_id: str, user=Depends(sec.current_user)):
     current = _get_integration(user, iid)
     sec.require_org_permission(user, current.get("org_id"), PERMISSION)
     due = sec.service_rest("GET", f"integration_deliveries?select=id,integration_id,event_id,attempts&integration_id=eq.{iid}&status=in.(pending,failed)&next_attempt_at=lte.{_iso(_now())}&order=next_attempt_at.asc&limit=10") or []
-    summary = {"found": len(due), "succeeded": 0, "failed": 0, "dead": 0, "skipped": 0}
-    for row in due:
-        outcome = deliver_one(row)
-        summary["skipped" if outcome is None else outcome] += 1
-    return {"ok": True, **summary}
+    return {"ok": True, **_run(due)}
 
 
 def retention_days() -> int:

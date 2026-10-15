@@ -132,13 +132,14 @@ class WebhookProvider:
         ctx.minimum_version = ssl.TLSVersion.TLSv1_2
         return ctx
 
-    def _pick_ip(self, host: str, port: int) -> str:
+    def _pick_ips(self, host: str, port: int) -> list[str]:
+        """Todos os endereços do nome, já validados (qualquer um não público bloqueia). Tenta-se um a um ao conectar."""
         addresses = self._resolve(host, port)
         if not addresses:
             raise BlockedDestination("sem endereço")
         if not self._allow_private and not all(_public_ip(a) for a in addresses):
             raise BlockedDestination("endereço não público")
-        return addresses[0]
+        return addresses[:4]
 
     def deliver(self, config: dict, secret: str, event: dict) -> DeliveryResult:
         try:
@@ -155,25 +156,31 @@ class WebhookProvider:
                    "X-Aura-Delivery": str(event["id"]), "X-Aura-Timestamp": str(ts), "X-Aura-Signature": sign(secret, ts, body),
                    "Accept": "*/*"}
         try:
-            ip = self._pick_ip(host, port)
+            ips = self._pick_ips(host, port)
         except BlockedDestination:
             return DeliveryResult(False, None, "Destino bloqueado: o endereço não é público.", retryable=False)
         except OSError:
             return DeliveryResult(False, None, "Não foi possível resolver o endereço.", retryable=True)
-        conn = _PinnedHTTPS(host, ip, port, TIMEOUT, self._context())
-        try:
-            conn.request("POST", path, body=body, headers=headers)
-            response = conn.getresponse()
-            response.read(1024)  # a resposta do destino é descartada
-            status = response.status
-        except ssl.SSLError:
-            return DeliveryResult(False, None, "Certificado do destino inválido.", retryable=False)
-        except (socket.timeout, TimeoutError):
-            return DeliveryResult(False, None, "Tempo esgotado.", retryable=True)
-        except (OSError, http.client.HTTPException):
-            return DeliveryResult(False, None, "Falha de conexão.", retryable=True)
-        finally:
-            conn.close()
+        status = None
+        failure: DeliveryResult | None = None
+        for ip in ips:  # um nome pode ter IPv6 e IPv4: se o primeiro não conecta, tenta o próximo
+            conn = _PinnedHTTPS(host, ip, port, TIMEOUT, self._context())
+            try:
+                conn.request("POST", path, body=body, headers=headers)
+                response = conn.getresponse()
+                response.read(1024)  # a resposta do destino é descartada
+                status = response.status
+                break
+            except ssl.SSLError:
+                return DeliveryResult(False, None, "Certificado do destino inválido.", retryable=False)
+            except (socket.timeout, TimeoutError):
+                failure = DeliveryResult(False, None, "Tempo esgotado.", retryable=True)
+            except (OSError, http.client.HTTPException):
+                failure = DeliveryResult(False, None, "Falha de conexão.", retryable=True)
+            finally:
+                conn.close()
+        if status is None:
+            return failure or DeliveryResult(False, None, "Falha de conexão.", retryable=True)
         if 200 <= status < 300:
             return DeliveryResult(True, status)
         if 300 <= status < 400:

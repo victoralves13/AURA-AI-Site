@@ -268,6 +268,32 @@ class EnvioReal(unittest.TestCase):
         self.assertEqual(self.rx.requests, [])
 
 
+class VariosEnderecos(unittest.TestCase):
+    def setUp(self):
+        self.rx = Receiver()
+        self.addCleanup(self.rx.close)
+        self.cfg = {"url": f"https://hook.test:{self.rx.port}/x"}
+
+    def test_se_o_primeiro_endereco_nao_conecta_tenta_o_proximo(self):
+        dead = socket.socket()
+        dead.bind(("127.0.0.2", 0))
+        dead_port = dead.getsockname()[1]
+        dead.close()  # nada escuta lá
+        # 1º endereço: porta fechada no mesmo número de porta do destino real não existe; simulamos pelo IP sem servidor
+        provider = wp.WebhookProvider(resolver=lambda h, p: ["127.0.0.2", "127.0.0.1"], ssl_context=trusting_context(), allow_private=True)
+        r = provider.deliver(self.cfg, "s", EVENT)
+        self.assertEqual((r.ok, r.status_code), (True, 200))
+        self.assertEqual(len(self.rx.requests), 1)
+
+    def test_todos_falhando_devolve_falha_de_conexao(self):
+        provider = wp.WebhookProvider(resolver=lambda h, p: ["127.0.0.2", "127.0.0.3"], ssl_context=trusting_context(), allow_private=True)
+        r = provider.deliver({"url": f"https://hook.test:{self.rx.port + 1}/x"}, "s", EVENT)
+        self.assertEqual((r.ok, r.retryable, r.error), (False, True, "Falha de conexão."))
+
+    def test_limita_a_quatro_enderecos(self):
+        self.assertEqual(len(wp.WebhookProvider(resolver=lambda h, p: [f"93.184.216.{i}" for i in range(10)])._pick_ips("example.com", 443)), 4)
+
+
 class FluxoCompleto(Base):
     """Cadastro pela API, evento e entrega com o provedor REAL falando com o servidor local."""
 

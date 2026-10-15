@@ -20,5 +20,10 @@ Medição: Lighthouse (desktop e celular, login e 4 telas) e axe-core 4.10 (WCAG
 Lighthouse desktop: Acessibilidade 100, Boas práticas 100, SEO 100. axe: 0 violações em todas as telas.
 Não verificado: leitor de tela real (NVDA/VoiceOver) e a medição Lighthouse no celular após as correções — fazer no preview.
 
-## Limitação conhecida: tema claro
-O botão "Alternar tema" liga um tema claro que nunca foi acabado (ex.: o título da página fica quase invisível sobre branco). O axe acusa falhas de contraste só nesse tema (cerca de 27 elementos em 4 telas). O tema escuro, que é o padrão, tem 0 violações. Corrigir o tema claro é um trabalho de design à parte.
+## Tema claro (corrigido)
+O botão "Alternar tema" liga um tema claro que antes era parcial: página e barra lateral escuras, textos quase invisíveis e painéis com texto escuro sobre fundo escuro.
+Agora o tema claro é coerente: `a11y-light.css` (GERADO por `tests/tools/gen_light_theme.py`) cria, para cada regra do tema escuro, a versão clara (texto escurecido na mesma matiz,
+fundos escuros viram brancos, bordas claras viram bordas escuras translúcidas); `a11y.css` cuida da página, da barra lateral e dos filtros.
+- axe (WCAG 2.0/2.1/2.2 A/AA + boas práticas): **0 violações nas 11 telas, nos dois temas**. Uma varredura própria, mais rigorosa que o axe (ele não calcula contraste sobre gradientes), também deu 0 nas telas, painéis (perfil, primeiros passos, integrações) e detalhes (reunião, cliente, ação, oportunidade).
+- **Ao mudar cores do tema escuro, rode `python tests/tools/gen_light_theme.py`**: `tests/test_light_theme.py` falha se o arquivo gerado estiver desatualizado.
+- Não verificado: telas de login/cadastro no tema claro e estados que dependem de dados que a conta de teste não tem (por exemplo, um risco alto aberto). Confira no preview.
