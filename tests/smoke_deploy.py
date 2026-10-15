@@ -21,8 +21,8 @@ import urllib.request
 SENSITIVE = ["/api/index.py", "/api/security.py", "/api/openai_engine.py", "/api/orgs.py", "/api/clients.py",
              "/.git/config", "/.env", "/.env.example", "/supabase/schema.sql", "/requirements.txt",
              "/DEPLOY.md", "/README.md", "/tests/test_security.py", "/vercel.json", "/package.json"]
-ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/product-shell.js", "/auth.css",
-          "/evidence.css", "/clients-ui.css", "/supabase-js-2.117.2.umd.js"]
+ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/actions-ui.js", "/product-shell.js", "/auth.css",
+          "/evidence.css", "/clients-ui.css", "/actions-ui.css", "/supabase-js-2.117.2.umd.js"]
 
 results = []
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -412,7 +412,7 @@ def add_outcome(action_id: str, payload: OutcomeCreate, user=Depends(sec.current
         observed = _iso_date(payload.observed_at)
         if not observed:
             raise HTTPException(status_code=400, detail="Data inválida. Use o formato AAAA-MM-DD.")
-        if observed > date.today().isoformat():
+        if observed > (date.today() + timedelta(days=1)).isoformat():  # tolera 1 dia: fusos à frente do servidor
             raise HTTPException(status_code=400, detail=ERRORS["observed_in_future"][1])
         row["observed_at"] = observed
     created = (_db(lambda: sec.user_rest(user, "POST", "action_outcomes", row)) or [row])[0]

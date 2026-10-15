@@ -393,11 +393,16 @@ class Resultados(Base):
 
     def test_entradas_invalidas(self):
         self.patch(self.a1, status="done")
-        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+        tomorrow = (date.today() + timedelta(days=2)).isoformat()
         for body in ({"result": "  "}, {"result": "x" * 2001}, {"effectiveness": "otimo"}, {"observed_at": "ontem"}, {"observed_at": tomorrow}):
             self.assertEqual(self.outcome(self.a1, **body).status_code, 400, body)
         self.assertEqual(self.fake.tables["action_outcomes"], [])
         self.assertFalse([c for c in self.fake.calls if c[0] == "POST" and "action_outcomes" in c[1]])  # nada chegou ao banco
+
+    def test_data_de_amanha_e_tolerada_por_causa_de_fusos(self):
+        self.patch(self.a1, status="done")
+        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+        self.assertEqual(self.outcome(self.a1, observed_at=tomorrow).status_code, 200)
 
     def test_sem_permissao_ou_de_outra_organizacao(self):
         self.patch(self.a1, status="done")

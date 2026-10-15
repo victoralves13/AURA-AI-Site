@@ -13,7 +13,7 @@ const X = '10000000-0000-0000-0000-000000000001', Y = '10000000-0000-0000-0000-0
 const T1 = '20000000-0000-0000-0000-000000000001';
 const M = n => '30000000-0000-0000-0000-00000000000' + n;
 const MIGRATIONS = ['20261014120000_etapa2_identidade_organizacoes', '20261014120100_etapa2_reunioes_isolamento', '20261014130000_etapa2_acesso_exige_membro',
-  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014160000_etapa4_acoes', '20261014170000_etapa4_resultados'];
+  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014160000_etapa4_acoes', '20261014170000_etapa4_resultados', '20261014180000_etapa4_data_observada'];
 
 async function as(uid, fn) {
   await db.exec('reset role');
@@ -170,6 +170,7 @@ check('constraint: done exige completed_at (inserção direta inconsistente é c
 
 
 console.log('\n== resultados e eficácia (migração 7) ==');
+const dbTomorrow = async () => (await rows("select to_char(current_date + 1, 'YYYY-MM-DD') d"))[0].d;
 const out = (uid, action, extra = {}) => tryq(uid,
   `insert into public.action_outcomes(action_id,result,effectiveness,observed_at,org_id) values ($1,$2,$3,coalesce($4::date,current_date),$5) returning id, org_id, recorded_by`,
   [action, extra.result ?? 'Cliente respondeu e assinou', extra.eff ?? 'worked', extra.at ?? null, extra.org_id ?? null]);
@@ -180,6 +181,7 @@ let ro = await out(C, o1, { org_id: Y });
 check('dono registra resultado de ação concluída', ro.ok, ro.err);
 check('org_id e autor vêm do banco, não do cliente', ro.ok && ro.rows[0].org_id === X && ro.rows[0].recorded_by === C, JSON.stringify(ro.rows));
 check('o resultado entra no histórico da ação', (await rows(`select count(*) c from public.action_events where action_id=$1 and event='outcome'`, [o1]))[0].c == 1);
+{ const r = await out(C, o1, { at: await dbTomorrow() }); check('data de amanhã é aceita (fusos à frente do UTC)', r.ok, r.err); }
 check('resultado no futuro é recusado', /observed_in_future/.test((await out(C, o1, { at: '2999-01-01' })).err || ''));
 check('avaliação inválida é recusada', !(await out(C, o1, { eff: 'otimo' })).ok);
 check('resultado vazio é recusado', !(await out(C, o1, { result: '' })).ok);
@@ -213,6 +215,8 @@ check('apagar a ação apaga os resultados (cascata)', Number((await rows(`selec
 
 console.log('\n== rollback e reaplicação ==');
 const meetingsBefore = (await rows('select count(*) c from public.meetings'))[0].c;
+await db.exec(read('rollbacks/20261014180000_etapa4_data_observada.down.sql'));
+check('rollback do ajuste volta a recusar amanhã', /observed_in_future/.test((await out(A, o1, { at: await dbTomorrow() })).err || ''));
 await db.exec(read('rollbacks/20261014170000_etapa4_resultados.down.sql'));
 check('rollback da 7 remove resultados e o tipo de evento, e preserva ações', Number((await rows(`select count(*) c from information_schema.tables where table_name='action_outcomes'`))[0].c) === 0 && Number((await rows('select count(*) c from public.actions'))[0].c) > 0 && Number((await rows(`select count(*) c from public.action_events where event='outcome'`))[0].c) === 0);
 await db.exec(read('rollbacks/20261014160000_etapa4_acoes.down.sql'));
@@ -223,6 +227,7 @@ check('rollback preserva reuniões', Number((await rows('select count(*) c from 
 check('rollback preserva o restante (clientes, organizações)', Number((await rows('select count(*) c from public.organizations'))[0].c) === 2);
 await db.exec(read('migrations/20261014160000_etapa4_acoes.sql'));
 await db.exec(read('migrations/20261014170000_etapa4_resultados.sql'));
+await db.exec(read('migrations/20261014180000_etapa4_data_observada.sql'));
 check('migrações 6 e 7 reaplicam após o rollback', true);
 
 console.log(`\n${pass} aprovados, ${fail} reprovados`);

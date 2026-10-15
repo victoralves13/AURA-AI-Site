@@ -305,3 +305,13 @@ Migração `20261014170000_etapa4_resultados.sql` (aditiva; **aplique antes de u
   corrigir é registrar de novo; o mais recente vale. Só para ação concluída, cancelada ou vencida. Registrado no histórico da ação.
 - Endpoints: `POST|GET /api/actions/{id}/outcomes`, `GET /api/actions/stats` (filtros `org_id`, `client_id`). As listas de ações trazem
   `latest_outcome` e `outcomes_count`. Taxas (conclusão, eficácia) ficam nulas quando não há base; "incerto" não entra na taxa de eficácia.
+
+## Etapa 4.3 — Interface de ações
+
+Arquivos novos: `actions-ui.js` e `actions-ui.css` (publicados como os demais; já estão no `vercel.json` e no `smoke_deploy.py`).
+Só atuam com login ativo. A área **Ações** mostra indicadores (em aberto, atrasadas, conclusão, eficácia), filtros, lista e um painel por
+ação (estado, responsável, prazo, evidência de origem, histórico e resultados observados). Dentro de cada reunião aparece o painel
+"Ações acompanháveis", com opção de adicionar uma ação. Ao abrir a área Ações pela primeira vez em cada espaço, o app chama
+`POST /api/actions/sync` e cria as ações das reuniões que ainda não as têm (inclusive as antigas, só com o texto das pendências).
+Migração `20261014180000_etapa4_data_observada.sql` (ajuste pequeno, aditiva; rollback em `supabase/rollbacks/`): a data observada de um
+resultado aceita até amanhã (UTC), por causa de fusos à frente do servidor. **Aplique as migrações 6, 7 e 8 antes de usar a tela.**

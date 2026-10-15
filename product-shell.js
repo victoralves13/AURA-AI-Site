@@ -655,6 +655,7 @@ function actionDetail(m){
 }
 function actions(){
  const h=document.getElementById('shellActions');if(!h)return;
+ if(window.AURA_ACTIONS_UI&&window.AURA_ACTIONS_UI.enabled()){window.AURA_ACTIONS_UI.render(h);return}
  const base=items(), a=[];
  base.forEach(m=>{
   const candidates=[...arr(m,'pending_actions'),...(m.next_move?[m.next_move]:[])].filter(Boolean);
