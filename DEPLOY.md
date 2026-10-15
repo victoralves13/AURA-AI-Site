@@ -132,6 +132,71 @@ serviço fica restrita a criar organizações, gravar auditoria e assinar URLs d
 Testes: `python -m unittest discover -s tests` (backend) e
 `npm install --no-save @electric-sql/pglite && node tests/db/rls.test.mjs` (migrações + RLS).
 
+### Deploy de teste (preview) na Vercel — sem tocar na produção
+
+**Ponto de partida verificado:** migrações 1 a 5 aplicadas no Supabase `aura-ai`; código na branch
+`etapa1-estabilizacao`; `AURA_AUTH_REQUIRED` fica DESLIGADA no primeiro deploy. Um preview usa o MESMO
+banco e o MESMO bucket do Supabase: tudo o que for criado nele (reuniões, contas, organizações) é real.
+Use uma conta de teste, áudios curtos e uma chave da OpenAI própria para teste, com limite de gasto.
+
+**Caminho A (recomendado): projeto novo seu, pela CLI, sem enviar nada ao GitHub.** Não toca no projeto
+nem no domínio de produção de ninguém.
+
+1. `npx vercel@latest login` (autentica no navegador).
+2. Na pasta do projeto: `npx vercel@latest link` e criar um projeto NOVO (ex.: `aura-ai-preview`).
+3. Variáveis, sempre no ambiente **preview** (`npx vercel@latest env add NOME preview`). Segredos: digite
+   o valor quando a CLI pedir e marque "sensitive"; nunca os passe em argumentos.
+
+   | Variável | Valor | Segredo? |
+   |---|---|---|
+   | `OPENAI_API_KEY` | chave de TESTE da OpenAI | sim |
+   | `SUPABASE_URL` | `https://vveochvgvilukgpfxbht.supabase.co` | não |
+   | `SUPABASE_SECRET_KEY` | a mesma chave de serviço que a produção já usa | sim |
+   | `SUPABASE_PUBLISHABLE_KEY` | chave "publishable" do projeto (painel: Project Settings → API Keys) | não (feita para o navegador) |
+   | `AURA_AUDIO_BUCKET` | `aura-audio` | não |
+   | `AURA_OPENAI_ANALYSIS_MODEL` | um modelo que a sua conta liste | não |
+   | `AURA_OPENAI_TRANSCRIPTION_MODEL` | `gpt-4o-transcribe-diarize` | não |
+   | `AURA_MAX_ANALYSES_PER_HOUR` | `30` | não |
+   | `AURA_AUTH_REQUIRED` | **não criar ainda** | — |
+
+4. `npx vercel@latest deploy` (sem `--prod`: gera um preview; a URL aparece no final). Nunca use `--prod`.
+5. Supabase → Authentication → URL Configuration: acrescente a URL do preview em *Redirect URLs*.
+   Crie a conta de teste em Authentication → Users → *Add user* (marque confirmar e-mail).
+6. Verificação automática com o login desligado:
+   `python tests/smoke_deploy.py https://SEU-PREVIEW.vercel.app --auth off`
+   (se o preview pedir login da Vercel, defina `VERCEL_BYPASS_TOKEN` com o "Protection Bypass for Automation").
+7. Teste manual do login SEM exigi-lo: abra `https://SEU-PREVIEW.vercel.app/?auth=1` e entre com a conta de teste.
+
+**Caminho B: preview do projeto do Victor.** Exige permissão de escrita no repositório e acesso ao projeto
+dele na Vercel: `git push -u origin etapa1-estabilizacao` gera um preview automático; as variáveis acima
+precisam existir no ambiente *Preview* desse projeto. As verificações são as mesmas.
+
+**Antes de ligar `AURA_AUTH_REQUIRED` (todos os itens):**
+
+1. `smoke_deploy.py --auth off` sem nenhuma falha, e `/api/health` com `supabase_configured` e `auth_configured` verdadeiros.
+2. Login pelo `?auth=1` funcionando: entrar, sair, senha errada com mensagem clara, sessão que persiste ao recarregar.
+3. **As 5 reuniões antigas têm dono definido.** Elas estão sem dono; com a exigência ligada ficam invisíveis
+   na interface (continuam no banco, nada é apagado). Decisão pendente: qual conta fica com elas. Depois de
+   criar a conta de teste e copiar o UUID dela (Authentication → Users): `update public.meetings set owner_id = '<uuid>' where owner_id is null;`
+4. Uma análise de texto e uma de áudio curto de verdade: resultado com selos "Dito/Inferido", cliente sugerido
+   ou vinculado, linha nova em `meetings` com `analysis_version = 2` e linhas em `audit_log`.
+5. Criar uma organização e convidar uma segunda conta de teste; conferir o espaço pessoal separado do da organização.
+6. Supabase: `get_advisors` de segurança sem alertas; Logs da função na Vercel sem erros 5xx durante os testes.
+7. Anotar o plano de volta (abaixo) e quem decide a ativação na produção.
+
+**Ligar no preview:** `npx vercel@latest env add AURA_AUTH_REQUIRED preview` (valor `1`) e redeploy
+(`npx vercel@latest deploy`): variáveis só valem para deploys novos. Depois:
+`AURA_TEST_TOKEN=<access token da conta de teste> python tests/smoke_deploy.py https://SEU-PREVIEW.vercel.app --auth on`
+(o token: no navegador logado, `JSON.parse(localStorage[Object.keys(localStorage).find(k=>k.includes('auth-token'))]).access_token`;
+vale ~1 hora). Tudo precisa passar, inclusive "sem login = 401" em todas as rotas de dados.
+
+**Voltar atrás:** `npx vercel@latest env rm AURA_AUTH_REQUIRED preview` + novo deploy devolve o comportamento
+anterior em minutos. O banco não precisa de rollback para isso. Os rollbacks de migração (`supabase/rollbacks/`)
+só valem se for preciso desfazer o esquema.
+
+**Produção:** fora deste roteiro. Exige autorização explícita, as mesmas variáveis no ambiente *Production*
+(com a exigência desligada primeiro) e a repetição das verificações acima na URL de produção.
+
 ### Análise v2: dito × inferido e conferência das evidências (Etapa 3)
 
 A IA agora marca cada achado como **dito** (afirmado na conversa) ou **inferido** (conclusão dela, com
