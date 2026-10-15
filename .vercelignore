@@ -6,3 +6,4 @@ supabase
 .git
 __pycache__
 *.pyc
+*.md
