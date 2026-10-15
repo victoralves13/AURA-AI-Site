@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -194,6 +194,71 @@ def analyze_transcript_endpoint(payload: dict):
         return _build_result(transcript, _clean(payload.get("client_name")), payload.get("meeting_title") or "transcript", "transcript", _clean(payload.get("context")) or "Outro", is_demo=bool(payload.get("is_demo")), demo_scenario=_clean(payload.get("demo_scenario")) or None, meeting_title=_clean(payload.get("meeting_title")) or "Análise por transcrição")
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+@app.post("/api/analyze-audio")
+async def analyze_audio_upload(
+    file: UploadFile = File(...),
+    context: str = Header(default="Outro", alias="X-AURA-Context"),
+):
+    """Analyze an audio file directly; Supabase Storage is not required for this path."""
+    filename = Path(file.filename or "reuniao.webm").name
+    suffix = Path(filename).suffix.lower() or ".webm"
+    if suffix not in {".mp3", ".wav", ".m4a", ".mp4", ".webm", ".ogg", ".mpeg", ".mpga"}:
+        raise HTTPException(status_code=400, detail="Formato de áudio não suportado.")
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
+            temp_path = temp.name
+            total = 0
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_AUDIO_BYTES:
+                    raise HTTPException(status_code=413, detail="O áudio deve ter até 100 MB.")
+                temp.write(chunk)
+        if total == 0:
+            raise HTTPException(status_code=400, detail="O arquivo de áudio está vazio.")
+        from openai_engine import transcribe_audio
+        transcript, meta = transcribe_audio(temp_path)
+        if not transcript:
+            raise HTTPException(status_code=422, detail="Não foi possível transcrever o áudio.")
+        segments = meta.get("segments") or []
+        def stamp(seconds):
+            total_seconds = max(0, int(seconds))
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, secs = divmod(remainder, 60)
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
+        timed_transcript = "\n".join(
+            f"[{stamp(segment.get('start', 0))}] [{segment.get('speaker')}] {segment.get('text', '').strip()}"
+            if segment.get("speaker")
+            else f"[{stamp(segment.get('start', 0))}] {segment.get('text', '').strip()}"
+            for segment in segments if segment.get("text")
+        )
+        if timed_transcript:
+            meta = {**meta, "plain_text": transcript}
+        return _build_result(
+            timed_transcript or transcript,
+            "",
+            filename,
+            "audio",
+            _clean(context) or "Outro",
+            meta,
+            meeting_title=filename,
+            analysis_transcript=timed_transcript or transcript,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    finally:
+        await file.close()
+        if temp_path:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
 
 @app.post("/api/audio-upload-url")
 def audio_upload_url(payload: AudioUploadRequest):
