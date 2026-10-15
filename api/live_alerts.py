@@ -151,7 +151,7 @@ def enforce_scan_limit(user: sec.AuthUser) -> None:
     try:
         rows = sec.service_rest("GET", f"audit_log?select=id&actor_id=eq.{user.id}&action=eq.live.scan&at=gte.{since}&limit={limit + 1}") or []
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail="Não foi possível verificar o limite de uso. Tente novamente.") from exc
+        raise sec.limit_check_failed(exc) from exc
     if len(rows) >= limit:
         raise HTTPException(status_code=429, detail="Limite de varreduras de alertas por hora atingido. A transcrição continua normalmente.")
 

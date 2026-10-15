@@ -240,6 +240,16 @@ def audit(actor: AuthUser | None, action: str, org_id: str | None = None, entity
         log.warning("auditoria não gravada (%s): %s", action, exc)
 
 
+def limit_check_failed(exc: Exception) -> HTTPException:
+    """Falha ao consultar o uso: registra a CAUSA no log do servidor (sem segredos) e devolve o aviso genérico ao usuário."""
+    if isinstance(exc, SupabaseError):
+        cause = f"HTTP {exc.status} {exc.db_code} {exc.db_message[:120]}".strip()
+    else:
+        cause = str(exc)[:160]
+    log.warning("verificação de limite de uso falhou: %s", cause)
+    return HTTPException(status_code=503, detail="Não foi possível verificar o limite de uso. Tente novamente.")
+
+
 def enforce_usage_limit(user: AuthUser | None) -> None:
     """Limita análises (custo de IA) por usuário/hora. Falha de verificação bloqueia (fail closed)."""
     if user is None:
@@ -249,7 +259,7 @@ def enforce_usage_limit(user: AuthUser | None) -> None:
     try:
         rows = service_rest("GET", f"audit_log?select=id&actor_id=eq.{user.id}&action=like.analysis.*&at=gte.{since}&limit={limit + 1}") or []
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail="Não foi possível verificar o limite de uso. Tente novamente.") from exc
+        raise limit_check_failed(exc) from exc
     if len(rows) >= limit:
         raise HTTPException(status_code=429, detail="Limite de análises por hora atingido. Tente novamente mais tarde.")
 

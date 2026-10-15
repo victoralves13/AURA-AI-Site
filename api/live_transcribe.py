@@ -83,7 +83,7 @@ def enforce_hourly_limit(user: sec.AuthUser) -> float:
     try:
         used = minutes_last_hour(user)
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail="Não foi possível verificar o limite de uso. Tente novamente.") from exc
+        raise sec.limit_check_failed(exc) from exc
     if used >= hourly_limit_minutes():
         raise HTTPException(status_code=429, detail="Limite de transcrição por hora atingido. O áudio continua guardado e a transcrição segue quando o limite liberar.")
     return used
