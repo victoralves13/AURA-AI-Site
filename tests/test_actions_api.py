@@ -355,6 +355,131 @@ class Listagem(Base):
             self.assertTrue(urls and urls[0].endswith(expected), urls)
 
 
+class Resultados(Base):
+    def setUp(self):
+        super().setUp()
+        self.mid = self.add_meeting()
+        self.sync(self.mid)
+        self.a1, self.a2 = [a["id"] for a in self.actions(self.mid)]
+
+    def outcome(self, aid, tok="tok-a", **body):
+        body.setdefault("result", "O cliente assinou o contrato")
+        body.setdefault("effectiveness", "worked")
+        return self.client.post(f"/api/actions/{aid}/outcomes", headers=self.h(tok), json=body)
+
+    def test_exige_login(self):
+        self.assertEqual(self.client.post(f"/api/actions/{self.a1}/outcomes", json={"result": "x", "effectiveness": "worked"}).status_code, 401)
+        self.assertEqual(self.client.get(f"/api/actions/{self.a1}/outcomes").status_code, 401)
+        self.assertEqual(self.client.get("/api/actions/stats").status_code, 401)
+
+    def test_so_depois_de_concluida_cancelada_ou_vencida(self):
+        self.assertEqual(self.outcome(self.a1).status_code, 409)  # aberta e no prazo
+        self.patch(self.a1, status="done")
+        self.assertEqual(self.outcome(self.a1).status_code, 200)
+        self.patch(self.a2, status="cancelled")
+        self.assertEqual(self.outcome(self.a2, effectiveness="uncertain").status_code, 200)
+        a3 = self.make(self.mid, due_date=(date.today() - timedelta(days=1)).isoformat()).json()["action"]["id"]
+        self.assertEqual(self.outcome(a3, effectiveness="not_worked").status_code, 200)  # vencida
+        a4 = self.make(self.mid, due_date=(date.today() + timedelta(days=3)).isoformat()).json()["action"]["id"]
+        self.assertEqual(self.outcome(a4).status_code, 409)
+
+    def test_registro_valido(self):
+        self.patch(self.a1, status="done")
+        r = self.outcome(self.a1, result="  Assinou   em dois dias ", observed_at="2026-10-10")
+        self.assertEqual(r.status_code, 200, r.text)
+        row = self.fake.tables["action_outcomes"][0]
+        self.assertEqual((row["result"], row["observed_at"], row["recorded_by"], row["org_id"]), ("Assinou em dois dias", "2026-10-10", UA, ORG1))
+        self.assertIn("outcome", [e["event"] for e in self.fake.tables["action_events"] if e["action_id"] == self.a1])
+
+    def test_entradas_invalidas(self):
+        self.patch(self.a1, status="done")
+        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+        for body in ({"result": "  "}, {"result": "x" * 2001}, {"effectiveness": "otimo"}, {"observed_at": "ontem"}, {"observed_at": tomorrow}):
+            self.assertEqual(self.outcome(self.a1, **body).status_code, 400, body)
+        self.assertEqual(self.fake.tables["action_outcomes"], [])
+        self.assertFalse([c for c in self.fake.calls if c[0] == "POST" and "action_outcomes" in c[1]])  # nada chegou ao banco
+
+    def test_sem_permissao_ou_de_outra_organizacao(self):
+        self.patch(self.a1, status="done")
+        self.assertEqual(self.outcome(self.a1, "tok-d").status_code, 404)
+        self.fake.no_edit.add(self.mid)
+        self.assertEqual(self.outcome(self.a1).status_code, 403)
+        self.assertEqual(self.fake.tables["action_outcomes"], [])
+
+    def test_o_mais_recente_vale_e_historico_fica(self):
+        self.patch(self.a1, status="done")
+        self.outcome(self.a1, effectiveness="worked", result="Primeiro")
+        self.outcome(self.a1, effectiveness="partial", result="Corrigido: só em parte")
+        item = [a for a in self.client.get(f"/api/meetings/{self.mid}/actions", headers=self.h()).json()["actions"] if a["id"] == self.a1][0]
+        self.assertEqual((item["outcomes_count"], item["latest_outcome"]["effectiveness"]), (2, "partial"))
+        self.assertNotIn("action_outcomes", item)
+        listed = self.client.get(f"/api/actions/{self.a1}/outcomes", headers=self.h()).json()["outcomes"]
+        self.assertEqual([o["result"] for o in listed], ["Corrigido: só em parte", "Primeiro"] if listed[0]["created_at"] > listed[1]["created_at"] else ["Primeiro", "Corrigido: só em parte"])
+        self.assertEqual(len(listed), 2)
+
+    def test_auditoria_guarda_so_a_avaliacao(self):
+        self.patch(self.a1, status="done")
+        self.outcome(self.a1, result="Informação sensível do cliente")
+        entry = [r for r in self.fake.tables["audit_log"] if r["action"] == "action.outcome"][0]
+        self.assertEqual(entry["metadata"], {"effectiveness": "worked"})
+        self.assertNotIn("sensível", str(entry))
+
+
+class Estatisticas(Base):
+    def stats(self, qs="", tok="tok-a"):
+        r = self.client.get("/api/actions/stats" + qs, headers=self.h(tok))
+        self.assertEqual(r.status_code, 200, r.text)
+        return r.json()
+
+    def test_sem_dados_nao_inventa_taxas(self):
+        s = self.stats()
+        self.assertEqual((s["total"], s["completion_rate"], s["effective_rate"], s["evaluated"]), (0, None, None, 0))
+
+    def test_contagens_e_taxas(self):
+        mid = self.add_meeting(detail=[], pending=[f"tarefa {i}" for i in range(6)])
+        self.sync(mid)
+        ids = [a["id"] for a in self.actions(mid)]
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        for aid, status in zip(ids, ["done", "done", "done", "cancelled", "in_progress", "open"]):
+            self.patch(aid, status=status)
+        self.patch(ids[5], due_date=yesterday)  # aberta e vencida
+        self.patch(ids[0], due_date=yesterday)  # concluída com prazo passado NÃO é atrasada
+        for aid, eff in ((ids[0], "worked"), (ids[1], "not_worked"), (ids[2], "uncertain")):
+            self.client.post(f"/api/actions/{aid}/outcomes", headers=self.h(), json={"result": "r", "effectiveness": eff})
+        s = self.stats()
+        self.assertEqual(s["total"], 6)
+        self.assertEqual(s["by_status"], {"open": 1, "in_progress": 1, "done": 3, "cancelled": 1})
+        self.assertEqual((s["overdue"], s["with_outcome"], s["closed_without_outcome"]), (1, 3, 2))  # cancelada + vencida sem resultado
+        self.assertEqual(s["completion_rate"], 0.6)  # 3 de 5 (cancelada fora)
+        self.assertEqual(s["effectiveness"], {"worked": 1, "partial": 0, "not_worked": 1, "uncertain": 1})
+        self.assertEqual((s["effective_rate"], s["evaluated"]), (0.5, 2))  # "incerto" não entra na taxa
+        self.assertFalse(s["truncated"])
+
+    def test_vale_a_avaliacao_mais_recente(self):
+        mid = self.add_meeting(detail=[], pending=["única"])
+        self.sync(mid)
+        aid = self.actions(mid)[0]["id"]
+        self.patch(aid, status="done")
+        for eff in ("worked", "not_worked"):
+            self.client.post(f"/api/actions/{aid}/outcomes", headers=self.h(), json={"result": "r", "effectiveness": eff})
+        s = self.stats()
+        self.assertEqual((s["effectiveness"]["not_worked"], s["effectiveness"]["worked"], s["effective_rate"]), (1, 0, 0.0))
+
+    def test_recortes_e_isolamento(self):
+        m1 = self.add_meeting(detail=[], pending=["a", "b"])
+        m2 = self.add_meeting(detail=[], pending=["c"], owner=UC)
+        mp = self.add_meeting(detail=[], pending=["d"], org=None)
+        for m in (m1, m2, mp):
+            self.sync(m)
+        self.fake.rows("meetings", id=m1)[0]["client_id"] = "c1c1c1c1-0000-0000-0000-000000000001"
+        self.assertEqual(self.stats()["total"], 4)
+        self.assertEqual(self.stats(f"?org_id={ORG1}")["total"], 3)
+        self.assertEqual(self.stats("?org_id=personal")["total"], 1)
+        self.assertEqual(self.stats("?client_id=c1c1c1c1-0000-0000-0000-000000000001")["total"], 2)
+        self.assertEqual(self.stats("?client_id=c1c1c1c1-0000-0000-0000-0000000000ff")["total"], 0)
+        self.assertEqual(self.stats("", "tok-d")["total"], 0)  # outra organização não vê nada
+
+
 class AoAnalisar(Base):
     def setUp(self):
         super().setUp()

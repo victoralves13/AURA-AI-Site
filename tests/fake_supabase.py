@@ -6,6 +6,7 @@ Reproduz o que importa para a segurança:
   * leituras/escritas com a chave de serviço ignoram o RLS.
 """
 import itertools
+from datetime import date
 import uuid
 from urllib.parse import parse_qsl, urlsplit
 
@@ -18,7 +19,7 @@ class FakeSupabase:
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
                                               "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
-                                              "actions", "action_events")}
+                                              "actions", "action_events", "action_outcomes")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
         self.no_edit = set()  # ids de reuniões cujas ações a pessoa vê, mas não pode editar (a política real distingue)
@@ -175,6 +176,22 @@ class FakeSupabase:
             return 200, [dict(a) for a in hit]
         return 405, {}
 
+    def _outcome_write(self, payload, uid):
+        a = next((a for a in self.tables["actions"] if a["id"] == payload.get("action_id")), None)
+        m = next((m for m in self.tables["meetings"] if a and m["id"] == a["meeting_id"]), None)
+        if not a or not m or not self._can_edit_actions(m, uid):
+            return 403, {"message": "new row violates row-level security policy"}
+        if not (a["status"] in ("done", "cancelled") or (a.get("due_date") and str(a["due_date"]) < date.today().isoformat())):
+            return 400, {"code": "23514", "message": "action_not_closed"}
+        if payload.get("effectiveness") not in ("worked", "partial", "not_worked", "uncertain") or not payload.get("result"):
+            return 400, {"code": "23514", "message": "check constraint"}
+        row = {"observed_at": date.today().isoformat(), **payload, "id": str(uuid.uuid4()), "org_id": a.get("org_id"),
+               "recorded_by": uid, "created_at": self._ts()}
+        self.tables["action_outcomes"].append(row)
+        self.tables["action_events"].append({"id": next(self._seq), "action_id": a["id"], "at": self._ts(), "actor_id": uid,
+                                             "event": "outcome", "data": {"effectiveness": row["effectiveness"]}})
+        return 201, [dict(row)]
+
     def rows(self, table, **where):
         return [r for r in self.tables[table] if all(r.get(k) == v for k, v in where.items())]
 
@@ -272,7 +289,7 @@ class FakeSupabase:
                 return self._can_read_client(row, uid)
             if table == "actions":
                 return self._action_meeting_visible(row, uid)
-            if table == "action_events":
+            if table in ("action_events", "action_outcomes"):
                 act = next((a for a in self.tables["actions"] if a["id"] == row["action_id"]), None)
                 return bool(act) and self._action_meeting_visible(act, uid)
             return False
@@ -288,7 +305,11 @@ class FakeSupabase:
                 for r in out:
                     m = next((m for m in self.tables["meetings"] if m["id"] == r["meeting_id"]), {})
                     r["meetings"] = {k: m.get(k) for k in ("meeting_title", "client_name", "client_id", "created_at")}
-                select = "*"
+            if table == "actions" and "action_outcomes(" in select:
+                for r in out:
+                    r["action_outcomes"] = [dict(o) for o in self.tables["action_outcomes"] if o["action_id"] == r["id"]]
+            if table == "actions" and "(" in select:
+                select = "*" if select.startswith("*") else ""
             if select and select != "*":  # projeção de colunas, como o PostgREST faz
                 cols, depth, cur = [], 0, ""
                 for ch in select:
@@ -311,6 +332,8 @@ class FakeSupabase:
             self.tables["meetings"].append(row)
             return 201, [dict(row)]
 
+        if table == "action_outcomes" and not is_service and method == "POST":
+            return self._outcome_write(payload or {}, caller["id"])
         if table == "actions" and not is_service:
             return self._actions_write(method, payload or {}, caller["id"], match)
         if table == "clients" and not is_service and method == "POST":

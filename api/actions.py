@@ -29,7 +29,9 @@ STATUSES = ("open", "in_progress", "done", "cancelled")
 ACTIVE = ("open", "in_progress")
 MAX_SYNC_MEETINGS = 100
 MAX_ACTIONS_PER_MEETING = 50
-SELECT_LIST = "*,meetings(meeting_title,client_name,client_id,created_at)"
+EFFECTIVENESS = ("worked", "partial", "not_worked", "uncertain")
+SELECT_LIST = "*,meetings(meeting_title,client_name,client_id,created_at),action_outcomes(effectiveness,result,observed_at,created_at)"
+STATS_LIMIT = 2000
 
 
 # ---------------------------------------------------------------------------
@@ -94,6 +96,9 @@ ERRORS = {
     "action_immutable": (409, "Esse campo da ação não pode ser alterado."),
     "assignee_not_member": (400, "O responsável precisa ser membro da organização desta reunião."),
     "meeting_not_found": (404, "Reunião não encontrada."),
+    "action_not_found": (404, "Ação não encontrada."),
+    "action_not_closed": (409, "Só é possível registrar o resultado de uma ação concluída, cancelada ou vencida."),
+    "observed_in_future": (400, "A data da observação não pode ser futura."),
 }
 GENERIC = "Não foi possível concluir a operação com ações. Tente novamente."
 
@@ -143,11 +148,20 @@ def _get_meeting(user: sec.AuthUser, meeting_id: str) -> dict:
     return rows[0]
 
 
+def _with_latest(rows: list[dict]) -> list[dict]:
+    """Troca a lista de resultados embutida por `latest_outcome` (o mais recente vale) e a contagem."""
+    for row in rows:
+        outcomes = row.pop("action_outcomes", None) or []
+        row["outcomes_count"] = len(outcomes)
+        row["latest_outcome"] = max(outcomes, key=lambda o: o.get("created_at") or "") if outcomes else None
+    return rows
+
+
 def _get_action(user: sec.AuthUser, action_id: str) -> dict:
     rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select={SELECT_LIST}&id=eq.{action_id}&limit=1")) or []
     if not rows:
         raise HTTPException(status_code=404, detail="Ação não encontrada.")
-    return rows[0]
+    return _with_latest(rows)[0]
 
 
 def sync_for_meeting(user: sec.AuthUser | None, meeting: dict) -> int:
@@ -254,7 +268,44 @@ def list_actions(org_id: str | None = None, status: str | None = None, meeting_i
         where += f"&due_date=lt.{date.today().isoformat()}&status=in.(open,in_progress)"
     limit = max(1, min(limit, 500))
     rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select={SELECT_LIST}{where}&order=created_at.desc&limit={limit}")) or []
-    return {"ok": True, "actions": rows, "count": len(rows)}
+    return {"ok": True, "actions": _with_latest(rows), "count": len(rows)}
+
+
+def _stats(rows: list[dict], today: str) -> dict:
+    by_status = {s: 0 for s in STATUSES}
+    effect = {e: 0 for e in EFFECTIVENESS}
+    overdue = with_outcome = closed_without = 0
+    for r in rows:
+        status = r.get("status")
+        by_status[status] = by_status.get(status, 0) + 1
+        late = status in ACTIVE and bool(r.get("due_date")) and r["due_date"] < today
+        overdue += late
+        outcomes = r.get("action_outcomes") or []
+        if outcomes:
+            with_outcome += 1
+            effect[max(outcomes, key=lambda o: o.get("created_at") or "")["effectiveness"]] += 1
+        elif status in ("done", "cancelled") or late:
+            closed_without += 1
+    tracked = len(rows) - by_status["cancelled"]
+    judged = effect["worked"] + effect["partial"] + effect["not_worked"]
+    return {"total": len(rows), "by_status": by_status, "overdue": overdue,
+            "completion_rate": round(by_status["done"] / tracked, 3) if tracked else None,
+            "with_outcome": with_outcome, "closed_without_outcome": closed_without, "effectiveness": effect,
+            "effective_rate": round(effect["worked"] / judged, 3) if judged else None,  # só com avaliações; nunca inventado
+            "evaluated": judged}
+
+
+@router.get("/api/actions/stats")
+def action_stats(org_id: str | None = None, client_id: str | None = None, user=Depends(sec.current_user)):
+    """Acompanhamento e eficácia das ações do espaço. Taxas ficam nulas quando não há base para calculá-las."""
+    user = _need_user(user)
+    where = _space(user, org_id)
+    if client_id:
+        cid = _uuid(client_id, "Cliente")
+        ids = [m["id"] for m in _db(lambda: sec.user_rest(user, "GET", f"meetings?select=id&client_id=eq.{cid}&limit=500")) or []]
+        where += "&meeting_id=in.(" + ",".join(ids or ["00000000-0000-0000-0000-000000000000"]) + ")"
+    rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select=id,status,due_date,action_outcomes(effectiveness,created_at){where}&limit={STATS_LIMIT}")) or []
+    return {"ok": True, **_stats(rows, date.today().isoformat()), "truncated": len(rows) >= STATS_LIMIT}
 
 
 @router.post("/api/actions/sync")
@@ -275,7 +326,7 @@ def meeting_actions(meeting_id: str, user=Depends(sec.current_user)):
     mid = _uuid(meeting_id, "Reunião")
     _get_meeting(user, mid)
     rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select={SELECT_LIST}&meeting_id=eq.{mid}&order=created_at.asc&limit=200")) or []
-    return {"ok": True, "actions": rows, "count": len(rows)}
+    return {"ok": True, "actions": _with_latest(rows), "count": len(rows)}
 
 
 @router.post("/api/meetings/{meeting_id}/actions/sync")
@@ -337,3 +388,42 @@ def action_events(action_id: str, user=Depends(sec.current_user)):
     _get_action(user, aid)
     rows = _db(lambda: sec.user_rest(user, "GET", f"action_events?select=at,actor_id,event,data&action_id=eq.{aid}&order=at.asc&limit=200")) or []
     return {"ok": True, "events": rows}
+
+
+class OutcomeCreate(BaseModel):
+    result: str
+    effectiveness: str
+    observed_at: str | None = None
+
+
+@router.post("/api/actions/{action_id}/outcomes")
+def add_outcome(action_id: str, payload: OutcomeCreate, user=Depends(sec.current_user)):
+    """Registra o que a pessoa observou depois da ação e se funcionou. Só acrescenta: corrigir é registrar de novo."""
+    user = _need_user(user)
+    aid = _uuid(action_id, "Ação")
+    current = _get_action(user, aid)
+    result = _short(payload.result, 2001)
+    if not result or len(result) > 2000:
+        raise HTTPException(status_code=400, detail="Descreva o resultado observado (até 2000 caracteres).")
+    if payload.effectiveness not in EFFECTIVENESS:
+        raise HTTPException(status_code=400, detail="Avaliação inválida. Use worked, partial, not_worked ou uncertain.")
+    row = {"action_id": aid, "result": result, "effectiveness": payload.effectiveness}
+    if payload.observed_at:
+        observed = _iso_date(payload.observed_at)
+        if not observed:
+            raise HTTPException(status_code=400, detail="Data inválida. Use o formato AAAA-MM-DD.")
+        if observed > date.today().isoformat():
+            raise HTTPException(status_code=400, detail=ERRORS["observed_in_future"][1])
+        row["observed_at"] = observed
+    created = (_db(lambda: sec.user_rest(user, "POST", "action_outcomes", row)) or [row])[0]
+    sec.audit(user, "action.outcome", current.get("org_id"), "action", aid, {"effectiveness": payload.effectiveness})
+    return {"ok": True, "outcome": created}
+
+
+@router.get("/api/actions/{action_id}/outcomes")
+def list_outcomes(action_id: str, user=Depends(sec.current_user)):
+    user = _need_user(user)
+    aid = _uuid(action_id, "Ação")
+    _get_action(user, aid)
+    rows = _db(lambda: sec.user_rest(user, "GET", f"action_outcomes?select=id,result,effectiveness,observed_at,recorded_by,created_at&action_id=eq.{aid}&order=created_at.desc&limit=100")) or []
+    return {"ok": True, "outcomes": rows}

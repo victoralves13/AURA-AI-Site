@@ -13,7 +13,7 @@ const X = '10000000-0000-0000-0000-000000000001', Y = '10000000-0000-0000-0000-0
 const T1 = '20000000-0000-0000-0000-000000000001';
 const M = n => '30000000-0000-0000-0000-00000000000' + n;
 const MIGRATIONS = ['20261014120000_etapa2_identidade_organizacoes', '20261014120100_etapa2_reunioes_isolamento', '20261014130000_etapa2_acesso_exige_membro',
-  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014160000_etapa4_acoes'];
+  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014160000_etapa4_acoes', '20261014170000_etapa4_resultados'];
 
 async function as(uid, fn) {
   await db.exec('reset role');
@@ -168,8 +168,53 @@ check('constraint: done exige completed_at (inserção direta inconsistente é c
   return (await rows(`select completed_at is not null ok from public.actions where id='${id}'`))[0].ok;
 })());
 
+
+console.log('\n== resultados e eficácia (migração 7) ==');
+const out = (uid, action, extra = {}) => tryq(uid,
+  `insert into public.action_outcomes(action_id,result,effectiveness,observed_at,org_id) values ($1,$2,$3,coalesce($4::date,current_date),$5) returning id, org_id, recorded_by`,
+  [action, extra.result ?? 'Cliente respondeu e assinou', extra.eff ?? 'worked', extra.at ?? null, extra.org_id ?? null]);
+const o1 = (await add(C, M(1), 'Enviar o contrato', { source: 'ai', key: 'o1', basis: 'dito' })).rows[0].id;
+check('ação em aberto e no prazo NÃO aceita resultado', /action_not_closed/.test((await out(C, o1)).err || ''));
+await db.exec(`update public.actions set status='done' where id='${o1}'`);
+let ro = await out(C, o1, { org_id: Y });
+check('dono registra resultado de ação concluída', ro.ok, ro.err);
+check('org_id e autor vêm do banco, não do cliente', ro.ok && ro.rows[0].org_id === X && ro.rows[0].recorded_by === C, JSON.stringify(ro.rows));
+check('o resultado entra no histórico da ação', (await rows(`select count(*) c from public.action_events where action_id=$1 and event='outcome'`, [o1]))[0].c == 1);
+check('resultado no futuro é recusado', /observed_in_future/.test((await out(C, o1, { at: '2999-01-01' })).err || ''));
+check('avaliação inválida é recusada', !(await out(C, o1, { eff: 'otimo' })).ok);
+check('resultado vazio é recusado', !(await out(C, o1, { result: '' })).ok);
+check('várias avaliações para a mesma ação (corrigir = novo registro)', (await out(C, o1, { eff: 'partial', result: 'Na verdade assinou só parte' })).ok);
+const o2 = (await add(C, M(1), 'Ligar para o diretor')).rows[0].id;
+await db.exec(`update public.actions set due_date = current_date - 3 where id='${o2}'`);
+check('ação vencida e ainda aberta aceita resultado', (await out(C, o2, { eff: 'not_worked', result: 'Não atendeu' })).ok);
+const o3 = (await add(C, M(1), 'Reunir com a equipe')).rows[0].id;
+await db.exec(`update public.actions set status='cancelled' where id='${o3}'`);
+check('ação cancelada aceita resultado', (await out(C, o3, { eff: 'uncertain', result: 'Cancelada, sem efeito medido' })).ok);
+const alheia = (await rows(`select id from public.actions where meeting_id='${M(2)}' limit 1`))[0].id;
+await db.exec(`update public.actions set status='done' where id='${alheia}'`);  // fechada: só a permissão impede o registro
+check('colaborador NÃO registra resultado em ação de reunião alheia (mesmo fechada)', /row-level security/.test((await out(C, alheia)).err || ''));
+check('admin da org (actions.manage) registra em reunião alheia', (await out(A, o1, { eff: 'worked', result: 'Confirmado pelo admin' })).ok);
+check('outra organização NÃO registra', !(await out(D, o1)).ok);
+check('pessoa sem org NÃO registra', !(await out(E, o1)).ok);
+check('anon NÃO registra nem lê', !(await out(null, o1)).ok && !(await tryq(null, 'select 1 from public.action_outcomes')).ok);
+check('resultado não pode ser editado', !(await tryq(C, `update public.action_outcomes set result='x' where action_id=$1`, [o1])).ok);
+check('resultado não pode ser apagado', !(await tryq(C, `delete from public.action_outcomes where action_id=$1`, [o1])).ok);
+check('colaborador vê os resultados da própria reunião', await count(C, `select 1 from public.action_outcomes where action_id='${o1}'`) >= 3);
+const a7 = (await add(A, M(7), 'Ação privada do admin')).rows[0].id;
+await db.exec(`update public.actions set status='done' where id='${a7}'`);
+await out(A, a7);
+check('colaborador NÃO vê resultado de reunião privada alheia', await count(C, `select 1 from public.action_outcomes where action_id='${a7}'`) === 0);
+check('outra organização NÃO vê resultados', await count(D, `select 1 from public.action_outcomes`) === 0);
+await db.exec(`delete from public.memberships where org_id='${X}' and user_id='${C}'`);
+check('ex-membro NÃO registra nem vê resultados', !(await out(C, o1)).ok && await count(C, `select 1 from public.action_outcomes`) === 0);
+await db.exec(`insert into public.memberships(org_id,user_id,role) values ('${X}','${C}','member')`);
+await db.exec(`delete from public.actions where id='${o3}'`);
+check('apagar a ação apaga os resultados (cascata)', Number((await rows(`select count(*) c from public.action_outcomes where action_id='${o3}'`))[0].c) === 0);
+
 console.log('\n== rollback e reaplicação ==');
 const meetingsBefore = (await rows('select count(*) c from public.meetings'))[0].c;
+await db.exec(read('rollbacks/20261014170000_etapa4_resultados.down.sql'));
+check('rollback da 7 remove resultados e o tipo de evento, e preserva ações', Number((await rows(`select count(*) c from information_schema.tables where table_name='action_outcomes'`))[0].c) === 0 && Number((await rows('select count(*) c from public.actions'))[0].c) > 0 && Number((await rows(`select count(*) c from public.action_events where event='outcome'`))[0].c) === 0);
 await db.exec(read('rollbacks/20261014160000_etapa4_acoes.down.sql'));
 const left = (await rows(`select (select count(*) from information_schema.tables where table_schema='public' and table_name in ('actions','action_events')) t,
   (select count(*) from pg_proc where proname in ('can_edit_actions','actions_guard','actions_log')) f`))[0];
@@ -177,7 +222,8 @@ check('rollback remove tabelas e funções de ações', Number(left.t) === 0 && 
 check('rollback preserva reuniões', Number((await rows('select count(*) c from public.meetings'))[0].c) === Number(meetingsBefore));
 check('rollback preserva o restante (clientes, organizações)', Number((await rows('select count(*) c from public.organizations'))[0].c) === 2);
 await db.exec(read('migrations/20261014160000_etapa4_acoes.sql'));
-check('migração reaplica após o rollback', true);
+await db.exec(read('migrations/20261014170000_etapa4_resultados.sql'));
+check('migrações 6 e 7 reaplicam após o rollback', true);
 
 console.log(`\n${pass} aprovados, ${fail} reprovados`);
 process.exit(fail ? 1 : 0);

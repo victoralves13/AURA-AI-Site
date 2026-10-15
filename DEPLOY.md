@@ -296,3 +296,12 @@ Endpoints (todos exigem login): `GET /api/actions` (filtros `org_id`, `status`, 
 `PATCH|DELETE /api/actions/{id}`, `GET /api/actions/{id}/events`.
 Sem a migração aplicada, a análise continua funcionando (a criação de ações falha em silêncio e é registrada no log).
 Testes: `python -m unittest discover -s tests` e `node tests/db/actions.test.mjs` (migrações + RLS das ações).
+
+## Etapa 4.2 — Resultados e eficácia das ações
+
+Migração `20261014170000_etapa4_resultados.sql` (aditiva; **aplique antes de usar os endpoints de resultados**; rollback em
+`supabase/rollbacks/20261014170000_etapa4_resultados.down.sql`, que apaga os resultados registrados mas não as ações):
+- Cria `action_outcomes`: o que uma PESSOA observou (texto, data, avaliação worked/partial/not_worked/uncertain). Só acréscimo:
+  corrigir é registrar de novo; o mais recente vale. Só para ação concluída, cancelada ou vencida. Registrado no histórico da ação.
+- Endpoints: `POST|GET /api/actions/{id}/outcomes`, `GET /api/actions/stats` (filtros `org_id`, `client_id`). As listas de ações trazem
+  `latest_outcome` e `outcomes_count`. Taxas (conclusão, eficácia) ficam nulas quando não há base; "incerto" não entra na taxa de eficácia.
