@@ -74,7 +74,7 @@ def hourly_limit_minutes() -> float:
 
 
 def minutes_last_hour(user: sec.AuthUser) -> float:
-    since = (live._now() - timedelta(hours=1)).isoformat()
+    since = (live._now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")  # sem "+00:00": o "+" na URL viraria espaço e o banco recusaria
     rows = sec.service_rest("GET", f"live_chunks?select=duration_ms&owner_id=eq.{user.id}&status=eq.transcribed&transcribed_at=gte.{since}&limit=2000") or []
     return sum(int(r.get("duration_ms") or 0) for r in rows) / 60000
 

@@ -439,6 +439,9 @@ class FakeSupabase:
         is_service = token == SERVICE_KEY
         if not is_service and caller is None:
             return 401, {"message": "JWT required"}
+        for key, value in query:  # o PostgREST recusa timestamp com espaço (um "+" não codificado na URL vira espaço)
+            if key not in _CONTROL and value.split(".", 1)[0] in ("gte", "gt", "lte", "lt") and " " in value:
+                return 400, {"code": "22007", "message": f'invalid input syntax for type timestamp with time zone: "{value.split(".", 1)[1]}"'}
         if (method, table) in self.fail:
             return 500, {"message": "boom"}
         if table.startswith("rpc/"):
