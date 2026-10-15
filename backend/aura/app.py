@@ -21,7 +21,8 @@ from aura.features.meetings.router import router as meetings_router
 from aura.features.onboarding.router import router as onboarding_router
 from aura.features.orgs.router import router as orgs_router
 
-ROOT = Path(__file__).resolve().parents[2]  # raiz do repositório (o front-end público está nela)
+ROOT = Path(__file__).resolve().parents[2]  # raiz do repositório
+WEB = ROOT / "web"  # só esta pasta é pública
 
 app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
 handler = app
@@ -58,4 +59,4 @@ def public_config():
     return {"auth_required": sec.auth_required(), "supabase_url": sec.supabase_url() or None, "supabase_publishable_key": sec.publishable_key() or None}
 
 # Serve só o front-end público (html/css/js/imagens na raiz); nunca api/, supabase/, .git, .env etc.
-app.mount("/", sec.PublicFiles(directory=ROOT, html=True), name="frontend")
+app.mount("/", sec.PublicFiles(directory=WEB, html=True), name="frontend")

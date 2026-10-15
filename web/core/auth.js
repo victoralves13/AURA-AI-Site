@@ -156,7 +156,7 @@
     const links = view === 'login'
       ? '<button type="button" class="aura-auth-link" data-go="signup">Criar conta</button><button type="button" class="aura-auth-link" data-go="forgot">Esqueci minha senha</button>'
       : view === 'recovery' ? '' : '<button type="button" class="aura-auth-link" data-go="login">Voltar para entrar</button>';
-    el.innerHTML = '<div class="aura-auth-card"><div class="aura-auth-brand"><img src="aura-logo-real.jpeg" alt="" width="34" height="34"><span>AURA AI</span></div>' +
+    el.innerHTML = '<div class="aura-auth-card"><div class="aura-auth-brand"><img src="/assets/img/aura-logo-real.jpeg" alt="" width="34" height="34"><span>AURA AI</span></div>' +
       '<h1 id="auraAuthTitle">' + v.title + '</h1><p class="aura-auth-sub">' + v.sub + '</p>' +
       '<form class="aura-auth-form" novalidate>' + v.fields.map(fieldHtml).join('') +
       '<p class="aura-auth-msg ' + (notice ? 'ok' : '') + '" role="status" aria-live="polite">' + esc(notice || '') + '</p>' +

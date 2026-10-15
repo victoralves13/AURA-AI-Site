@@ -1,46 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "builds": [
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.jpeg",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.svg",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": { "includeFiles": ["backend/**"] }
-    }
+    { "src": "web/**/*.html", "use": "@vercel/static" },
+    { "src": "web/**/*.css", "use": "@vercel/static" },
+    { "src": "web/**/*.js", "use": "@vercel/static" },
+    { "src": "web/**/*.jpeg", "use": "@vercel/static" },
+    { "src": "web/**/*.svg", "use": "@vercel/static" },
+    { "src": "api/index.py", "use": "@vercel/python", "config": { "includeFiles": ["backend/**"] } }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
+      "src": "/(index\\.html|(?:assets|core|features|shell|styles|vendor)/.+\\.(?:html|js|css|jpeg|svg))",
+      "headers": { "Cache-Control": "public, max-age=0, must-revalidate" },
+      "dest": "/web/$1"
     },
-    {
-      "src": "/(index.html|app.js|dynamic-data.js|real-engine.js|persistence.js|styles.css|brand.css|app-enhancements.css|real-engine.css|product-shell.css|product-shell.js|cloud-bridge.js|auth.js|auth.css|orgs.js|orgs.css|evidence.css|clients-ui.js|clients-ui.css|actions-ui.js|actions-ui.css|chat-ui.js|chat-ui.css|live-ui.js|live-ui.css|a11y.css|a11y-light.css|onboarding-ui.js|onboarding-ui.css|integrations-ui.js|integrations-ui.css)",
-      "headers": {
-        "Cache-Control": "public, max-age=0, must-revalidate"
-      },
-      "continue": true
-    },
-    {
-      "handle": "filesystem"
-    }
+    { "src": "/", "headers": { "Cache-Control": "public, max-age=0, must-revalidate" }, "dest": "/web/index.html" }
   ]
 }

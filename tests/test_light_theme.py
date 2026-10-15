@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+LIGHT = ROOT / "web" / "styles" / "theme" / "a11y-light.css"
 
 
 class TemaClaro(unittest.TestCase):
@@ -16,17 +17,17 @@ class TemaClaro(unittest.TestCase):
             subprocess.run([sys.executable, str(ROOT / "tests" / "tools" / "gen_light_theme.py"), str(out)], check=True, capture_output=True,
                            env={**__import__("os").environ, "PYTHONUTF8": "1"})
             fresh = out.read_text(encoding="utf8").replace("\r\n", "\n")
-        committed = (ROOT / "a11y-light.css").read_text(encoding="utf8").replace("\r\n", "\n")
+        committed = LIGHT.read_text(encoding="utf8").replace("\r\n", "\n")
         self.assertEqual(fresh, committed, "Rode: python tests/tools/gen_light_theme.py")
 
     def test_regras_do_tema_claro_so_valem_com_a_classe(self):
-        for line in (ROOT / "a11y-light.css").read_text(encoding="utf8").splitlines():
+        for line in LIGHT.read_text(encoding="utf8").splitlines():
             if line and not line.startswith(("/*", "   ")):
                 self.assertTrue(line.startswith("body.aura-light"), line[:80])
 
     def test_nenhum_texto_claro_sobra_sobre_fundo_claro_nas_regras_geradas(self):
         import re
-        for color in re.findall(r"(?<![-\w])color:(#[0-9a-f]{6})!important", (ROOT / "a11y-light.css").read_text(encoding="utf8")):
+        for color in re.findall(r"(?<![-\w])color:(#[0-9a-f]{6})!important", LIGHT.read_text(encoding="utf8")):
             h = color.lstrip("#")
             r, g, b = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
             f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4

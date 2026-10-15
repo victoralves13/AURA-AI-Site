@@ -327,6 +327,7 @@ class PublicFiles(StaticFiles):
         clean = path.strip("/")
         if clean and clean != ".":
             name = clean.lower()
-            if "/" in clean or name.startswith(".") or os.path.splitext(name)[1] not in PUBLIC_EXTENSIONS:
+            # Subpastas do front-end (core/, features/...) são públicas; nada que comece com "." e nada fora das extensões de front-end.
+            if any(part == "" or part.startswith(".") for part in clean.split("/")) or os.path.splitext(name)[1] not in PUBLIC_EXTENSIONS:
                 raise HTTPException(status_code=404)
         return await super().get_response(path, scope)

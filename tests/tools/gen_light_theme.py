@@ -1,7 +1,7 @@
 """Gera a11y-light.css: para cada regra dos CSS do app que define uma COR DE TEXTO clara (feita para fundo escuro), cria a regra
 equivalente do tema claro (`body.aura-light <seletor>`) com a mesma matiz, escurecida até ter contraste suficiente sobre branco.
 
-Uso:  python tests/tools/gen_light_theme.py          (reescreve a11y-light.css na raiz)
+Uso:  python tests/tools/gen_light_theme.py          (reescreve web/styles/theme/a11y-light.css)
 Também clareia fundos escuros sólidos/translúcidos e gradientes escuros (viram branco) e troca bordas claras por bordas escuras
 translúcidas, para o tema claro ficar coerente: texto escuro sobre fundo claro.
 """
@@ -11,10 +11,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCES = ["styles.css", "app-enhancements.css", "real-engine.css", "product-shell.css", "aura-enterprise-v3.css", "aura-product-v2.css",
-           "auth.css", "orgs.css", "evidence.css", "clients-ui.css", "actions-ui.css", "chat-ui.css", "live-ui.css", "onboarding-ui.css",
-           "integrations-ui.css", "brand.css",
-           "aura-enterprise-v3.js", "aura-product-v2.js", "product-shell.js", "live-ui.js", "chat-ui.js", "clients-ui.js", "actions-ui.js", "orgs.js"]
+WEB = ROOT / "web"
+OUTPUT = WEB / "styles" / "theme" / "a11y-light.css"
+# Todo CSS do front-end (menos o próprio arquivo gerado) e os scripts que injetam CSS; a ordem é fixa para o resultado ser reproduzível.
+SOURCES = sorted(p for p in WEB.rglob("*.css") if p.name != "a11y-light.css") + sorted(
+    p for p in WEB.rglob("*.js") if "vendor" not in p.parts and p.name not in ("auth.js", "persistence.js", "dynamic-data.js", "cloud-bridge.js", "background.js", "app.js", "real-engine.js"))
 TARGET = 5.4  # contraste mínimo desejado sobre branco (o fundo claro mais escuro do tema é #eef4f6)
 DECL = re.compile(r"(?<![-\w])color\s*:\s*(#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*[0-9.]+\s*)?\))")
 RULE = re.compile(r"([^{}@]+)\{([^{}]*)\}")
@@ -103,10 +104,7 @@ def is_css_rule(selector, body):
 
 def main():
     out, seen = [], set()
-    for name in SOURCES:
-        path = ROOT / name
-        if not path.exists():
-            continue
+    for path in SOURCES:
         text = re.sub(r"/\*.*?\*/", "", path.read_text(encoding="utf8"), flags=re.S)
         for sel, body in RULE.findall(text):
             sel = " ".join(sel.split())
@@ -148,7 +146,7 @@ def main():
                         out.append(f"{prefix} {one}{{{block}}}")
     header = ("/* AURA AI — tema claro: texto, fundos e bordas. GERADO por tests/tools/gen_light_theme.py (não edite à mão).\n"
               "   Cada regra de texto claro do tema escuro ganha a versão escurecida (mesma matiz) para o tema claro. */\n")
-    target = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "a11y-light.css"
+    target = Path(sys.argv[1]) if len(sys.argv) > 1 else OUTPUT
     target.write_text(header + "\n".join(out) + "\n", encoding="utf8", newline="\n")
     print(f"{len(out)} regras geradas")
 

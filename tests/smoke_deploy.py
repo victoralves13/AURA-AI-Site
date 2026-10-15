@@ -22,8 +22,12 @@ SENSITIVE = ["/api/index.py", "/backend/aura/app.py", "/backend/aura/core/securi
              "/backend/aura/features/analysis/engine.py", "/backend/aura/features/orgs/router.py",
              "/.git/config", "/.env", "/.env.example", "/supabase/schema.sql", "/requirements.txt",
              "/DEPLOY.md", "/README.md", "/tests/test_security.py", "/vercel.json", "/package.json"]
-ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/actions-ui.js", "/chat-ui.js", "/live-ui.js", "/onboarding-ui.js", "/integrations-ui.js", "/product-shell.js", "/auth.css",
-          "/evidence.css", "/clients-ui.css", "/actions-ui.css", "/chat-ui.css", "/live-ui.css", "/a11y.css", "/a11y-light.css", "/onboarding-ui.css", "/integrations-ui.css", "/supabase-js-2.117.2.umd.js"]
+ASSETS = ["/", "/index.html", "/core/auth.js", "/core/orgs.js", "/features/clients/clients-ui.js", "/features/actions/actions-ui.js",
+          "/features/chat/chat-ui.js", "/features/live/live-ui.js", "/features/onboarding/onboarding-ui.js", "/features/integrations/integrations-ui.js",
+          "/shell/product-shell.js", "/core/auth.css", "/features/analysis/evidence.css", "/features/clients/clients-ui.css",
+          "/features/actions/actions-ui.css", "/features/chat/chat-ui.css", "/features/live/live-ui.css", "/styles/theme/a11y.css",
+          "/styles/theme/a11y-light.css", "/features/onboarding/onboarding-ui.css", "/features/integrations/integrations-ui.css",
+          "/assets/img/aura-logo-real.jpeg", "/vendor/supabase-js-2.117.2.umd.js"]
 
 results = []
 FAKE_ID = "00000000-0000-4000-8000-000000000000"

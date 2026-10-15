@@ -260,9 +260,19 @@ class Publico(Base):
             self.assertEqual(self.client.get(p).status_code, 404, p)
 
     def test_serve_o_front_end(self):
-        for p in ["/", "/index.html", "/app.js", "/product-shell.css", "/aura-logo.svg", "/aura-logo-real.jpeg",
-                  "/auth.js", "/auth.css", "/orgs.js", "/orgs.css", "/evidence.css", "/clients-ui.js", "/clients-ui.css", "/supabase-js-2.117.2.umd.js"]:
+        for p in ["/", "/index.html", "/shell/app.js", "/styles/base/styles.css", "/shell/product-shell.css", "/assets/img/aura-logo.svg",
+                  "/assets/img/aura-logo-real.jpeg", "/core/auth.js", "/core/auth.css", "/core/orgs.js", "/core/orgs.css",
+                  "/features/analysis/evidence.css", "/features/clients/clients-ui.js", "/features/clients/clients-ui.css",
+                  "/vendor/supabase-js-2.117.2.umd.js"]:
             self.assertEqual(self.client.get(p).status_code, 200, p)
+
+    def test_subpastas_nao_abrem_caminho_para_fora_do_front_end(self):
+        for p in ["/core/../../backend/aura/app.py", "/features/live/../../../vercel.json", "/%2e%2e/vercel.json", "/core/%2e%2e/%2e%2e/DEPLOY.md",
+                  "/core/.hidden.js", "/.git/config", "/core/auth.js.map", "/core/", "/core", "/features", "/vendor/x.py"]:
+            r = self.client.get(p)
+            self.assertIn(r.status_code, (404, 307, 308), p)
+            self.assertNotIn("def ", r.text[:2000], p)
+            self.assertNotIn("aura-ai-site", r.text[:2000], p)  # nem o package.json/vercel.json
 
 
 class TipoDeChave(unittest.TestCase):
