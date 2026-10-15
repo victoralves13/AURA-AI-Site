@@ -20,8 +20,28 @@
     if (cache.loaded && !force && cache.space === space) return cache.clients;
     const r = await ui().api('GET', '/api/clients?org_id=' + encodeURIComponent(space));
     cache = { clients: r.clients || [], loaded: true, space };
+    if (canonicalize()) window.dispatchEvent(new CustomEvent('aura:meetings-synced', { detail: { meetings: meetings() } }));
     return cache.clients;
   }
+
+  // Telas que agrupam por nome (Riscos, Oportunidades, Evolução, Visão geral) passam a enxergar o nome do cliente
+  // cadastrado (entidade), então clientes fundidos ou renomeados aparecem como um só. O nome extraído fica em client_name_raw.
+  function canonicalize(list) {
+    if (!enabled() || !cache.loaded) return false;
+    const names = new Map(cache.clients.map(c => [c.id, c.name]));
+    let changed = false;
+    (list || meetings()).forEach(m => {
+      if (m && m.client_id && names.has(m.client_id) && m.client_name !== names.get(m.client_id)) {
+        if (m.client_name_raw === undefined) m.client_name_raw = m.client_name;
+        m.client_name = names.get(m.client_id);
+        changed = true;
+      }
+    });
+    return changed;
+  }
+  const warm = () => { if (enabled() && (!cache.loaded || cache.space !== ui().space())) loadClients().catch(() => {}); };
+  window.addEventListener('aura:user-ready', warm);
+  window.addEventListener('aura:meetings-synced', warm);
 
   const syncMeetings = () => Promise.resolve(window.AURA_SYNC_MEETINGS && window.AURA_SYNC_MEETINGS()).catch(() => {});
 
@@ -279,5 +299,5 @@
     }
   }
 
-  window.AURA_CLIENTS_UI = { enabled, render };
+  window.AURA_CLIENTS_UI = { enabled, render, canonicalize };
 })();

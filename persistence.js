@@ -19,8 +19,10 @@ const DEMO_SEED=[
 {id:"demo-relacao-1",created_at:"2026-09-21T14:30:00-03:00",source_type:"demo",is_demo:true,demo_scenario:"Relacionamento",meeting_title:"VivaCorp · Saúde do relacionamento",client_name:"VivaCorp",file_name:"demo-relacao-01",context:"Relacionamento",summary:"O cliente reconheceu melhora no atendimento, mas pediu mais clareza sobre responsáveis e canais.",sentiment:"Positivo",risk:"Médio",risk_score:51,opportunity:"Detectada",opportunity_score:69,priority:"Média",impact:"Retenção",why_it_matters:"A percepção melhorou, mas a falta de clareza pode voltar a gerar atrito.",intent:"Fortalecer relacionamento",objections:["Responsáveis pouco claros"],products:["Atendimento"],evidence:["Cliente percebeu melhora no atendimento","Pediu canal e responsável definidos"],risk_signals:["Responsabilidade difusa"],opportunity_signals:["Padronizar canal de atendimento"],decisions:["Definir responsável principal"],pending_actions:["Enviar matriz de contatos"],important_signals:["Atendimento","Responsável","Canal"],participants:["Juliana · Cliente","Bruno · Customer Success"],next_move:"Enviar matriz de contatos ao cliente",owner:"Bruno",deadline:"2026-09-24",model:"demo-seed"},
 {id:"demo-outro-1",created_at:"2026-09-24T17:00:00-03:00",source_type:"demo",is_demo:true,demo_scenario:"Outro",meeting_title:"Projeto Horizonte · Alinhamento",client_name:"Projeto Horizonte",file_name:"demo-outro-01",context:"Outro",summary:"A equipe alinhou decisões e responsabilidades que estavam dispersas entre diferentes pessoas.",sentiment:"Neutro",risk:"Baixo",risk_score:25,opportunity:"Detectada",opportunity_score:61,priority:"Média",impact:"Organização",why_it_matters:"Centralizar decisões reduz perda de contexto entre reuniões.",intent:"Organizar execução",objections:[],products:["Workspace"],evidence:["Decisões estavam dispersas","Responsáveis foram definidos"],risk_signals:["Dependência de alinhamentos informais"],opportunity_signals:["Centralização de decisões"],decisions:["Centralizar decisões em um único fluxo"],pending_actions:["Criar registro central"],important_signals:["Decisão","Responsabilidade","Centralização"],participants:["Equipe Horizonte"],next_move:"Criar registro central de decisões",owner:"Camila",deadline:"2026-09-27",model:"demo-seed"}
 ];
-  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}};
-  function ensureDemoData(){try{const key='aura-meeting-history-v1';const current=JSON.parse(localStorage.getItem(key)||'[]');const version=localStorage.getItem('aura-demo-seed-version');const has=current.some(x=>x&&x.is_demo===true);if(!has||version!==DEMO_SEED_VERSION){const real=current.filter(x=>!x?.is_demo);localStorage.setItem(key,JSON.stringify([...DEMO_SEED,...real]));localStorage.setItem('aura-demo-seed-version',DEMO_SEED_VERSION);}}catch{}}
+  const isDemoItem=x=>!!(x&&(x.is_demo===true||String(x.id||'').startsWith('demo')));
+  // Com sessão iniciada, a memória é só do usuário: os exemplos de demonstração nunca aparecem nem são gravados.
+  const read=()=>{try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return window.AURA_USER?a.filter(x=>!isDemoItem(x)):a}catch{return[]}};
+  function ensureDemoData(){if(window.AURA_USER)return;try{const key='aura-meeting-history-v1';const current=JSON.parse(localStorage.getItem(key)||'[]');const version=localStorage.getItem('aura-demo-seed-version');const has=current.some(x=>x&&x.is_demo===true);if(!has||version!==DEMO_SEED_VERSION){const real=current.filter(x=>!x?.is_demo);localStorage.setItem(key,JSON.stringify([...DEMO_SEED,...real]));localStorage.setItem('aura-demo-seed-version',DEMO_SEED_VERSION);}}catch{}}
   const write=v=>{try{localStorage.setItem(KEY,JSON.stringify(v.slice(0,MAX_MEMORY)))}catch{}};
   window.AURA_HISTORY={
     all:read,
@@ -60,6 +62,7 @@ const DEMO_SEED=[
             if(!byId.has(key)||!byId.get(key)?.is_demo)byId.set(key,m);
           });
           const merged=[...byId.values()].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+          try{window.AURA_CLIENTS_UI&&window.AURA_CLIENTS_UI.canonicalize&&window.AURA_CLIENTS_UI.canonicalize(merged)}catch{}
           window.AURA_SERVER_MEETINGS=merged;
           write(merged);
           render(merged);
@@ -86,6 +89,14 @@ const DEMO_SEED=[
     render(next);
     window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:next}}));
   });
+  function dropDemoForUser(){
+    try{const cur=JSON.parse(localStorage.getItem(KEY)||'[]');const real=cur.filter(x=>!isDemoItem(x));if(real.length!==cur.length)localStorage.setItem(KEY,JSON.stringify(real))}catch{}
+    const next=(Array.isArray(window.AURA_SERVER_MEETINGS)?window.AURA_SERVER_MEETINGS:[]).filter(x=>!isDemoItem(x));
+    window.AURA_SERVER_MEETINGS=next;render(next);
+    window.dispatchEvent(new CustomEvent('aura:meetings-synced',{detail:{meetings:next}}));
+  }
+  window.addEventListener('aura:user-ready',()=>{dropDemoForUser();loadServer()});
+  if(window.AURA_USER)dropDemoForUser();
   window.AURA_SYNC_MEETINGS=loadServer;
   loadServer();
   window.addEventListener('DOMContentLoaded',()=>loadServer());

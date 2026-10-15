@@ -8,13 +8,13 @@ header .eyebrow{display:none!important}
 .aura-profile-clean{border:1px solid rgba(170,220,230,.09)!important;background:#071116!important;border-radius:9px!important}
 #auraOverviewClean{margin-top:2px}
 .aura-clean-head{display:flex;align-items:center;justify-content:space-between;padding:5px 0 18px;border-bottom:1px solid rgba(170,220,230,.08)}
-.aura-section-label{font:7px 'DM Mono';color:#58717a;letter-spacing:.13em}
+.aura-section-label{font:7px 'DM Mono';color:#8aa3ab;letter-spacing:.13em}
 .aura-clean-head h2{font-size:28px;margin:5px 0 0;letter-spacing:-.035em}
 .aura-clean-action{border:1px solid rgba(101,231,245,.24);background:rgba(101,231,245,.07);color:#bfe9ed;border-radius:8px;padding:9px 12px;font:700 8px 'DM Mono';cursor:pointer}
 .aura-clean-action b{font-size:12px;margin-left:7px;color:#65e7f5}
 .aura-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
 .aura-kpis>div{min-height:84px;padding:13px 14px;border:1px solid rgba(170,220,230,.08);border-radius:11px;background:#071116}
-.aura-kpis span{display:block;color:#5e757e;font:7px 'DM Mono';letter-spacing:.08em}
+.aura-kpis span{display:block;color:#8aa3ab;font:7px 'DM Mono';letter-spacing:.08em}
 .aura-kpis strong{display:block;font-size:27px;letter-spacing:-.04em;margin:8px 0 2px}
 .aura-kpis small{color:#70858d;font-size:10px}
 .aura-dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -35,7 +35,7 @@ header .eyebrow{display:none!important}
 .aura-demo{display:inline!important;padding:2px 4px;border:1px solid rgba(101,231,245,.18);border-radius:3px;color:#65e7f5!important;font:6px 'DM Mono'!important}
 .aura-empty-row{padding:20px 4px 10px;text-align:center}
 .aura-empty-row b{display:block;font-size:10px}
-.aura-empty-row small{display:block;color:#667c84;font-size:10px;margin-top:4px}
+.aura-empty-row small{display:block;color:#8aa3ab;font-size:10px;margin-top:4px}
 .aura-evolution{grid-column:1/-1}
 .aura-mini-chart{height:150px;display:flex;align-items:flex-end;gap:12px;padding:18px 8px 0;border-top:1px solid rgba(170,220,230,.06);border-bottom:1px solid rgba(170,220,230,.06);overflow-x:auto}
 .aura-trend-item{height:100%;min-width:86px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
@@ -45,8 +45,8 @@ header .eyebrow{display:none!important}
 .aura-trend-label{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#b8cdd2;font-size:10px;line-height:1.2}
 .aura-trend-item small{font:8px 'DM Mono';color:#8aa3ab;white-space:nowrap}
 .aura-chart-subtitle{display:block;margin-top:4px;color:#70878f;font-size:10px;font-weight:400;line-height:1.4}
-.aura-chart-empty{width:100%;text-align:center;color:#627880;font:9px 'DM Mono'}
-.aura-chart-meta{display:flex;justify-content:space-between;padding-top:8px;color:#647a82;font:7px 'DM Mono'}
+.aura-chart-empty{width:100%;text-align:center;color:#8aa3ab;font:9px 'DM Mono'}
+.aura-chart-meta{display:flex;justify-content:space-between;padding-top:8px;color:#8aa3ab;font:7px 'DM Mono'}
 .aura-chart-meta b{color:#a8c2c8}
 .shell-page-head h2{font-size:27px!important;margin:0!important}
 .shell-page-head{margin-bottom:16px!important}
@@ -260,7 +260,7 @@ header .eyebrow{display:none!important}
 .aura-home-orbit i{position:absolute;width:5px;height:5px;border-radius:50%;background:#65e7f5;box-shadow:0 0 12px rgba(101,231,245,.8)}
 .aura-home-orbit i:nth-of-type(1){left:41px;top:64px}.aura-home-orbit i:nth-of-type(2){right:24px;top:105px;background:#63e8bd;box-shadow:0 0 12px rgba(99,232,189,.75)}.aura-home-orbit i:nth-of-type(3){left:86px;bottom:18px;background:#8aaeb7}
 .aura-home-context{position:absolute;right:28px;bottom:24px;z-index:3;text-align:right}
-.aura-home-context span{display:block;color:#59727a;font:8px 'DM Mono';letter-spacing:.12em}
+.aura-home-context span{display:block;color:#8aa3ab;font:8px 'DM Mono';letter-spacing:.12em}
 .aura-home-context strong{display:block;margin-top:4px;color:#63e8bd;font:700 10px 'DM Mono';letter-spacing:.12em}
 .aura-home-context small{display:block;margin-top:5px;color:#8aa3ab;font:8px 'DM Mono'}
 .aura-command-strip{display:grid;grid-template-columns:2fr repeat(3,1fr);margin-top:12px;border:1px solid rgba(170,220,230,.09);border-radius:14px;background:#071116;overflow:hidden}
@@ -285,9 +285,9 @@ header .eyebrow{display:none!important}
 .aura-home-row:hover{background:rgba(101,231,245,.025)}
 .aura-row-marker{width:6px;height:6px;border-radius:50%;display:block}.aura-row-marker.red{background:#ff7894;box-shadow:0 0 10px rgba(255,120,148,.5)}
 .aura-home-row strong{display:block;font-size:12px;line-height:1.35}.aura-home-row p{display:block;margin:3px 0 0;color:#a8bcc2;font-size:10px}.aura-home-row small{display:block;margin-top:5px;color:#6f858d;font-size:10px;line-height:1.45}
-.aura-home-row>b{color:#607981;font:12px 'DM Mono'}.aura-home-row.compact{grid-template-columns:84px minmax(0,1fr) auto;min-height:64px}.aura-home-row.compact strong{font-size:11px}.aura-home-row.compact small{margin-top:4px;font-size:10px}.aura-home-row.compact em{font:8px 'DM Mono';font-style:normal;color:#789097}
+.aura-home-row>b{color:#8aa3ab;font:12px 'DM Mono'}.aura-home-row.compact{grid-template-columns:84px minmax(0,1fr) auto;min-height:64px}.aura-home-row.compact strong{font-size:11px}.aura-home-row.compact small{margin-top:4px;font-size:10px}.aura-home-row.compact em{font:8px 'DM Mono';font-style:normal;color:#789097}
 .aura-row-date{color:#78929a;font:9px 'DM Mono';white-space:nowrap}
-.aura-home-empty{padding:26px 6px;text-align:center}.aura-home-empty strong{display:block;color:#c7d9dd;font-size:11px}.aura-home-empty span{display:block;margin-top:5px;color:#657c84;font-size:10px;line-height:1.5}
+.aura-home-empty{padding:26px 6px;text-align:center}.aura-home-empty strong{display:block;color:#c7d9dd;font-size:11px}.aura-home-empty span{display:block;margin-top:5px;color:#8aa3ab;font-size:10px;line-height:1.5}
 .aura-trajectory-panel{margin-top:12px}
 .aura-trajectory-meta{text-align:right}.aura-trajectory-meta strong{display:block;color:#65e7f5;font:700 20px 'DM Mono'}.aura-trajectory-meta span{display:block;margin-top:4px;color:#8aa3ab;font:8px 'DM Mono'}
 .aura-pulse-chart{height:185px;display:flex;align-items:flex-end;gap:14px;padding:20px 8px 0;border-top:1px solid rgba(170,220,230,.06);margin-top:4px;overflow-x:auto}
@@ -351,7 +351,7 @@ header .eyebrow{display:none!important}
 .aura-home-facts>div{padding-top:12px}
 .aura-home-facts>div+div{padding-left:18px;border-left:1px solid rgba(170,220,230,.07)}
 .aura-home-facts b{display:block;color:#dcecef;font:600 17px Manrope}
-.aura-home-facts span{display:block;margin-top:3px;color:#607981;font:8px 'DM Mono';letter-spacing:.06em}
+.aura-home-facts span{display:block;margin-top:3px;color:#8aa3ab;font:8px 'DM Mono';letter-spacing:.06em}
 .aura-command-strip{margin-top:10px!important;border-radius:11px!important}
 .aura-home-section-head{margin-top:25px!important}
 .aura-home-section-head h2{font-size:21px!important}
@@ -438,7 +438,7 @@ header .eyebrow{display:none!important}
 .aura-profile-overview .panel-label{display:block}
 .aura-profile-overview-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .aura-profile-overview-facts div{padding-left:14px;border-left:1px solid rgba(170,220,230,.08)}
-.aura-profile-overview-facts span{display:block;color:#627981;font:600 8px 'DM Mono';letter-spacing:.08em}
+.aura-profile-overview-facts span{display:block;color:#8aa3ab;font:600 8px 'DM Mono';letter-spacing:.08em}
 .aura-profile-overview-facts b{display:block;margin-top:4px;color:#cbd9dc;font:600 12px Manrope}
 .aura-profile-open{border:1px solid rgba(101,231,245,.16);border-radius:7px;background:rgba(101,231,245,.04);color:#65e7f5;padding:9px 12px;white-space:nowrap;cursor:pointer;font:600 11px Manrope;transition:.16s}
 .aura-profile-open b{margin-left:8px;font-size:13px}

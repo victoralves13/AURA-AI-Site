@@ -19,3 +19,6 @@ Medição: Lighthouse (desktop e celular, login e 4 telas) e axe-core 4.10 (WCAG
 ## Resultado depois
 Lighthouse desktop: Acessibilidade 100, Boas práticas 100, SEO 100. axe: 0 violações em todas as telas.
 Não verificado: leitor de tela real (NVDA/VoiceOver) e a medição Lighthouse no celular após as correções — fazer no preview.
+
+## Limitação conhecida: tema claro
+O botão "Alternar tema" liga um tema claro que nunca foi acabado (ex.: o título da página fica quase invisível sobre branco). O axe acusa falhas de contraste só nesse tema (cerca de 27 elementos em 4 telas). O tema escuro, que é o padrão, tem 0 violações. Corrigir o tema claro é um trabalho de design à parte.

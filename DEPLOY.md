@@ -615,3 +615,12 @@ queda de rede não perdeu áudio · apagar o áudio preservou a reunião · aval
 ## 7. Desfazer
 - **Código:** o preview é descartável (não afeta a produção). Para sumir com ele: Vercel → o deploy → Delete.
 - **Banco:** os rollbacks de cada migração estão em `supabase/rollbacks/` (rodar a 12, depois a 11, a 10… na ordem inversa, SÓ com sua aprovação; apagam dados das tabelas novas). Os áudios em `live/` não são apagados por rollback.
+
+---
+
+## Fases 7.1 e 7.2 (acessibilidade e refinamento) — o que verificar no preview
+- Nenhuma migração nova nem variável de ambiente nova. O arquivo novo `a11y.css` entra pelo deploy normal; o `smoke_deploy.py` confere que ele responde.
+- Entre com a conta de teste: o canto superior e o painel de perfil devem mostrar o SEU nome/e-mail e o espaço atual (nunca "Victor Alves"), e as telas não devem listar clientes de exemplo (Grupo Atlas de demonstração, NovaTech, LogiSul etc.).
+- Renomeie ou funda um cliente em Clientes e abra Evolução, Riscos, Oportunidades e Visão geral: o nome novo deve aparecer em todas.
+- Teclado: Tab na primeira tela mostra "Pular para o conteúdo"; o foco sempre fica visível.
+- Rollback: reverter o commit da fase; não há dados nem tabelas envolvidos.
