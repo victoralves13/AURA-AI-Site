@@ -71,3 +71,5 @@
 .live-cons.warn{border-color:rgba(242,200,111,.55)}
 .live-cons.error{border-color:rgba(255,120,152,.5)}
 .live-cons.ok>b{color:#9df0c1}.live-cons.warn>b{color:#f3dca5}.live-cons.error>b{color:#ff9bb0}
+
+.live-interrupt{margin:10px 0 0;padding:12px 14px;border:1px solid color-mix(in srgb,var(--yellow) 55%,transparent);border-radius:10px;background:color-mix(in srgb,var(--yellow) 10%,transparent);color:var(--text);font-size:14px;line-height:1.5}

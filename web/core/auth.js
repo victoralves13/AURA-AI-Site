@@ -146,7 +146,7 @@
       newpass2: ['Repita a nova senha', 'password', 'newpass2', 'new-password']
     }[name];
     const hint = name === 'newpass' && currentView === 'signup' ? ' aria-describedby="auraPassHint"' : '';
-    const extra = name === 'name' ? ' maxlength="80"' : name === 'newpass' || name === 'newpass2' ? ' maxlength="72"' : '';
+    const extra = name === 'name' ? ' maxlength="80" autocapitalize="words"' : name === 'email' ? ' inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"' : name === 'newpass' || name === 'newpass2' ? ' maxlength="72"' : '';
     const label = currentView === 'signup' ? ({ newpass: 'Senha', newpass2: 'Confirmar senha' }[name] || f[0]) : f[0];
     return '<label>' + label + '<input name="' + f[2] + '" type="' + f[1] + '" autocomplete="' + f[3] + '"' + hint + extra + ' required></label>' +
       (hint ? '<p class="aura-auth-hint" id="auraPassHint">Mínimo de 8 caracteres.</p>' : '');
