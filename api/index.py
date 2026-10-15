@@ -23,12 +23,15 @@ ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
 if str(API_DIR) not in os.sys.path:
     os.sys.path.insert(0, str(API_DIR))
+import clients as clients_mod
 import security as sec
+from clients import router as clients_router
 from orgs import router as orgs_router
 
 app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
 handler = app
 app.include_router(orgs_router)
+app.include_router(clients_router)
 # O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
 # Para liberar origens específicas: AURA_ALLOWED_ORIGINS="https://app.exemplo.com,https://outra.com"
 if sec.allowed_origins():
@@ -100,7 +103,7 @@ def _supabase_request(method: str, path: str, payload=None, user=None):
 
 # Colunas da análise v2 (migração 20261014140000). Se ainda não existirem no banco, o salvamento
 # degrada: grava sem elas e devolve tudo na resposta, em vez de perder a reunião.
-V2_COLUMNS = ("analysis_version", "decisions_detail", "actions_detail", "evidence_summary")
+V2_COLUMNS = ("analysis_version", "decisions_detail", "actions_detail", "evidence_summary", "client_link", "client_suggestion")
 
 def _schema_error(exc: RuntimeError, names: tuple) -> bool:
     message = str(exc).lower()
@@ -113,6 +116,11 @@ def _save_meeting(data: dict, user=None):
     for key in V2_COLUMNS:  # só quando presentes: null violaria o NOT NULL das colunas jsonb
         if data.get(key) is not None:
             payload[key] = data[key]
+    if data.get("client_id"):  # a coluna existe desde a Etapa 2; o gatilho do banco confere o espaço do cliente
+        payload["client_id"] = data["client_id"]
+    if data.get("client_link") == "unlinked" and not data.get("client_suggestion"):
+        payload.pop("client_link", None)  # padrão do banco; evita enviar coluna nova sem necessidade
+        payload.pop("client_suggestion", None)
     if user is not None:
         # Dono e organização vêm do token verificado, nunca do corpo da requisição.
         org_id = data.get("org_id") or None
@@ -192,7 +200,10 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     from openai_engine import analyze_transcript, build_product_fields
     analysis = analyze_transcript(analysis_transcript or transcript, context=context)
     fields = build_product_fields(analysis, analysis_transcript or transcript)
-    resolved_client = _clean(client_name) or _clean(fields.get("client_name")) or "Cliente não identificado"
+    # "Cliente não identificado" enviado pela interface é um marcador, não um nome digitado: nesse caso vale
+    # o cliente que a IA encontrou na conversa (antes o marcador sobrescrevia o nome extraído).
+    typed_client = _clean(client_name) if not clients_mod.is_placeholder(client_name) else ""
+    resolved_client = typed_client or _clean(fields.get("client_name")) or "Cliente não identificado"
     resolved_title = _clean(meeting_title)
     if not resolved_title or resolved_title == "Análise por transcrição":
         resolved_title = resolved_client + " · " + (context or "Outro")
@@ -200,6 +211,8 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
     if transcription_meta:
         result["transcription"] = transcription_meta
     result["intent"] = f"{context or 'Outro'} · {fields['intent']}"
+    link = clients_mod.link_for_new_meeting(user, org_id, typed_client or None, _clean(fields.get("client_name")) or None, is_demo=bool(is_demo))
+    result.update(link)
     saved = _save_meeting({**result, "source_type": source_type, "org_id": org_id}, user)
     if saved.get("meeting"):
         result["id"] = saved["meeting"].get("id")

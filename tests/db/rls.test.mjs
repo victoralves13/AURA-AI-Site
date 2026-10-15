@@ -55,6 +55,7 @@ await db.exec(read('migrations/20261014120000_etapa2_identidade_organizacoes.sql
 await db.exec(read('migrations/20261014120100_etapa2_reunioes_isolamento.sql'));
 await db.exec(read('migrations/20261014130000_etapa2_acesso_exige_membro.sql'));
 await db.exec(read('migrations/20261014140000_etapa3_analise_v2.sql'));
+await db.exec(read('migrations/20261014150000_etapa3_clientes.sql'));
 console.log('migrações aplicadas sem erro');
 await seed();
 
@@ -153,7 +154,61 @@ const nul = await tryq(E, "update public.meetings set decisions_detail = null wh
 check('NÃO aceita nulo nas colunas jsonb novas', !nul.ok, JSON.stringify(nul));
 check('o RLS continua valendo para as colunas novas (outro usuário não vê)', (await ids(D)).split(',').every(x => x !== 'a'));
 
+console.log('\n== clientes como entidade (migração 5) ==');
+const mkClient = async (name, org, owner) => (await db.query(`insert into public.clients(org_id,owner_id,name,normalized_name) values ($1,$2,$3,$4) returning id`, [org, owner, name, name.toLowerCase()])).rows[0].id;
+const cX1 = await mkClient('Atlas', X, A), cX2 = await mkClient('Atlas Sul', X, A), cY1 = await mkClient('Outra Org', Y, D);
+const cP = await mkClient('Cliente Pessoal E1', null, E), cP2 = await mkClient('Cliente Pessoal C1', null, C), cP3 = await mkClient('Cliente Pessoal E2', null, E);
+const setClient = async (meeting, client, link = 'confirmed') => tryq(null, 'select 1', []).then(async () => { await db.exec('reset role'); try { await db.query('update public.meetings set client_id=$1, client_link=$2 where id=$3', [client, link, meeting]); return { ok: true }; } catch (e) { return { ok: false, err: e.message }; } });
+const rows = async sql => (await db.query(sql)).rows;
+
+const old5 = (await rows(`select count(*) n, count(*) filter (where client_link='unlinked' and client_suggestion='[]'::jsonb) padrao from public.meetings where client_id is null`))[0];
+check('reuniões existentes ficam sem vínculo (unlinked) e sem sugestões', Number(old5.n) > 0 && old5.n === old5.padrao, JSON.stringify(old5));
+check('reunião de organização aceita cliente da mesma organização', (await setClient(M(2), cX1)).ok);
+check('NÃO aceita cliente de OUTRA organização', /client_scope_mismatch/.test((await setClient(M(2), cY1)).err || ''));
+check('reunião pessoal aceita o próprio cliente pessoal', (await setClient(M(4), cP)).ok);
+check('reunião pessoal NÃO aceita cliente pessoal de outra pessoa', /client_scope_mismatch/.test((await setClient(M(4), cP2)).err || ''));
+check('reunião pessoal NÃO aceita cliente de organização', /client_scope_mismatch/.test((await setClient(M(4), cX1)).err || ''));
+check('NÃO aceita cliente inexistente', !(await setClient(M(2), '90000000-0000-0000-0000-000000000009')).ok);
+check("'confirmed' ou 'auto' sem cliente é recusado", !(await setClient(M(7), null, 'confirmed')).ok && !(await setClient(M(7), null, 'auto')).ok);
+check("'suggested' sem cliente é aceito (aguardando confirmação)", (await setClient(M(7), null, 'suggested')).ok);
+await db.exec(`update public.meetings set client_id='${cX2}', client_link='auto' where id in ('${M(2)}','${M(3)}','${M(7)}')`);
+
+const merge = (uid, a, b) => tryq(uid, 'select public.merge_clients($1,$2)', [a, b]);
+check('anon NÃO executa a fusão', !(await merge(null, cX2, cX1)).ok);
+check('colaborador (sem clients.manage) NÃO funde', /forbidden/.test((await merge(C, cX2, cX1)).err || ''));
+check('admin de OUTRA organização não enxerga os clientes (isolamento)', /client_not_found/.test((await merge(D, cX2, cX1)).err || ''));
+check('não funde com cliente de outra organização (admin X nem o enxerga)', /client_not_found/.test((await merge(A, cX2, cY1)).err || ''));
+check('não funde cliente com ele mesmo', /same_client/.test((await merge(A, cX1, cX1)).err || ''));
+check('não mistura pessoal com organização', /client_not_found|scope_mismatch/.test((await merge(E, cP, cX1)).err || ''));
+const mr = await merge(B, cX2, cX1);
+check('gestor (clients.manage) funde com sucesso', mr.ok, JSON.stringify(mr));
+const after = (await rows(`select id, client_id, client_link from public.meetings where id in ('${M(2)}','${M(3)}','${M(7)}') order by id`));
+check('as 3 reuniões foram movidas para o cliente de destino, confirmadas', after.length === 3 && after.every(r => r.client_id === cX1 && r.client_link === 'confirmed'), JSON.stringify(after));
+const src = (await rows(`select merged_into, jsonb_array_length(merged_meeting_ids) n from public.clients where id='${cX2}'`))[0];
+check('cliente de origem guarda a fusão e as reuniões movidas', src.merged_into === cX1 && src.n === 3, JSON.stringify(src));
+check("nome do cliente de origem virou apelido do destino", (await rows(`select 'Atlas Sul' = any(aliases) a from public.clients where id='${cX1}'`))[0].a === true);
+check('NÃO vincula reunião a cliente já fundido', /client_merged/.test((await setClient(M(2), cX2)).err || ''));
+check('fundir de novo é recusado (já fundido)', /already_merged/.test((await merge(B, cX2, cX1)).err || ''));
+check('pessoal: dono funde os próprios clientes', (await merge(E, cP3, cP)).ok);
+check('pessoal: outra pessoa não vê nem funde clientes alheios', /client_not_found/.test((await merge(C, cP3, cP)).err || ''));
+
+const un = (uid, id) => tryq(uid, 'select public.unmerge_clients($1)', [id]);
+check('colaborador NÃO desfaz fusão', /forbidden/.test((await un(C, cX2)).err || ''));
+check('desfazer o que não foi fundido é recusado', /not_merged/.test((await un(B, cX1)).err || ''));
+const ur = await un(B, cX2);
+check('gestor desfaz a fusão', ur.ok, JSON.stringify(ur));
+const back = (await rows(`select id, client_id from public.meetings where id in ('${M(2)}','${M(3)}','${M(7)}') order by id`));
+check('as reuniões voltam para o cliente original', back.every(r => r.client_id === cX2), JSON.stringify(back));
+const alias = (await rows(`select 'Atlas Sul' = any(aliases) a from public.clients where id='${cX1}'`))[0].a;
+check('o apelido adicionado pela fusão é removido do destino', alias === false);
+check('cliente de origem volta a ficar ativo e sem histórico de fusão', (await rows(`select merged_into is null and jsonb_array_length(merged_meeting_ids) = 0 as ok from public.clients where id='${cX2}'`))[0].ok);
+check('ex-membro/outsider não executa fusão em cliente da org', /client_not_found/.test((await merge(E, cX2, cX1)).err || ''));
+const idx = (await rows(`select count(*) n from pg_indexes where schemaname='public' and indexname in ('invitations_invited_by_idx','invitations_org_idx','meeting_access_granted_by_idx','meetings_client_org_idx','meetings_team_org_idx','organizations_created_by_idx','team_members_org_user_idx','team_members_team_org_idx','teams_org_idx','clients_merged_into_idx')`))[0];
+check('os 9 índices de chaves estrangeiras (+1 da fusão) existem', Number(idx.n) === 10, JSON.stringify(idx));
+check('o RLS dos clientes continua valendo (cliente pessoal invisível a outro usuário)', await as(C, async () => (await db.query(`select count(*) c from public.clients where name='Cliente Pessoal E1'`)).rows[0].c === '0' || Number((await db.query(`select count(*) c from public.clients where name='Cliente Pessoal E1'`)).rows[0].c) === 0));
+
 console.log('\n== rollback e reaplicação ==');
+await db.exec(read('rollbacks/20261014150000_etapa3_clientes.down.sql'));
 await db.exec(read('rollbacks/20261014140000_etapa3_analise_v2.down.sql'));
 await db.exec(read('rollbacks/20261014130000_etapa2_acesso_exige_membro.down.sql'));
 await db.exec(read('rollbacks/20261014120100_etapa2_reunioes_isolamento.down.sql'));
@@ -161,12 +216,15 @@ await db.exec(read('rollbacks/20261014120000_etapa2_identidade_organizacoes.down
 const left = (await db.query(`select (select count(*) from information_schema.tables where table_schema='public' and table_name<>'meetings') as t, (select count(*) from information_schema.columns where table_name='meetings' and column_name in ('owner_id','org_id','client_id','team_id','visibility')) as c, (select count(*) from pg_namespace where nspname='aura_private') as s, (select count(*) from public.meetings) as m`)).rows[0];
 check('rollback remove tabelas, colunas e schema novos', Number(left.t) === 0 && Number(left.c) === 0 && Number(left.s) === 0, JSON.stringify(left));
 check('rollback preserva as reuniões existentes', Number(left.m) >= 7, JSON.stringify(left));
+const gone5 = (await db.query("select (select count(*) from information_schema.columns where table_name='meetings' and column_name in ('client_link','client_suggestion')) + (select count(*) from information_schema.columns where table_name='clients' and column_name in ('created_via','merged_into','merged_at','merged_meeting_ids')) + (select count(*) from pg_proc where proname in ('merge_clients','unmerge_clients','check_meeting_client')) + (select count(*) from pg_trigger where tgname='meetings_client_scope') c")).rows[0];
+check('rollback da migração 5 remove colunas, funções e gatilho', Number(gone5.c) === 0, JSON.stringify(gone5));
 const gone = (await db.query("select count(*) c from information_schema.columns where table_name='meetings' and column_name in ('analysis_version','decisions_detail','actions_detail','evidence_summary')")).rows[0];
 check('rollback remove as colunas da análise v2', Number(gone.c) === 0, JSON.stringify(gone));
 await db.exec(read('migrations/20261014120000_etapa2_identidade_organizacoes.sql'));
 await db.exec(read('migrations/20261014120100_etapa2_reunioes_isolamento.sql'));
 await db.exec(read('migrations/20261014130000_etapa2_acesso_exige_membro.sql'));
 await db.exec(read('migrations/20261014140000_etapa3_analise_v2.sql'));
+await db.exec(read('migrations/20261014150000_etapa3_clientes.sql'));
 check('migrações reaplicam após rollback', true);
 console.log(`\n${pass} aprovados, ${fail} reprovados`);
 process.exit(fail ? 1 : 0);

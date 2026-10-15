@@ -161,6 +161,34 @@ Avaliar a qualidade real da IA (gasta crédito; a chave só na janela do termina
 de `tests/eval/fixtures/` e mostra % de evidências conferidas, inferências marcadas, fatos esperados
 encontrados e afirmações sem base. Mede conferibilidade, não substitui avaliação humana.
 
+### Clientes como entidade (Etapa 3.3)
+
+Migração `20261014150000_etapa3_clientes.sql` (aditiva; **aplique antes de usar os endpoints de clientes**):
+estado do vínculo na reunião (`client_link`: `unlinked`, `suggested`, `auto`, `confirmed`; `client_suggestion`),
+origem do cliente (`created_via`), fusão reversível (`merged_into`, `merged_meeting_ids`), um gatilho que
+impede vincular a cliente de outro espaço ou já fundido, `merge_clients`/`unmerge_clients` (atômicas, com
+a permissão `clients.manage` checada dentro) e os 9 índices de chaves estrangeiras do advisor.
+A migração não cria, vincula nem funde nenhum cliente; as reuniões existentes ficam `unlinked`.
+
+Regra de vínculo ao analisar (determinística, sempre dentro do mesmo espaço: organização **ou** conta pessoal):
+
+| Origem do nome | Igual a cliente/apelido | Parecido ou ambíguo | Sem correspondência |
+|---|---|---|---|
+| Digitado pela pessoa | vincula (`confirmed`) | sugere, não cria duplicado | cria o cliente (`confirmed`) |
+| Extraído pela IA | vincula (`auto`) | sugere | propõe criar e espera confirmação |
+
+"Igual" ignora acento, caixa, pontuação e sufixos societários (Ltda, S.A., ME…). "Parecido" usa as palavras
+relevantes (sem "Grupo", "Empresa"…) ou erro de digitação. Sem nome, "Cliente não identificado", reunião demo
+ou modo sem login: sem vínculo. Falha ao vincular nunca impede salvar a análise.
+Corrigido: o marcador "Cliente não identificado" enviado pela interface apagava o cliente que a IA encontrou.
+
+Endpoints (login exigido; `org_id=personal|<uuid>` escolhe o espaço): `GET|POST /api/clients`,
+`GET|PATCH /api/clients/{id}`, `PATCH /api/meetings/{id}/client` (`confirm`, `set`, `create`, `unlink`),
+`POST /api/clients/{id}/merge` (`{"into": "<id>"}`) e `POST /api/clients/{id}/unmerge`.
+A fusão move todas as reuniões do cliente de origem, mesmo as que quem funde não enxerga, e guarda o nome
+antigo como apelido; desfazer devolve as reuniões e remove o apelido. As telas de clientes (confirmar
+sugestões, fundir) são a fase 3.4: até lá a interface ainda agrupa pelo nome.
+
 ### Organizações, papéis e convites
 
 Na interface (com o login ativo): o seletor "Espaço" no cabeçalho alterna entre o **espaço pessoal**

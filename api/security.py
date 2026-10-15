@@ -138,20 +138,37 @@ def rest_headers(user: AuthUser | None, prefer: str = "return=representation") -
     return {"apikey": key, "Authorization": f"Bearer {key}", "Prefer": prefer}
 
 
+class SupabaseError(RuntimeError):
+    """Erro do PostgREST com o status e o corpo preservados (o texto da mensagem não muda)."""
+
+    def __init__(self, status: int, body: Any = None):
+        super().__init__(f"Supabase error: HTTP {status}")
+        self.status = status
+        self.body = body if isinstance(body, dict) else {}
+
+    @property
+    def db_message(self) -> str:
+        return str(self.body.get("message") or "")
+
+    @property
+    def db_code(self) -> str:
+        return str(self.body.get("code") or "")
+
+
 def service_rest(method: str, path: str, payload: Any = None) -> Any:
     """Chamada PostgREST com a chave de serviço (somente para operações do backend)."""
     if not supabase_url() or not service_key():
         raise RuntimeError("Supabase server credentials não configuradas.")
     status, body = http_json(method, f"{supabase_url()}/rest/v1/{path}", rest_headers(None), payload)
     if status >= 400:
-        raise RuntimeError(f"Supabase error: HTTP {status}")
+        raise SupabaseError(status, body)
     return body
 
 
 def user_rest(user: AuthUser, method: str, path: str, payload: Any = None) -> Any:
     status, body = http_json(method, f"{supabase_url()}/rest/v1/{path}", rest_headers(user), payload)
     if status >= 400:
-        raise RuntimeError(f"Supabase error: HTTP {status}")
+        raise SupabaseError(status, body)
     return body
 
 
