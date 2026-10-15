@@ -6,5 +6,11 @@
 #realAudioDrop:hover .real-audio-icon{animation:none!important;transform:none!important}
 #realAudioDrop.dragging .real-audio-icon{animation:none!important;transform:none!important}
 
-/* Audio analyze button: disabled state must not show the browser's spinning wait cursor. */
+/* Keep the upload button's cursor neutral until analysis is actually running. */
+#realAudioAnalyze{cursor:pointer!important}
 #realAudioAnalyze:disabled{cursor:default!important}
+.real-audio-record-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.real-audio-record-actions button{min-height:36px}
+#realAudioRecord{color:#a7e9ee;border-color:rgba(103,228,239,.28)}
+#realAudioStop{color:#ffb7be;border-color:rgba(240,125,137,.35)}
+#realAudioRecordHint{color:#71858d;font-size:9px;line-height:1.5}
