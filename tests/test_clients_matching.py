@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from aura.features.clients import router as c  # noqa: E402
+from aura.features.clients import matching as c  # noqa: E402
 
 
 def cl(name, cid=None, aliases=None):

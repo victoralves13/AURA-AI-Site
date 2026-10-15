@@ -17,7 +17,7 @@ except Exception:
 
 from aura.core import security as sec
 from aura.features.actions import router as actions_mod
-from aura.features.clients import router as clients_mod
+from aura.features.clients import service as clients_mod
 from aura.features.meetings.router import _save_meeting
 
 router = APIRouter()
