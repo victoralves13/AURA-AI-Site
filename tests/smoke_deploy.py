@@ -115,7 +115,9 @@ def main(argv):
     print("\n== Rotas de dados " + ("(login exigido)" if expect == "on" else "(login desligado: só informativo)"))
     protected = [("GET", "/api/meetings", None), ("GET", "/api/me", None), ("GET", "/api/clients", None),
                  ("POST", "/api/analyze-transcript", b'{"transcript":"x"}'), ("POST", "/api/audio-upload-url", b'{"file_name":"a.mp3","size_bytes":10}'),
-                 ("POST", "/api/orgs", b'{"name":"x"}'), ("POST", "/api/invitations/accept", b'{"token":"x"}')]
+                 ("POST", "/api/orgs", b'{"name":"x"}'), ("POST", "/api/invitations/accept", b'{"token":"x"}'),
+                 ("GET", "/api/actions", None), ("GET", "/api/actions/stats", None), ("POST", "/api/actions/sync", None),
+                 ("GET", "/api/conversations", None), ("POST", "/api/conversations", b'{}')]
     for method, path, body in protected:
         hdr = {"Content-Type": "application/json"} if body else {}
         status, _, _ = call(base, method, path, hdr, body)

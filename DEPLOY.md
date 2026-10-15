@@ -381,3 +381,44 @@ Abre o chat já limitado ao item (`scope`: `meeting_id`, `client_id` ou `action_
 A conversa só é criada ao enviar a primeira pergunta; o cabeçalho mostra "Conversa sobre a reunião/o cliente/a ação …" e as sugestões mudam conforme o item.
 Só aparece para quem tem a permissão `chat.use` no espaço. Nas conversas limitadas, se a pergunta não coincidir com a transcrição, o contexto
 ainda inclui o começo da transcrição do item (para a IA ter o que citar). `index.html` referencia `chat-ui` v4, `clients-ui` v3 e `actions-ui` v4 (cache por versão).
+
+## Roteiro do preview com as Etapas 4 e 5 (ações, resultados, feedback e chat)
+
+**Estado do banco (já feito):** as migrações 6 a 10 foram aplicadas no Supabase `aura-ai`. Atenção: esse projeto do Supabase é o MESMO da
+produção. As migrações são aditivas (tabelas e funções novas; reuniões intactas, conferido por impressão digital), então o app de produção
+atual continua funcionando; ele só não usa as tabelas novas.
+
+**Variáveis do preview:** as mesmas do roteiro acima. Novas e opcionais: `AURA_MAX_CHAT_PER_HOUR` (padrão 60) e `AURA_OPENAI_CHAT_MODEL`
+(padrão = o modelo da análise). O chat usa a `OPENAI_API_KEY` que já existe no preview.
+
+**Passos (na pasta do projeto, sem `--prod`):**
+1. `npx vercel@latest deploy` (envia os arquivos desta pasta; `.vercelignore` deixa de fora testes, `supabase/` e `.venv`). Anote a URL do preview.
+2. Se for a primeira vez nessa URL, acrescente-a em Supabase → Authentication → URL Configuration → Redirect URLs.
+3. Verificação automática (só leitura): `python tests/smoke_deploy.py <URL> --auth on` (use `--auth off` se o login ainda estiver desligado no preview;
+   com a proteção da Vercel ligada, defina `VERCEL_BYPASS_TOKEN` na janela do terminal). Deve dar todos os itens PASS, inclusive as novas rotas de
+   ações e conversas respondendo 401 sem login.
+4. Verificação com login de verdade (opcional): `AURA_TEST_TOKEN` com o token da conta de teste, na janela do terminal.
+
+**O que verificar à mão no preview (conta de teste, `AURA_AUTH_REQUIRED=1`):**
+- Ao entrar, o app abre em **Conversar** (e a Visão geral continua no menu). Se não abrir, recarregue com Ctrl+F5 (cache de versões).
+- **Ações:** abra a área; a primeira vez cria as ações das reuniões antigas (aparece um aviso). Abra uma ação: mude o estado, defina responsável e
+  prazo, conclua e registre um resultado (Funcionou / em parte / não / incerto); veja o histórico; vote "Útil / Não útil" em uma ação da IA.
+  Os indicadores no topo devem refletir isso (eficácia só aparece depois de avaliações).
+- **Reunião e cliente:** no detalhe da reunião, o painel "Ações acompanháveis" e o botão **Perguntar ao AURA**; no cliente, o resumo das ações.
+- **Chat:** faça uma pergunta sobre uma reunião real. Confira: nível de evidência, chips de fonte, trecho/horário/interlocutor ao abrir a fonte, e que
+  uma pergunta sem resposta nos dados vira "Não encontrei evidência". Renomeie, apague e retome conversas. Troque de espaço (pessoal ↔ organização):
+  as conversas e os dados não se misturam.
+- **Isolamento:** com uma segunda conta (outro e-mail), confirme que ela não vê as conversas, ações nem reuniões da primeira.
+- Se algo falhar, o log da função na Vercel mostra o erro (nunca o conteúdo das conversas).
+
+**Avaliação do chat com a IA real (você roda; gasta crédito da OpenAI; 5 chamadas):** abra um terminal na pasta do projeto e, na MESMA janela,
+defina a chave sem gravá-la em arquivo e rode o roteiro:
+```powershell
+$env:OPENAI_API_KEY = Read-Host "Cole a chave da OpenAI"
+.\.venv\Scripts\python.exe tests\eval\chat_eval.py --dry     # confere os exemplos, sem custo
+.\.venv\Scripts\python.exe tests\eval\chat_eval.py           # roda de verdade
+$env:OPENAI_API_KEY = $null
+```
+Leitura do resultado: cada pergunta mostra `OK` ou `FALHA`, o nível de evidência e quantas afirmações da IA foram comprovadas ou descartadas.
+Esperado: as perguntas respondíveis com fonte comprovada; as sem dado e a fora do escopo em "insuficiente"; a ordem escondida na transcrição sem vazar.
+Muitas afirmações descartadas indicam um modelo que cita trechos que não existem. Cole aqui só a saída (nunca a chave).
