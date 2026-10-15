@@ -21,8 +21,8 @@ import urllib.request
 SENSITIVE = ["/api/index.py", "/api/security.py", "/api/openai_engine.py", "/api/orgs.py", "/api/clients.py",
              "/.git/config", "/.env", "/.env.example", "/supabase/schema.sql", "/requirements.txt",
              "/DEPLOY.md", "/README.md", "/tests/test_security.py", "/vercel.json", "/package.json"]
-ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/actions-ui.js", "/chat-ui.js", "/live-ui.js", "/product-shell.js", "/auth.css",
-          "/evidence.css", "/clients-ui.css", "/actions-ui.css", "/chat-ui.css", "/live-ui.css", "/a11y.css", "/supabase-js-2.117.2.umd.js"]
+ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/actions-ui.js", "/chat-ui.js", "/live-ui.js", "/onboarding-ui.js", "/product-shell.js", "/auth.css",
+          "/evidence.css", "/clients-ui.css", "/actions-ui.css", "/chat-ui.css", "/live-ui.css", "/a11y.css", "/onboarding-ui.css", "/supabase-js-2.117.2.umd.js"]
 
 results = []
 FAKE_ID = "00000000-0000-4000-8000-000000000000"
@@ -119,6 +119,8 @@ def main(argv):
                  ("POST", "/api/orgs", b'{"name":"x"}'), ("POST", "/api/invitations/accept", b'{"token":"x"}'),
                  ("GET", "/api/actions", None), ("GET", "/api/actions/stats", None), ("POST", "/api/actions/sync", None),
                  ("GET", "/api/conversations", None), ("POST", "/api/conversations", b'{}'),
+                 ("GET", "/api/onboarding", None), ("POST", "/api/onboarding/dismiss", b'{}'), ("POST", "/api/onboarding/reset", b'{}'),
+                 ("POST", "/api/onboarding/steps/chat/skip", b'{}'),
                  ("GET", "/api/live", None), ("POST", "/api/live", b'{"consent":true}'),
                  ("POST", f"/api/live/{FAKE_ID}/chunks/upload-url", b'{"seq":0}'), ("POST", f"/api/live/{FAKE_ID}/transcribe", b'{}'),
                  ("GET", f"/api/live/{FAKE_ID}/transcript", None), ("POST", f"/api/live/{FAKE_ID}/alerts/scan", b'{}'),

@@ -624,3 +624,11 @@ queda de rede não perdeu áudio · apagar o áudio preservou a reunião · aval
 - Renomeie ou funda um cliente em Clientes e abra Evolução, Riscos, Oportunidades e Visão geral: o nome novo deve aparecer em todas.
 - Teclado: Tab na primeira tela mostra "Pular para o conteúdo"; o foco sempre fica visível.
 - Rollback: reverter o commit da fase; não há dados nem tabelas envolvidos.
+
+---
+
+## Fase 7.3 — onboarding no servidor (migração 13, AINDA NÃO APLICADA)
+- **Migração:** `supabase/migrations/20261014230000_etapa7_onboarding.sql` (tabela `onboarding_progress`, aditiva). Só aplicar com aprovação. Rollback: `supabase/rollbacks/20261014230000_etapa7_onboarding.down.sql` (roda ANTES dos de 12 em diante; perde só o progresso do tutorial).
+- **Sem a migração aplicada**, `GET /api/onboarding` responde 502 e a interface simplesmente não mostra o botão "Primeiros passos" (o resto do app não é afetado).
+- **Arquivos novos:** `api/onboarding.py`, `onboarding-ui.js`, `onboarding-ui.css` (o smoke confere os dois arquivos e as rotas `/api/onboarding*` respondendo 401 sem login).
+- **Verificar no preview (conta nova):** botão "Primeiros passos 0/5" no topo; analisar uma reunião faz o passo 1 virar "Concluído" sozinho; "Pular" e "Dispensar" persistem ao recarregar e em outro aparelho; Perfil → "Rever o tutorial" reabre; uma segunda conta não herda nada.

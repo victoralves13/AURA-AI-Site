@@ -29,6 +29,7 @@ import security as sec
 from actions import router as actions_router
 from clients import router as clients_router
 from conversations import router as conversations_router
+from onboarding import router as onboarding_router
 from live import router as live_router
 from live_alerts import router as live_alerts_router
 from live_consolidate import router as live_consolidate_router
@@ -42,6 +43,7 @@ app.include_router(orgs_router)
 app.include_router(clients_router)
 app.include_router(actions_router)
 app.include_router(conversations_router)
+app.include_router(onboarding_router)
 app.include_router(live_router)
 app.include_router(live_transcribe_router)
 app.include_router(live_alerts_router)

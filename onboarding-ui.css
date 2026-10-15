@@ -1,0 +1,14 @@
+.onb-chip{margin-right:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(98,233,250,.45);background:rgba(98,233,250,.1);color:#bff6ff;font:800 12px Manrope,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.onb-chip:hover{background:rgba(98,233,250,.18)}
+.onb-bar{height:8px;border-radius:99px;background:rgba(170,220,230,.15);overflow:hidden}
+.onb-bar i{display:block;height:100%;background:#62e9fa;border-radius:99px}
+.onb-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.onb-step{display:grid;gap:10px;padding:14px;border:1px solid rgba(170,220,230,.16);border-radius:12px;background:rgba(8,17,23,.6)}
+.onb-step b{display:block;color:#eaf8fa;font-size:14px}
+.onb-step small{display:block;margin-top:4px;color:#8aa3ab;font-size:12.5px;line-height:1.5}
+.onb-status{display:inline-block;margin-top:8px;font:800 11px Manrope,system-ui,sans-serif;color:#8aa3ab;letter-spacing:.04em;text-transform:uppercase}
+.onb-step.done .onb-status{color:#6ee7a8}
+.onb-step.done b{text-decoration:none}
+.onb-actions{display:flex;gap:8px;flex-wrap:wrap}
+.onb-foot{display:flex;justify-content:flex-end}
+@media (max-width:700px){.onb-chip{padding:7px 10px}}

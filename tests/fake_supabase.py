@@ -19,7 +19,7 @@ class FakeSupabase:
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
                                               "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
-                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages", "live_sessions", "live_chunks")}
+                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages", "live_sessions", "live_chunks", "onboarding_progress")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
         self.clock = None  # ISO do "agora" das sessões ao vivo (os testes fixam)
@@ -299,6 +299,30 @@ class FakeSupabase:
             return 201, [dict(row)]
         return 405, {}
 
+    ONBOARDING_STEPS = ("first_meeting", "client", "action", "chat", "live")
+
+    def _onboarding_write(self, method, payload, uid, match):  # espelha onboarding_progress (RLS + gatilho)
+        rows = self.tables["onboarding_progress"]
+        skipped = payload.get("skipped")
+        if skipped is not None and (not isinstance(skipped, dict) or any(k not in self.ONBOARDING_STEPS or not isinstance(v, str) or len(v) > 40 for k, v in skipped.items())):
+            return 400, {"code": "23514", "message": "onboarding_invalid_step"}
+        if method == "POST":
+            if payload.get("user_id") != uid:
+                return 403, {"message": "new row violates row-level security policy"}
+            if any(r["user_id"] == uid for r in rows):
+                return 409, {"code": "23505", "message": "duplicate key value violates unique constraint"}
+            row = {"skipped": {}, "dismissed_at": None, "completed_at": None, **payload, "created_at": self._ts()}
+            rows.append(row)
+            return 201, [dict(row)]
+        if method == "PATCH":
+            if "user_id" in payload or "created_at" in payload:
+                return 400, {"code": "23514", "message": "onboarding_immutable"}
+            hit = [r for r in rows if r["user_id"] == uid and match(r)]
+            for r in hit:
+                r.update(payload)
+            return 200, [dict(r) for r in hit]
+        return 403, {"message": "denied"}  # sem DELETE para a pessoa
+
     def _feedback_write(self, method, payload, uid, match):
         votes = self.tables["action_feedback"]
         if method == "POST":
@@ -428,6 +452,8 @@ class FakeSupabase:
             if table == "live_chunks":
                 s = next((s for s in self.tables["live_sessions"] if s["id"] == row["session_id"]), None)
                 return bool(s) and self._live_visible(s, uid)
+            if table == "onboarding_progress":
+                return row["user_id"] == uid
             if table == "conversations":
                 return self._conv_visible(row, uid)
             if table == "messages":
@@ -486,6 +512,8 @@ class FakeSupabase:
 
         if table in ("live_sessions", "live_chunks") and not is_service:
             return self._live_write(table, method, payload or {}, caller["id"], match)
+        if table == "onboarding_progress" and not is_service:
+            return self._onboarding_write(method, payload or {}, caller["id"], match)
         if table in ("conversations", "messages") and not is_service:
             return self._chat_write(table, method, payload or {}, caller["id"], match)
         if table == "action_feedback" and not is_service:
