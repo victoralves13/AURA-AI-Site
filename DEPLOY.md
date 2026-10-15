@@ -483,3 +483,21 @@ O gatilho de pedaços também passa a recusar um pedaço já "reservado" vindo d
 - **Tela:** o texto cresce abaixo do cronômetro (com "transcrevendo…" nos pedaços pendentes, falhas em vermelho e "Tentar de novo"), mostra transcrito, custo estimado e uso na última hora, e
   continua depois de encerrar até terminar os últimos pedaços. `index.html`: `live-ui` v5.
 - **Teste real (você):** grave 2–3 minutos falando em português e confira o texto, as emendas entre pedaços (palavras repetidas) e a estimativa de custo; teste também com a chave da OpenAI ausente.
+
+## Etapa 6.4 — Alertas visuais silenciosos (sem migração nova)
+
+`api/live_alerts.py` + painel "Alertas" na tela de gravação (`live-ui.js` v6, `live-ui.css` v3). Usa a preferência `alerts_enabled` da sessão (já existe desde a migração 11).
+- **Como funciona:** a cada ~2 minutos o navegador pede `POST /api/live/{id}/alerts/scan` com `from_seq` (de onde partir). O servidor monta uma janela com o trecho NOVO da
+  transcrição (mais o pedaço anterior como contexto, até ~6000 caracteres), a IA sugere no máximo 4 alertas (risco, objeção, compromisso, decisão, preço, dúvida) e o backend só devolve
+  os que consegue COMPROVAR: cada alerta precisa de um trecho literal (3+ palavras) que exista na janela; o horário vem da transcrição; alertas repetidos são descartados.
+  O texto da transcrição entra na IA como dado não confiável (marcadores neutralizados). Sem nada novo, não chama a IA nem conta no limite.
+- **Silencioso de verdade:** sem som, sem notificação do navegador, sem pop-up, sem mudar o título da aba e sem roubar o foco. Só aparecem cartões num painel (com um leve destaque
+  de 1 s, desligado se a pessoa preferir menos movimento). Cada cartão traz categoria, horário, "Dito/Inferido", "trecho conferido" e **Ver trecho**; dá para **Dispensar** e para
+  **Desligar/Ligar alertas** a qualquer momento (a preferência fica na sessão).
+- **Limites:** `AURA_MAX_LIVE_SCANS_PER_HOUR` (padrão 40 varreduras por pessoa/hora; falha ao verificar bloqueia); modelo em `AURA_OPENAI_LIVE_ALERT_MODEL` (padrão = o da análise, nome não confirmado).
+  Erro/limite da IA: aviso discreto no painel; a gravação e a transcrição nunca são afetadas.
+- **Não ficam salvos:** os alertas valem para a reunião em curso (e ficam visíveis no cartão final até recarregar a página). A análise final (6.5) reconfere tudo contra a transcrição.
+  Recarregar a página durante a reunião perde os alertas já mostrados; a transcrição continua.
+- **Limite honesto:** a conferência garante que o trecho citado EXISTE; não garante que a conclusão tirada dele esteja certa. Por isso o cartão mostra sempre o trecho e rotula inferências.
+- **Teste real (você):** com a chave da OpenAI, grave uma conversa simulada em que alguém cita um prazo apertado, um preço e um compromisso, e confira se os alertas aparecem sem nenhum som,
+  com o trecho certo, e se "Desligar alertas" realmente para as varreduras.

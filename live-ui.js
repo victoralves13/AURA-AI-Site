@@ -67,7 +67,8 @@
     host: null, session: null, stream: null, ctx: null, analyser: null, recorder: null, mime: null, ext: '.webm',
     seq: 0, recStart: 0, accumulated: 0, paused: false, stopping: false, timer: null, wake: null, startedAt: 0,
     stats: { pending: 0, sent: 0, dead: 0, retrying: false }, pumping: false, nextTry: new Map(), interrupted: [], busy: false, error: null, doneMsg: null,
-    tr: { sid: null, lines: [], missing: [], counts: null, usage: null, timer: null, inflight: false, notice: null, blockedUntil: 0 }
+    tr: { sid: null, lines: [], missing: [], counts: null, usage: null, timer: null, inflight: false, notice: null, blockedUntil: 0 },
+    al: { items: [], seen: new Set(), nextSeq: 0, timer: null, inflight: false, enabled: true, notice: null, blockedUntil: 0, dismissed: 0, open: new Set(), live: false }
   };
   const elapsed = () => S.accumulated + (S.recorder && !S.paused ? Date.now() - S.recStart : 0);
 
@@ -234,6 +235,7 @@
       S.recorder = newRecorder(); S.recStart = Date.now();
       S.timer = setInterval(tick, 500);
       startTranscript(S.session.id);
+      startAlerts(form.alerts);
       wakeLock(true);
       document.title = '● Gravando — AURA AI';
     } catch (err) {
@@ -270,6 +272,7 @@
     if (!S.session || S.stopping) return;
     S.stopping = true; draw();
     clearInterval(S.timer); S.timer = null;
+    stopAlerts();
     await closeRecorder();
     if (S.stream) S.stream.getTracks().forEach(t => t.stop());
     safe(() => S.ctx && S.ctx.close());
@@ -382,6 +385,90 @@
     }
   }
 
+  /* ---------- alertas visuais silenciosos ---------- */
+  const SCAN_MS = () => Number(window.AURA_LIVE_SCAN_MS) > 0 ? Number(window.AURA_LIVE_SCAN_MS) : 120000;
+  const CATS = { risco: ['Risco', '#ff9bb0'], objecao: ['Objeção', '#f3dca5'], compromisso: ['Compromisso', '#9df0c1'], decisao: ['Decisão', '#8ff1ff'], preco: ['Preço', '#d7b8ff'], duvida: ['Dúvida', '#c3d8dc'] };
+
+  function startAlerts(enabled) {
+    stopAlerts();
+    S.al = { items: [], seen: new Set(), nextSeq: 0, timer: null, inflight: false, enabled: !!enabled, notice: null, blockedUntil: 0, dismissed: 0, open: new Set(), live: true };
+    S.al.timer = setInterval(scanAlerts, SCAN_MS());
+  }
+  function stopAlerts() { if (S.al.timer) clearInterval(S.al.timer); S.al.timer = null; S.al.live = false; }
+
+  async function scanAlerts() {
+    const { api } = ui();
+    const al = S.al;
+    if (!S.session || !al.enabled || al.inflight || S.paused || S.stopping || Date.now() < al.blockedUntil) return;
+    al.inflight = true;
+    try {
+      const r = await api('POST', '/api/live/' + S.session.id + '/alerts/scan', { from_seq: al.nextSeq });
+      al.nextSeq = r.next_seq;
+      al.notice = null;
+      for (const a of r.alerts) if (!al.seen.has(a.key)) { al.seen.add(a.key); al.items.unshift({ ...a, fresh: true }); }
+      drawAlerts();
+    } catch (err) {
+      if (err.status === 429) { al.notice = err.message; al.blockedUntil = Date.now() + 10 * 60000; }
+      else if (err.status === 503 || err.status === 409) { al.notice = err.message; al.blockedUntil = Date.now() + 5 * 60000; }
+      else if (err.status !== 401) al.notice = 'Não foi possível analisar agora; tentaremos de novo.';
+      drawAlerts();
+    }
+    al.inflight = false;
+  }
+
+  async function toggleAlerts() {
+    const { api, toast } = ui();
+    if (!S.session) return;
+    const next = !S.al.enabled;
+    try {
+      await api('PATCH', '/api/live/' + S.session.id, { alerts_enabled: next });
+      S.al.enabled = next; S.al.notice = null; S.al.blockedUntil = 0;
+      drawAlerts();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  function alertCard(a) {
+    const { el } = ui();
+    const [label, color] = CATS[a.category] || ['Alerta', '#c3d8dc'];
+    const quote = el('blockquote', { class: 'live-al-quote', hidden: !S.al.open.has(a.key), text: '“' + a.quote + '”' });
+    const more = el('button', { type: 'button', class: 'aura-btn ghost small', text: S.al.open.has(a.key) ? 'Ocultar trecho' : 'Ver trecho', 'aria-expanded': S.al.open.has(a.key) ? 'true' : 'false' });
+    more.addEventListener('click', () => { if (S.al.open.has(a.key)) S.al.open.delete(a.key); else S.al.open.add(a.key); drawAlerts(); });
+    const dismiss = el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Dispensar', 'aria-label': 'Dispensar o alerta: ' + a.statement });
+    dismiss.addEventListener('click', () => { S.al.items = S.al.items.filter(x => x.key !== a.key); S.al.dismissed += 1; drawAlerts(); });
+    const card = el('article', { class: 'live-alert' + (a.fresh ? ' fresh' : ''), style: 'border-left-color:' + color },
+      el('div', { class: 'live-al-top' }, el('b', { text: label, style: 'color:' + color }), a.timestamp ? el('time', { text: '[' + a.timestamp + ']' }) : null,
+        el('span', { class: 'act-badge ' + (a.kind === 'inferido' ? 'basis-inferido' : 'basis-dito'), text: a.kind === 'inferido' ? 'Inferido' : 'Dito' }),
+        el('span', { class: 'live-al-check', text: a.check === 'localizada' ? 'trecho conferido' : 'trecho conferido em parte' })),
+      el('p', { text: a.statement }), quote, el('div', { class: 'live-al-actions' }, more, dismiss));
+    a.fresh = false;
+    return card;
+  }
+
+  function alertsBox() {
+    const { el } = ui();
+    return el('aside', { class: 'live-alerts', 'aria-label': 'Alertas silenciosos' },
+      el('div', { class: 'live-al-head' }, el('b', { text: 'Alertas' }), el('span', { class: 'live-al-count', id: 'liveAlCount' }),
+        S.al.live ? el('button', { type: 'button', class: 'aura-btn ghost small', id: 'liveAlToggle', onclick: toggleAlerts }) : null),
+      el('div', { class: 'live-al-list', id: 'liveAlList' }),
+      el('p', { class: 'live-tr-note', id: 'liveAlNote' }),
+      el('p', { class: 'aura-note', text: 'Sugestões sem som e sem pop-up, geradas a partir da transcrição e só com trecho comprovado. Podem errar: confira no trecho. Não ficam salvas depois da reunião.' }));
+  }
+
+  function drawAlerts() {
+    const list = document.getElementById('liveAlList');
+    if (!list) return;
+    const { el } = ui();
+    const al = S.al;
+    list.replaceChildren(...(al.items.length ? al.items.map(alertCard)
+      : [el('p', { class: 'live-tr-empty', text: !al.enabled ? 'Alertas desligados nesta gravação.' : 'Nenhum alerta por enquanto. O AURA avisa aqui, em silêncio, quando algo merecer atenção.' })]));
+    const count = document.getElementById('liveAlCount');
+    if (count) count.textContent = al.items.length ? String(al.items.length) : '';
+    const tog = document.getElementById('liveAlToggle');
+    if (tog) tog.textContent = al.enabled ? 'Desligar alertas' : 'Ligar alertas';
+    const note = document.getElementById('liveAlNote');
+    if (note) { note.textContent = al.notice || ''; note.classList.toggle('warn', !!al.notice); }
+  }
+
   /* ---------- gravações interrompidas ---------- */
   async function loadInterrupted() {
     try {
@@ -476,7 +563,7 @@
       stats,
       el('p', { class: 'aura-note', text: 'O áudio é enviado em pedaços de cerca de 30 segundos e guardado neste aparelho até chegar ao servidor. ' + (durable ? '' : 'Atenção: este navegador não permite guardar o áudio localmente; se a conexão cair, parte da gravação pode se perder. ') + 'Não feche esta aba durante a reunião.' }),
       el('p', { class: 'live-done', id: 'liveDone', role: 'status' }),
-      transcriptBox());
+      transcriptBox(), alertsBox());
   }
 
   function drawTimer() { const t = document.getElementById('liveTimer'); if (t) t.textContent = clock(elapsed()); }
@@ -504,7 +591,7 @@
     const kids = [];
     if (S.session) kids.push(recordingPanel());
     else {
-      if (S.doneMsg) kids.push(el('div', { class: 'live-card live-finished', role: 'status' }, el('b', { text: 'Gravação concluída' }), el('p', { text: S.doneMsg }), S.tr.sid ? transcriptBox() : null));
+      if (S.doneMsg) kids.push(el('div', { class: 'live-card live-finished', role: 'status' }, el('b', { text: 'Gravação concluída' }), el('p', { text: S.doneMsg }), S.tr.sid ? transcriptBox() : null, S.tr.sid && (S.al.items.length || S.al.dismissed) ? alertsBox() : null));
       if (S.error) kids.push(el('p', { class: 'aura-msg error', role: 'alert', text: S.error }));
       kids.push(el('section', { class: 'live-card' }, el('h3', { text: 'Gravar uma reunião ao vivo' }),
         el('p', { class: 'aura-note', text: 'O AURA grava o microfone deste aparelho, guarda o áudio com segurança e, nas próximas fases, transcreve em tempo real e analisa a reunião ao final. Para registrar uma reunião online, deixe o áudio dela sair pelo alto-falante ou use a captura de áudio do seu sistema.' }),
@@ -513,7 +600,7 @@
       if (list) kids.push(list);
     }
     S.host.replaceChildren(el('div', { class: 'live-screen' }, kids));
-    drawStats(); drawDone(); drawTimer(); drawTranscript();
+    drawStats(); drawDone(); drawTimer(); drawTranscript(); drawAlerts();
   }
 
   async function render(h) {
