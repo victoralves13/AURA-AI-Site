@@ -142,7 +142,7 @@ function renderClients(items){
    let trend=latest.opportunity==='Detectada'?'Oportunidade comercial identificada':risk.toLowerCase().includes('alto')?'Risco de retenção':'Relacionamento em acompanhamento';
    if(previous){if(previous.risk!==latest.risk)trend='Risco mudou de '+(previous.risk||'—')+' para '+(latest.risk||'—');else if(previous.sentiment!==latest.sentiment)trend='Sentimento mudou de '+(previous.sentiment||'—')+' para '+(latest.sentiment||'—');else trend=rows.length+' reuniões no histórico · cenário estável';}
    const dots=rows.slice(0,3).reverse().map((x,i)=>'<i'+(i===2&&risk.toLowerCase().includes('alto')?' style="background:var(--red)"':'')+'></i>').join('');
-   return '<div class="client-card"><span class="client-status" '+statusClass+'>'+status+'</span><span class="eyebrow">CLIENTE</span><h3>'+esc(name)+'</h3><small style="color:#71858d">'+esc(trend)+'</small><div class="timeline">'+dots+'</div><small style="display:block;margin-top:10px;color:#71858d">'+rows.length+' reunião'+(rows.length===1?'':'ões')+' analisada'+(rows.length===1?'':'s')+'</small></div>';
+   return '<div class="client-card"><span class="client-status" '+statusClass+'>'+status+'</span><span class="eyebrow">CLIENTE</span><h3>'+esc(name)+'</h3><small style="color:#8aa3ab">'+esc(trend)+'</small><div class="timeline">'+dots+'</div><small style="display:block;margin-top:10px;color:#8aa3ab">'+rows.length+' reunião'+(rows.length===1?'':'ões')+' analisada'+(rows.length===1?'':'s')+'</small></div>';
  }).join('');
  grid.innerHTML=cards;
 }

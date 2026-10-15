@@ -1,0 +1,29 @@
+/* AURA AI — acessibilidade (fase 7.1): regras globais carregadas por último */
+
+/* Pular para o conteúdo: aparece só no foco por teclado */
+.skip-link{position:absolute;left:12px;top:-60px;z-index:10000;padding:10px 14px;border-radius:10px;background:#62e9fa;color:#03121d;font:800 13px Manrope,system-ui,sans-serif;text-decoration:none}
+.skip-link:focus,.skip-link:focus-visible{top:12px;outline:2px solid #e9fbff;outline-offset:2px}
+#main-content:focus{outline:none}
+
+/* O título principal (h1) existe em todas as telas, mesmo quando o cabeçalho visual é omitido */
+html body.shell-generated-active main>header{display:block!important;position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+
+/* Foco por teclado sempre visível (inclusive onde regras antigas removiam o contorno) */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid #62e9fa;outline-offset:2px}
+textarea:focus-visible,.guide-input input:focus-visible,.insight-sort:focus-visible,.aura-demo-text:focus-visible{outline:2px solid #62e9fa!important;outline-offset:2px}
+
+/* Alvos de toque/clique de pelo menos 24x24 px (WCAG 2.2, 2.5.8) */
+input[type=checkbox],input[type=radio]{min-width:24px;min-height:24px}
+.live-check input,.act-check input{width:24px;height:24px;margin:0 2px}
+.aura-home-link{display:inline-flex;align-items:center;min-height:24px;padding:4px 2px}
+
+/* Menos movimento para quem pede: nada de animação contínua nem transições longas */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
+}
+
+/* Contraste forçado (Windows): mantém contornos visíveis */
+@media (forced-colors:active){
+  .live-dot,.chat-chip-n{forced-color-adjust:none}
+  .act-badge,.chat-evidence,.live-alert,.chat-bubble{border:1px solid CanvasText}
+}

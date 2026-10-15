@@ -79,7 +79,7 @@
       el('div', {}, titleEl, subtitle ? el('small', { text: subtitle }) : null),
       el('button', { type: 'button', class: 'aura-panel-close', 'aria-label': 'Fechar', text: '×', onclick: closePanel }));
     const body = el('div', { class: 'aura-panel-body' });
-    const node = el('aside', { class: 'aura-panel', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auraPanelTitle' }, head, body);
+    const node = el('div', { class: 'aura-panel', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auraPanelTitle' }, head, body);
     const backdrop = el('div', { class: 'aura-panel-backdrop', onclick: closePanel });
     const onKey = e => {
       if (e.key === 'Escape') { e.stopPropagation(); closePanel(); return; }

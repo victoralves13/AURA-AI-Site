@@ -295,8 +295,8 @@
     const fbs = stats.feedback || {};
     const votes = (fbs.useful || 0) + (fbs.not_useful || 0);
     const insight = (origins.length || votes) ? el('div', { class: 'act-insight' },
-      origins.length ? el('div', {}, el('h4', { text: 'Eficácia por origem' }), el('ul', {}, origins)) : null,
-      votes ? el('div', {}, el('h4', { text: 'Utilidade das sugestões' }), el('ul', {}, el('li', {}, el('span', { text: 'Acharam útil' }), el('b', { text: pct(fbs.useful_rate) }),
+      origins.length ? el('div', {}, el('h3', { text: 'Eficácia por origem' }), el('ul', {}, origins)) : null,
+      votes ? el('div', {}, el('h3', { text: 'Utilidade das sugestões' }), el('ul', {}, el('li', {}, el('span', { text: 'Acharam útil' }), el('b', { text: pct(fbs.useful_rate) }),
         el('small', { text: 'de ' + plural(votes, 'voto', 'votos') + (votes < 5 ? ' · amostra pequena' : '') })))) : null) : null;
     const note = stats.closed_without_outcome
       ? el('p', { class: 'aura-note', text: plural(stats.closed_without_outcome, 'ação fechada ou vencida ainda sem resultado registrado', 'ações fechadas ou vencidas ainda sem resultado registrado') + '. A eficácia só considera o que uma pessoa avaliou.' }) : null;

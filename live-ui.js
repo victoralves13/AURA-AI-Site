@@ -450,7 +450,7 @@
 
   function alertsBox() {
     const { el } = ui();
-    return el('aside', { class: 'live-alerts', 'aria-label': 'Alertas silenciosos' },
+    return el('section', { class: 'live-alerts', 'aria-label': 'Alertas silenciosos' },
       el('div', { class: 'live-al-head' }, el('b', { text: 'Alertas' }), el('span', { class: 'live-al-count', id: 'liveAlCount' }),
         S.al.live ? el('button', { type: 'button', class: 'aura-btn ghost small', id: 'liveAlToggle', onclick: toggleAlerts }) : null),
       el('div', { class: 'live-al-list', id: 'liveAlList' }),
@@ -518,7 +518,7 @@
     if (c.state === 'done') {
       const i = c.info || {};
       const open = i.meeting_id && window.__auraOpenMeeting ? el('button', { type: 'button', class: 'aura-btn', text: 'Abrir a reunião', onclick: () => window.__auraOpenMeeting({ id: i.meeting_id }) }) : null;
-      return box('ok', [el('b', { text: 'Reunião criada' }), el('h4', { text: i.title || c.title }), i.summary ? el('p', { text: i.summary }) : null,
+      return box('ok', [el('b', { text: 'Reunião criada' }), el('h3', { text: i.title || c.title }), i.summary ? el('p', { text: i.summary }) : null,
         i.gaps ? el('p', { class: 'aura-note', text: plural(i.gaps, 'trecho ficou sem transcrição', 'trechos ficaram sem transcrição') + ' e aparece marcado na reunião.' }) : null,
         el('p', { class: 'aura-note', text: 'A reunião passa pela mesma análise das demais: cliente, evidências conferidas, decisões e ações. O áudio fica guardado até você apagá-lo.' }),
         el('div', { class: 'live-actions' }, open, close)]);
