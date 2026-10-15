@@ -17,6 +17,7 @@
   const API_OPEN = new Set(['/api/config', '/api/health']);
 
   let enabled = false;
+  let serverRequiresAuth = false;
   let client = null;
   let gateShown = false;
   let currentView = null;
@@ -87,7 +88,11 @@
     } else {
       res = await origFetch(input, init);
     }
-    if (res.status === 401) client.auth.signOut();  // sessão inválida: volta para a tela de login
+    if (res.status === 401 && serverRequiresAuth && token) {
+      // Só encerra a sessão se o Supabase confirmar que ela é inválida. Um 401 isolado (rota que exige login
+      // com o servidor em modo legado, proteção do deploy etc.) não pode derrubar quem acabou de entrar.
+      client.auth.getUser().then(r => { if (r && r.error && (r.error.status === 401 || r.error.status === 403)) client.auth.signOut(); }).catch(() => {});
+    }
     return res;
   };
 
@@ -283,6 +288,7 @@
     if (qs.get('auth') === '0') safe(() => localStorage.removeItem(PREVIEW_KEY));
     const preview = safe(() => localStorage.getItem(PREVIEW_KEY)) === '1';
     const configured = !!(cfg && cfg.supabase_url && cfg.supabase_publishable_key);
+    serverRequiresAuth = !!(cfg && cfg.auth_required);
     enabled = configured && (!!cfg.auth_required || preview) && !!(window.supabase && window.supabase.createClient);
     if (!enabled) {
       if (cfg && cfg.auth_required) console.error('AURA: login exigido pelo servidor, mas o cliente de autenticação não carregou.');
