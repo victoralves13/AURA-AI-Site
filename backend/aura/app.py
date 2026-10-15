@@ -11,7 +11,7 @@ from aura.features.analysis import router as analysis_mod
 from aura.features.analysis.router import AUDIO_BUCKET, router as analysis_router
 from aura.features.chat.router import router as conversations_router
 from aura.features.clients.router import router as clients_router
-from aura.features.integrations import router as integrations
+from aura.features.integrations import providers
 from aura.features.integrations.router import router as integrations_router
 from aura.features.integrations.webhook import WebhookProvider
 from aura.features.live import consolidate as live_consolidate
@@ -36,7 +36,7 @@ app.include_router(integrations_router)
 
 
 def register_default_providers() -> None:
-    integrations.register_provider(WebhookProvider())
+    providers.register_provider(WebhookProvider())
 
 
 register_default_providers()

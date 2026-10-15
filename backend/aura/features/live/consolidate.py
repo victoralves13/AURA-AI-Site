@@ -22,7 +22,7 @@ from aura.features.live import router as live
 from aura.features.live import alerts as live_alerts
 from aura.features.live import transcribe as lt
 from aura.core import security as sec
-from aura.features.integrations.router import emit_safe
+from aura.features.integrations.service import emit_safe
 
 log = logging.getLogger("aura.live.consolidate")
 router = APIRouter()

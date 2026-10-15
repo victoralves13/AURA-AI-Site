@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from aura.core import security as sec
-from aura.features.integrations.router import emit_safe
+from aura.features.integrations.service import emit_safe
 from aura.core import verification
 
 log = logging.getLogger("aura.actions")

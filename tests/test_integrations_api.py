@@ -12,7 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from aura.features.integrations import crypto as ic  # noqa: E402
-from aura.features.integrations import router as integ  # noqa: E402
+from aura.features.integrations import providers
+from aura.features.integrations import service as integ  # noqa: E402
 from test_orgs import OrgBase, ORG1, ORG2, UA, UB, UC, UD  # noqa: E402
 
 KEY = base64.urlsafe_b64encode(bytes(range(32))).decode()
@@ -25,7 +26,7 @@ class FakeProvider:
 
     def __init__(self):
         self.calls = []
-        self.result = integ.DeliveryResult(True, 200)
+        self.result = providers.DeliveryResult(True, 200)
         self.raises = None
 
     def validate_config(self, config):
@@ -47,8 +48,8 @@ class Base(OrgBase):
         self.env = mock.patch.dict(os.environ, {"AURA_INTEGRATIONS_KEY": KEY, "AURA_INTEGRATIONS_KEY_VERSION": "1"})
         self.env.start()
         self.provider = FakeProvider()
-        integ.register_provider(self.provider)
-        self.addCleanup(integ.unregister_provider, "webhook")
+        providers.register_provider(self.provider)
+        self.addCleanup(providers.unregister_provider, "webhook")
         self.addCleanup(self.env.stop)
 
     def create(self, tok="tok-a", org=ORG1, **over):
@@ -183,7 +184,7 @@ class Cadastro(Base):
         self.assertEqual(self.rows("integrations"), [])
 
     def test_provedor_indisponivel(self):
-        integ.unregister_provider("webhook")
+        providers.unregister_provider("webhook")
         self.assertEqual(self.create().status_code, 501)
 
     def test_validacoes(self):
@@ -328,7 +329,7 @@ class Entrega(Base):
         self.assertTrue(row["last_success_at"])
 
     def test_falha_agenda_nova_tentativa_e_nao_repete_antes_da_hora(self):
-        self.provider.result = integ.DeliveryResult(False, 500, "HTTP 500")
+        self.provider.result = providers.DeliveryResult(False, 500, "HTTP 500")
         self.dispatch()
         d = self.delivery()
         self.assertEqual((d["status"], d["attempts"], d["last_status"], d["last_error"]), ("failed", 1, 500, "HTTP 500"))
@@ -336,12 +337,12 @@ class Entrega(Base):
         self.assertEqual(self.dispatch()["found"], 0)
         self.assertEqual(len(self.provider.calls), 1)
         self.due_now()
-        self.provider.result = integ.DeliveryResult(True, 200)
+        self.provider.result = providers.DeliveryResult(True, 200)
         self.assertEqual(self.dispatch()["succeeded"], 1)
         self.assertEqual((self.delivery()["status"], self.delivery()["attempts"]), ("succeeded", 2))
 
     def test_espera_cresce_a_cada_falha(self):
-        self.provider.result = integ.DeliveryResult(False, 503)
+        self.provider.result = providers.DeliveryResult(False, 503)
         waits = []
         from datetime import datetime, timezone
         for _ in range(3):
@@ -352,7 +353,7 @@ class Entrega(Base):
         self.assertEqual(waits, [1, 5, 30])
 
     def test_depois_das_tentativas_vira_morta(self):
-        self.provider.result = integ.DeliveryResult(False, 500)
+        self.provider.result = providers.DeliveryResult(False, 500)
         for _ in range(integ.MAX_ATTEMPTS):
             self.due_now()
             self.dispatch()
@@ -363,7 +364,7 @@ class Entrega(Base):
         self.assertEqual(len(self.provider.calls), integ.MAX_ATTEMPTS)
 
     def test_erro_sem_nova_tentativa_encerra_na_hora(self):
-        self.provider.result = integ.DeliveryResult(False, 410, "Destino removido", retryable=False)
+        self.provider.result = providers.DeliveryResult(False, 410, "Destino removido", retryable=False)
         self.dispatch()
         self.assertEqual(self.delivery()["status"], "dead")
 
@@ -377,7 +378,7 @@ class Entrega(Base):
         self.assertNotIn("interno", d["last_error"])
 
     def test_falhas_seguidas_desligam_a_integracao(self):
-        self.provider.result = integ.DeliveryResult(False, 500)
+        self.provider.result = providers.DeliveryResult(False, 500)
         self.rows("integrations")[0]["consecutive_failures"] = integ.DISABLE_AFTER - 1
         self.dispatch()
         row = self.rows("integrations")[0]
@@ -420,7 +421,7 @@ class Entrega(Base):
         self.assertEqual(self.provider.calls, [])
 
     def test_provedor_removido_tenta_depois(self):
-        integ.unregister_provider("webhook")
+        providers.unregister_provider("webhook")
         self.dispatch()
         self.assertEqual(self.delivery()["status"], "failed")
 
@@ -504,7 +505,7 @@ class Teste(Base):
 
     def test_resultado_de_falha_aparece_na_hora(self):
         a = self.new()["integration"]["id"]
-        self.provider.result = integ.DeliveryResult(False, 502, "HTTP 502")
+        self.provider.result = providers.DeliveryResult(False, 502, "HTTP 502")
         out = self.client.post(f"/api/integrations/{a}/test", headers=self.h()).json()
         self.assertEqual((out["delivery"]["status"], out["delivery"]["last_status"]), ("failed", 502))
 

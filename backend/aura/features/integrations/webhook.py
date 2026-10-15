@@ -27,7 +27,7 @@ import ssl
 import time
 from urllib.parse import urlsplit
 
-from aura.features.integrations.router import DeliveryResult
+from aura.features.integrations.providers import DeliveryResult
 
 TIMEOUT = 8
 MAX_BODY = 64 * 1024

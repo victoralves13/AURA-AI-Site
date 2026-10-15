@@ -25,7 +25,8 @@ from cryptography.hazmat.primitives import hashes, serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import ec  # noqa: E402
 from cryptography.x509.oid import NameOID  # noqa: E402
 
-from aura.features.integrations import router as integ  # noqa: E402
+from aura.features.integrations import providers
+from aura.features.integrations import service as integ  # noqa: E402
 from aura.features.integrations import webhook as wp  # noqa: E402
 from test_integrations_api import Base, KEY  # noqa: E402
 from test_orgs import ORG1, UA  # noqa: E402
@@ -299,7 +300,7 @@ class FluxoCompleto(Base):
 
     def setUp(self):
         super().setUp()
-        integ.register_provider(local_provider())  # substitui o falso da base
+        providers.register_provider(local_provider())  # substitui o falso da base
         self.rx = Receiver()
         self.addCleanup(self.rx.close)
         # a URL cadastrada precisa passar na validação pública; o provedor de teste a resolve para o servidor local
@@ -330,7 +331,7 @@ class FluxoCompleto(Base):
         self.assertFalse(wp.verify(self.secret, int(h["x-aura-timestamp"]), req["body"], h["x-aura-signature"]))
 
     def test_criar_com_endereco_interno_e_recusado_pelo_provedor_real(self):
-        integ.register_provider(wp.WebhookProvider())  # o de produção
+        providers.register_provider(wp.WebhookProvider())  # o de produção
         for url in ("https://127.0.0.1/x", "https://169.254.169.254/x", "https://localhost/x", "http://example.com/x"):
             self.assertEqual(self.create(config={"url": url}).status_code, 400, url)
 
@@ -402,9 +403,9 @@ class AgendadorERetencao(Base):
         from aura import app as index
         from aura.features.meetings import router as meetings_mod
         from aura.features.analysis import router as analysis_mod
-        integ.unregister_provider("webhook")
+        providers.unregister_provider("webhook")
         index.register_default_providers()
-        self.assertIsInstance(integ._PROVIDERS["webhook"], wp.WebhookProvider)
+        self.assertIsInstance(providers._PROVIDERS["webhook"], wp.WebhookProvider)
 
 
 if __name__ == "__main__":

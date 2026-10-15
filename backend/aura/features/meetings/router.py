@@ -7,7 +7,7 @@ import urllib.request
 from fastapi import APIRouter, Depends, HTTPException
 
 from aura.core import security as sec
-from aura.features.integrations.router import emit_safe as emit_integration_event
+from aura.features.integrations.service import emit_safe as emit_integration_event
 
 router = APIRouter()
 
