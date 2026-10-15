@@ -23,8 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 API_DIR = ROOT / "api"
 if str(API_DIR) not in os.sys.path:
     os.sys.path.insert(0, str(API_DIR))
+import actions as actions_mod
 import clients as clients_mod
 import security as sec
+from actions import router as actions_router
 from clients import router as clients_router
 from orgs import router as orgs_router
 
@@ -32,6 +34,7 @@ app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
 handler = app
 app.include_router(orgs_router)
 app.include_router(clients_router)
+app.include_router(actions_router)
 # O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
 # Para liberar origens específicas: AURA_ALLOWED_ORIGINS="https://app.exemplo.com,https://outra.com"
 if sec.allowed_origins():
@@ -218,6 +221,9 @@ def _build_result(transcript: str, client_name: str, file_name: str, source_type
         result["id"] = saved["meeting"].get("id")
         result["created_at"] = saved["meeting"].get("created_at")
     result.update(saved)
+    if saved.get("meeting") and user is not None and not is_demo:
+        # As ações viram registros acompanháveis (estado, responsável, prazo). Falha aqui nunca perde a análise.
+        actions_mod.sync_for_meeting(user, {**result, "id": result.get("id"), "org_id": org_id})
     return result
 
 @app.get("/api/health")

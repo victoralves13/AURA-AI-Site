@@ -17,9 +17,11 @@ class FakeSupabase:
     def __init__(self):
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
-                                              "invitations", "audit_log", "teams", "team_members", "meetings", "clients")}
+                                              "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
+                                              "actions", "action_events")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
+        self.no_edit = set()  # ids de reuniões cujas ações a pessoa vê, mas não pode editar (a política real distingue)
         self._seq = itertools.count(1)
 
     # --- montagem de cenário -------------------------------------------------
@@ -44,6 +46,20 @@ class FakeSupabase:
 
     def _can_manage_client(self, c, uid):
         return (c.get("org_id") is None and c.get("owner_id") == uid) or self._role(uid, c.get("org_id")) in ("admin", "manager")
+
+    def _meeting_visible(self, row, uid):
+        role = self._role(uid, row.get("org_id")) if row.get("org_id") else None
+        return (row.get("owner_id") == uid and (row.get("org_id") is None or role is not None)) or role in ("admin", "manager")
+
+    def _action_meeting_visible(self, action, uid):
+        m = next((m for m in self.tables["meetings"] if m["id"] == action["meeting_id"]), None)
+        return bool(m) and self._meeting_visible(m, uid)
+
+    def _can_edit_actions(self, meeting, uid):  # espelha aura_private.can_edit_actions
+        if meeting["id"] in self.no_edit:
+            return False
+        role = self._role(uid, meeting.get("org_id")) if meeting.get("org_id") else None
+        return (meeting.get("owner_id") == uid and (meeting.get("org_id") is None or role is not None)) or role in ("admin", "manager")
 
     def _scope_error(self, meeting, client):
         if client is None:
@@ -95,6 +111,69 @@ class FakeSupabase:
             target["aliases"] = [a for a in (target.get("aliases") or []) if a not in drop]
             return 200, {"restored": len(restored), "client": s["id"]}
         return 404, {}
+
+    def _actions_write(self, method, payload, uid, match):
+        def err(code, msg, status=400):
+            return status, {"code": code, "message": msg}
+        acts = self.tables["actions"]
+        events = self.tables["action_events"]
+
+        def log(a, event, data):
+            events.append({"id": next(self._seq), "action_id": a["id"], "at": self._ts(), "actor_id": uid, "event": event, "data": data})
+
+        def member_ok(a):
+            return a.get("assignee_user_id") is None or (a.get("org_id") is not None and self._role(a["assignee_user_id"], a["org_id"]))
+        if method == "POST":
+            m = next((m for m in self.tables["meetings"] if m["id"] == payload.get("meeting_id")), None)
+            if not m or not self._can_edit_actions(m, uid):
+                return 403, {"message": "new row violates row-level security policy"}
+            row = {"status": "open", "source": "user", "source_key": None, "basis": None, "evidence": {}, "assignee_text": None,
+                   "assignee_user_id": None, "due_text": None, "due_date": None, **payload,
+                   "id": str(uuid.uuid4()), "org_id": m.get("org_id"), "created_by": uid, "created_at": self._ts(), "completed_at": None}
+            if row["status"] == "done":
+                row["completed_at"] = self._ts()
+            if not 1 <= len(row.get("text") or "") <= 1000:
+                return err("23514", "check constraint")
+            if row["source_key"] and any(a["meeting_id"] == row["meeting_id"] and a["source_key"] == row["source_key"] for a in acts):
+                return err("23505", "duplicate key value violates unique constraint", 409)
+            if not member_ok(row):
+                return err("23514", "assignee_not_member")
+            acts.append(row)
+            log(row, "created", {"source": row["source"], "status": row["status"]})
+            return 201, [dict(row)]
+        hit = [a for a in acts if self._action_meeting_visible(a, uid) and match(a)]
+        meetings = {m["id"]: m for m in self.tables["meetings"]}
+        hit = [a for a in hit if self._can_edit_actions(meetings[a["meeting_id"]], uid)]
+        if method == "DELETE":
+            hit = [a for a in hit if a["source"] == "user"]
+            for a in hit:
+                acts.remove(a)
+            return 200, [dict(a) for a in hit]
+        if method == "PATCH":
+            for a in hit:
+                for key in ("meeting_id", "org_id", "source", "source_key"):
+                    if key in payload and payload[key] != a.get(key):
+                        return err("23514", "action_immutable")
+                if a["source"] == "ai" and any(k in payload and payload[k] != a.get(k) for k in ("text", "basis", "evidence")):
+                    return err("23514", "action_text_locked")
+                if payload.get("status") not in (None, "open", "in_progress", "done", "cancelled"):
+                    return err("23514", "check constraint")
+                if "assignee_user_id" in payload and not member_ok({**a, **payload}):
+                    return err("23514", "assignee_not_member")
+            for a in hit:
+                before = dict(a)
+                a.update(payload)
+                if a["status"] != before["status"]:
+                    a["completed_at"] = self._ts() if a["status"] == "done" else None
+                    log(a, "status", {"from": before["status"], "to": a["status"]})
+                if (a["assignee_text"], a["assignee_user_id"]) != (before["assignee_text"], before["assignee_user_id"]):
+                    log(a, "assignee", {"from_text": before["assignee_text"], "to_text": a["assignee_text"]})
+                if (a["due_text"], a["due_date"]) != (before["due_text"], before["due_date"]):
+                    log(a, "due", {"from_date": before["due_date"], "to_date": a["due_date"]})
+                if a["text"] != before["text"]:
+                    log(a, "text", {"from": before["text"], "to": a["text"]})
+            return 200, [dict(a) for a in hit]
+        return 405, {}
 
     def rows(self, table, **where):
         return [r for r in self.tables[table] if all(r.get(k) == v for k, v in where.items())]
@@ -152,6 +231,15 @@ class FakeSupabase:
                 if value.startswith("eq."):
                     if str(row.get(key)) != value[3:]:
                         return False
+                elif value.startswith("in.("):
+                    if str(row.get(key)) not in value[4:-1].split(","):
+                        return False
+                elif value.startswith("lt."):
+                    if not (row.get(key) is not None and str(row.get(key)) < value[3:]):
+                        return False
+                elif value == "is.false":
+                    if row.get(key) not in (False, None):
+                        return False
                 elif value == "is.null":
                     if row.get(key) is not None:
                         return False
@@ -182,6 +270,11 @@ class FakeSupabase:
                 return (row.get("owner_id") == uid and (row.get("org_id") is None or role is not None)) or role in ("admin", "manager")
             if table == "clients":
                 return self._can_read_client(row, uid)
+            if table == "actions":
+                return self._action_meeting_visible(row, uid)
+            if table == "action_events":
+                act = next((a for a in self.tables["actions"] if a["id"] == row["action_id"]), None)
+                return bool(act) and self._action_meeting_visible(act, uid)
             return False
 
         if method == "GET":
@@ -191,6 +284,11 @@ class FakeSupabase:
                 for r in out:
                     org = next((o for o in self.tables["organizations"] if o["id"] == r["org_id"]), {})
                     r["organizations"] = {"id": org.get("id"), "name": org.get("name")}
+            if table == "actions" and "meetings(" in select:
+                for r in out:
+                    m = next((m for m in self.tables["meetings"] if m["id"] == r["meeting_id"]), {})
+                    r["meetings"] = {k: m.get(k) for k in ("meeting_title", "client_name", "client_id", "created_at")}
+                select = "*"
             if select and select != "*":  # projeção de colunas, como o PostgREST faz
                 cols, depth, cur = [], 0, ""
                 for ch in select:
@@ -213,6 +311,8 @@ class FakeSupabase:
             self.tables["meetings"].append(row)
             return 201, [dict(row)]
 
+        if table == "actions" and not is_service:
+            return self._actions_write(method, payload or {}, caller["id"], match)
         if table == "clients" and not is_service and method == "POST":
             uid = caller["id"]
             row = dict(payload, id=str(uuid.uuid4()), created_at=self._ts(), merged_into=None, merged_meeting_ids=[])

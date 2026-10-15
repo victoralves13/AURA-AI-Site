@@ -280,3 +280,19 @@ Endpoints (todos exigem login): `GET /api/me`, `POST /api/orgs`, `GET|POST /api/
 `DELETE /api/orgs/{id}/invitations/{inv}`, `GET /api/orgs/{id}/members`,
 `PATCH|DELETE /api/orgs/{id}/members/{user}`, `POST /api/invitations/accept`.
 `GET /api/meetings?org_id=personal|<uuid>` escolhe o recorte; o RLS continua decidindo o que se vê.
+
+## Etapa 4.1 — Ações como entidade
+
+Migração `20261014160000_etapa4_acoes.sql` (aditiva; **aplique antes de usar os endpoints de ações**; rollback em
+`supabase/rollbacks/20261014160000_etapa4_acoes.down.sql`, que apaga as ações cadastradas mas não as reuniões):
+- Cria `actions` (texto, estado, responsável, prazo, origem IA/pessoa, base dito/inferido, evidência) e `action_events`
+  (histórico gravado pelo banco). Nenhuma ação é criada pela migração.
+- Quem vê uma ação é quem vê a reunião; quem edita é o dono da reunião ou quem tem `actions.manage`.
+- Ação da IA tem texto, base e evidência imutáveis e não é apagada (é cancelada). Responsável/prazo só como ditos ou definidos por uma pessoa.
+
+Endpoints (todos exigem login): `GET /api/actions` (filtros `org_id`, `status`, `meeting_id`, `client_id`, `assignee=me`, `overdue`),
+`POST /api/actions/sync` (cria as ações de reuniões antigas do espaço; idempotente),
+`GET|POST /api/meetings/{id}/actions`, `POST /api/meetings/{id}/actions/sync`,
+`PATCH|DELETE /api/actions/{id}`, `GET /api/actions/{id}/events`.
+Sem a migração aplicada, a análise continua funcionando (a criação de ações falha em silêncio e é registrada no log).
+Testes: `python -m unittest discover -s tests` e `node tests/db/actions.test.mjs` (migrações + RLS das ações).
