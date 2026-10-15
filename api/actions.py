@@ -30,7 +30,9 @@ ACTIVE = ("open", "in_progress")
 MAX_SYNC_MEETINGS = 100
 MAX_ACTIONS_PER_MEETING = 50
 EFFECTIVENESS = ("worked", "partial", "not_worked", "uncertain")
-SELECT_LIST = "*,meetings(meeting_title,client_name,client_id,created_at),action_outcomes(effectiveness,result,observed_at,created_at)"
+SELECT_LIST = ("*,meetings(meeting_title,client_name,client_id,created_at),"
+               "action_outcomes(effectiveness,result,observed_at,created_at),action_feedback(user_id,rating)")
+RATINGS = ("useful", "not_useful")
 STATS_LIMIT = 2000
 
 
@@ -99,6 +101,8 @@ ERRORS = {
     "action_not_found": (404, "Ação não encontrada."),
     "action_not_closed": (409, "Só é possível registrar o resultado de uma ação concluída, cancelada ou vencida."),
     "observed_in_future": (400, "A data da observação não pode ser futura."),
+    "feedback_only_ai": (409, "Só ações geradas pela análise recebem feedback."),
+    "feedback_immutable": (409, "Esse campo do feedback não pode ser alterado."),
 }
 GENERIC = "Não foi possível concluir a operação com ações. Tente novamente."
 
@@ -148,9 +152,13 @@ def _get_meeting(user: sec.AuthUser, meeting_id: str) -> dict:
     return rows[0]
 
 
-def _with_latest(rows: list[dict]) -> list[dict]:
-    """Troca a lista de resultados embutida por `latest_outcome` (o mais recente vale) e a contagem."""
+def _with_latest(rows: list[dict], user: sec.AuthUser | None = None) -> list[dict]:
+    """Troca os resultados embutidos por `latest_outcome` (o mais recente vale) e resume o feedback da ação."""
     for row in rows:
+        votes = row.pop("action_feedback", None) or []
+        row["feedback"] = {"useful": sum(v.get("rating") == "useful" for v in votes),
+                           "not_useful": sum(v.get("rating") == "not_useful" for v in votes),
+                           "mine": next((v["rating"] for v in votes if user is not None and v.get("user_id") == user.id), None)}
         outcomes = row.pop("action_outcomes", None) or []
         row["outcomes_count"] = len(outcomes)
         row["latest_outcome"] = max(outcomes, key=lambda o: o.get("created_at") or "") if outcomes else None
@@ -161,7 +169,7 @@ def _get_action(user: sec.AuthUser, action_id: str) -> dict:
     rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select={SELECT_LIST}&id=eq.{action_id}&limit=1")) or []
     if not rows:
         raise HTTPException(status_code=404, detail="Ação não encontrada.")
-    return _with_latest(rows)[0]
+    return _with_latest(rows, user)[0]
 
 
 def sync_for_meeting(user: sec.AuthUser | None, meeting: dict) -> int:
@@ -268,14 +276,23 @@ def list_actions(org_id: str | None = None, status: str | None = None, meeting_i
         where += f"&due_date=lt.{date.today().isoformat()}&status=in.(open,in_progress)"
     limit = max(1, min(limit, 500))
     rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select={SELECT_LIST}{where}&order=created_at.desc&limit={limit}")) or []
-    return {"ok": True, "actions": _with_latest(rows), "count": len(rows)}
+    return {"ok": True, "actions": _with_latest(rows, user), "count": len(rows)}
+
+
+def _rate(worked: int, judged: int) -> float | None:
+    return round(worked / judged, 3) if judged else None  # sem avaliações, sem taxa (nunca inventada)
 
 
 def _stats(rows: list[dict], today: str) -> dict:
     by_status = {s: 0 for s in STATUSES}
     effect = {e: 0 for e in EFFECTIVENESS}
     overdue = with_outcome = closed_without = 0
+    groups: dict[str, dict[str, int]] = {}
+    useful = not_useful = 0
     for r in rows:
+        for v in r.get("action_feedback") or []:
+            useful += v.get("rating") == "useful"
+            not_useful += v.get("rating") == "not_useful"
         status = r.get("status")
         by_status[status] = by_status.get(status, 0) + 1
         late = status in ACTIVE and bool(r.get("due_date")) and r["due_date"] < today
@@ -283,7 +300,13 @@ def _stats(rows: list[dict], today: str) -> dict:
         outcomes = r.get("action_outcomes") or []
         if outcomes:
             with_outcome += 1
-            effect[max(outcomes, key=lambda o: o.get("created_at") or "")["effectiveness"]] += 1
+            latest = max(outcomes, key=lambda o: o.get("created_at") or "")["effectiveness"]
+            effect[latest] += 1
+            if latest != "uncertain":  # "incerto" não entra nas taxas
+                key = "ia_" + (r.get("basis") or "sem_base") if r.get("source") == "ai" else "pessoa"
+                g = groups.setdefault(key, {"evaluated": 0, "worked": 0})
+                g["evaluated"] += 1
+                g["worked"] += latest == "worked"
         elif status in ("done", "cancelled") or late:
             closed_without += 1
     tracked = len(rows) - by_status["cancelled"]
@@ -291,8 +314,9 @@ def _stats(rows: list[dict], today: str) -> dict:
     return {"total": len(rows), "by_status": by_status, "overdue": overdue,
             "completion_rate": round(by_status["done"] / tracked, 3) if tracked else None,
             "with_outcome": with_outcome, "closed_without_outcome": closed_without, "effectiveness": effect,
-            "effective_rate": round(effect["worked"] / judged, 3) if judged else None,  # só com avaliações; nunca inventado
-            "evaluated": judged}
+            "effective_rate": _rate(effect["worked"], judged), "evaluated": judged,
+            "by_origin": {k: {**g, "effective_rate": _rate(g["worked"], g["evaluated"])} for k, g in sorted(groups.items())},
+            "feedback": {"useful": useful, "not_useful": not_useful, "useful_rate": _rate(useful, useful + not_useful)}}
 
 
 @router.get("/api/actions/stats")
@@ -304,7 +328,7 @@ def action_stats(org_id: str | None = None, client_id: str | None = None, user=D
         cid = _uuid(client_id, "Cliente")
         ids = [m["id"] for m in _db(lambda: sec.user_rest(user, "GET", f"meetings?select=id&client_id=eq.{cid}&limit=500")) or []]
         where += "&meeting_id=in.(" + ",".join(ids or ["00000000-0000-0000-0000-000000000000"]) + ")"
-    rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select=id,status,due_date,action_outcomes(effectiveness,created_at){where}&limit={STATS_LIMIT}")) or []
+    rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select=id,status,due_date,source,basis,action_outcomes(effectiveness,created_at),action_feedback(rating){where}&limit={STATS_LIMIT}")) or []
     return {"ok": True, **_stats(rows, date.today().isoformat()), "truncated": len(rows) >= STATS_LIMIT}
 
 
@@ -326,7 +350,7 @@ def meeting_actions(meeting_id: str, user=Depends(sec.current_user)):
     mid = _uuid(meeting_id, "Reunião")
     _get_meeting(user, mid)
     rows = _db(lambda: sec.user_rest(user, "GET", f"actions?select={SELECT_LIST}&meeting_id=eq.{mid}&order=created_at.asc&limit=200")) or []
-    return {"ok": True, "actions": _with_latest(rows), "count": len(rows)}
+    return {"ok": True, "actions": _with_latest(rows, user), "count": len(rows)}
 
 
 @router.post("/api/meetings/{meeting_id}/actions/sync")
@@ -427,3 +451,48 @@ def list_outcomes(action_id: str, user=Depends(sec.current_user)):
     _get_action(user, aid)
     rows = _db(lambda: sec.user_rest(user, "GET", f"action_outcomes?select=id,result,effectiveness,observed_at,recorded_by,created_at&action_id=eq.{aid}&order=created_at.desc&limit=100")) or []
     return {"ok": True, "outcomes": rows}
+
+
+class FeedbackBody(BaseModel):
+    rating: str
+    note: str | None = None
+
+
+@router.put("/api/actions/{action_id}/feedback")
+def set_feedback(action_id: str, payload: FeedbackBody, user=Depends(sec.current_user)):
+    """O voto "útil / não útil" da própria pessoa sobre uma ação da análise. Cria ou troca; um voto por pessoa."""
+    user = _need_user(user)
+    aid = _uuid(action_id, "Ação")
+    current = _get_action(user, aid)
+    if payload.rating not in RATINGS:
+        raise HTTPException(status_code=400, detail="Avaliação inválida. Use useful ou not_useful.")
+    note = _short(payload.note, 501)
+    if note and len(note) > 500:
+        raise HTTPException(status_code=400, detail="A observação deve ter até 500 caracteres.")
+    if current.get("source") != "ai":
+        raise HTTPException(status_code=409, detail=ERRORS["feedback_only_ai"][1])
+    fields = {"rating": payload.rating, "note": note}
+
+    def save():
+        mine = sec.user_rest(user, "GET", f"action_feedback?select=id&action_id=eq.{aid}&user_id=eq.{user.id}&limit=1") or []
+        if mine:
+            return sec.user_rest(user, "PATCH", f"action_feedback?id=eq.{mine[0]['id']}", fields)
+        return sec.user_rest(user, "POST", "action_feedback", {"action_id": aid, **fields})
+    try:
+        row = (_db(save) or [fields])[0]
+    except HTTPException as exc:
+        if exc.status_code != 409 or exc.detail != "Essa ação já existe nesta reunião.":
+            raise
+        row = (_db(save) or [fields])[0]  # outra chamada votou ao mesmo tempo: troca o voto
+    sec.audit(user, "action.feedback", current.get("org_id"), "action", aid, {"rating": payload.rating})
+    return {"ok": True, "feedback": {"rating": row.get("rating", payload.rating)}}
+
+
+@router.delete("/api/actions/{action_id}/feedback")
+def clear_feedback(action_id: str, user=Depends(sec.current_user)):
+    user = _need_user(user)
+    aid = _uuid(action_id, "Ação")
+    current = _get_action(user, aid)
+    _db(lambda: sec.user_rest(user, "DELETE", f"action_feedback?action_id=eq.{aid}&user_id=eq.{user.id}"))
+    sec.audit(user, "action.feedback_clear", current.get("org_id"), "action", aid)
+    return {"ok": True}

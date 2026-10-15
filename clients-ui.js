@@ -273,6 +273,7 @@
           can('clients.manage') && others.length ? el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Fundir com outro cliente', onclick: () => openMerge(c, others, h) }) : null));
       detailHost.prepend(bar);
       detailHost.prepend(back);
+      if (window.AURA_ACTIONS_UI && window.AURA_ACTIONS_UI.clientSummary) window.AURA_ACTIONS_UI.clientSummary(detailHost, c.id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }

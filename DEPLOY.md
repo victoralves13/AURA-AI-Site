@@ -315,3 +315,14 @@ ação (estado, responsável, prazo, evidência de origem, histórico e resultad
 `POST /api/actions/sync` e cria as ações das reuniões que ainda não as têm (inclusive as antigas, só com o texto das pendências).
 Migração `20261014180000_etapa4_data_observada.sql` (ajuste pequeno, aditiva; rollback em `supabase/rollbacks/`): a data observada de um
 resultado aceita até amanhã (UTC), por causa de fusos à frente do servidor. **Aplique as migrações 6, 7 e 8 antes de usar a tela.**
+
+## Etapa 4.4 — Feedback e eficácia por origem
+
+Migração `20261014190000_etapa4_feedback.sql` (aditiva; **aplique antes de usar o feedback**; rollback em `supabase/rollbacks/`, que apaga só os votos):
+- Cria `action_feedback`: voto "útil / não útil" de UMA pessoa sobre uma ação gerada pela análise (ações digitadas não recebem voto).
+  Um voto por pessoa por ação (pode trocar ou retirar); vota quem VÊ a ação; ninguém altera o voto de outra pessoa; o autor vem sempre do login.
+- Endpoints: `PUT|DELETE /api/actions/{id}/feedback`. As listas de ações trazem `feedback {useful, not_useful, mine}`.
+  `GET /api/actions/stats` ganhou `by_origin` (eficácia de "ação dita", "inferida", "de análise anterior" e "criada por pessoa") e `feedback`
+  (taxa de utilidade). "Incerto" fica fora das taxas e nenhuma taxa é calculada sem avaliações; a tela avisa "amostra pequena" abaixo de 5.
+- Tela: botões "Útil / Não útil" no painel da ação; "Eficácia por origem" e "Utilidade das sugestões" na área Ações; resumo das ações no Customer 360 do cliente.
+Atenção ao publicar: `index.html` passou a referenciar `clients-ui.js` v2 e `actions-ui.js` v3 (os arquivos são cacheados por versão).

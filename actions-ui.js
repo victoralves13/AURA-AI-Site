@@ -93,6 +93,50 @@
       body.append(box);
     }
 
+    /* feedback: só em ação gerada pela análise; vota quem vê a ação */
+    if (a.source === 'ai') {
+      const box = el('div', { class: 'aura-section act-feedback' }, el('h3', { text: 'Esta ação foi útil?' }));
+      body.append(box);
+      const fb = a.feedback || { useful: 0, not_useful: 0, mine: null };
+      const drawFeedback = () => {
+        const f = a.feedback || fb;
+        const mk = (rating, label) => {
+          const b = el('button', { type: 'button', class: 'aura-btn small' + (f.mine === rating ? '' : ' ghost'), 'aria-pressed': f.mine === rating ? 'true' : 'false', text: label });
+          b.addEventListener('click', async () => {
+            [...box.querySelectorAll('button')].forEach(x => { x.disabled = true; });
+            try {
+              await api('PUT', '/api/actions/' + a.id + '/feedback', { rating });
+              const other = f.mine && f.mine !== rating ? f.mine : null;
+              a.feedback = { ...f, mine: rating, [rating]: f[rating] + (f.mine === rating ? 0 : 1), ...(other ? { [other]: Math.max(0, f[other] - 1) } : {}) };
+              toast('Obrigado pelo feedback.');
+              if (after) after();
+            } catch (err) { toast(err.message, 'error'); }
+            drawFeedback();
+          });
+          return b;
+        };
+        const kids = [el('h3', { text: 'Esta ação foi útil?' }), el('div', { class: 'act-feedback-btns' }, mk('useful', 'Útil'), mk('not_useful', 'Não útil'))];
+        if (f.mine) {
+          const clear = el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Retirar meu voto' });
+          clear.addEventListener('click', async () => {
+            clear.disabled = true;
+            try {
+              await api('DELETE', '/api/actions/' + a.id + '/feedback');
+              a.feedback = { ...f, mine: null, [f.mine]: Math.max(0, f[f.mine] - 1) };
+              if (after) after();
+            } catch (err) { toast(err.message, 'error'); }
+            drawFeedback();
+          });
+          kids[1].append(clear);
+        }
+        kids.push(el('p', { class: 'aura-note', text: (f.useful || f.not_useful)
+          ? plural(f.useful, 'pessoa achou', 'pessoas acharam') + ' útil · ' + plural(f.not_useful, 'achou', 'acharam') + ' não útil.'
+          : 'Ninguém votou ainda. O voto ajuda a medir quais sugestões do AURA valem a pena.' }));
+        box.replaceChildren(...kids);
+      };
+      drawFeedback();
+    }
+
     /* estado, responsável e prazo */
     const sel = el('select', { 'aria-label': 'Estado' }, Object.entries(STATUS).map(([v, l]) => el('option', { value: v, text: l })));
     sel.value = a.status;
@@ -242,6 +286,16 @@
       statCard('ATRASADAS', String(stats.overdue || 0), stats.overdue ? 'passaram do prazo' : 'nenhuma'),
       statCard('CONCLUSÃO', pct(stats.completion_rate), plural(stats.by_status.done || 0, 'concluída', 'concluídas')),
       statCard('EFICÁCIA', pct(stats.effective_rate), evaluated ? 'de ' + plural(evaluated, 'avaliação', 'avaliações') : 'ainda sem avaliações'));
+    const ORIGIN = { ia_dito: 'Ação dita na reunião', ia_inferido: 'Ação inferida pelo AURA', ia_sem_base: 'Ação de análise anterior', pessoa: 'Ação criada por pessoa' };
+    const origins = Object.entries(stats.by_origin || {}).map(([k, g]) =>
+      el('li', {}, el('span', { text: ORIGIN[k] || k }), el('b', { text: pct(g.effective_rate) }),
+        el('small', { text: 'de ' + plural(g.evaluated, 'avaliação', 'avaliações') + (g.evaluated < 5 ? ' · amostra pequena' : '') })));
+    const fbs = stats.feedback || {};
+    const votes = (fbs.useful || 0) + (fbs.not_useful || 0);
+    const insight = (origins.length || votes) ? el('div', { class: 'act-insight' },
+      origins.length ? el('div', {}, el('h4', { text: 'Eficácia por origem' }), el('ul', {}, origins)) : null,
+      votes ? el('div', {}, el('h4', { text: 'Utilidade das sugestões' }), el('ul', {}, el('li', {}, el('span', { text: 'Acharam útil' }), el('b', { text: pct(fbs.useful_rate) }),
+        el('small', { text: 'de ' + plural(votes, 'voto', 'votos') + (votes < 5 ? ' · amostra pequena' : '') })))) : null) : null;
     const note = stats.closed_without_outcome
       ? el('p', { class: 'aura-note', text: plural(stats.closed_without_outcome, 'ação fechada ou vencida ainda sem resultado registrado', 'ações fechadas ou vencidas ainda sem resultado registrado') + '. A eficácia só considera o que uma pessoa avaliou.' }) : null;
     const list = actions.length
@@ -252,7 +306,7 @@
       el('div', { class: 'act-head' }, el('div', {}, el('span', { class: 'eyebrow', text: 'EXECUÇÃO · ' + (inOrg ? 'ORGANIZAÇÃO' : 'ESPAÇO PESSOAL') }), el('h2', { text: 'O que precisa ser feito' }),
         el('p', { text: 'Cada ação está ligada à reunião que a originou. Responsável e prazo aparecem só quando foram ditos ou definidos por uma pessoa.' })),
         el('span', { class: 'action-count', text: plural(stats.total || 0, 'ação', 'ações') })),
-      strip, note, filters, list));
+      strip, insight, note, filters, list));
   }
 
   /* ---------- dentro da reunião ---------- */
@@ -297,5 +351,26 @@
   }
   document.addEventListener('aura:meeting-detail-rendered', e => renderMeetingPanel(e.target, e.detail && e.detail.meeting));
 
-  window.AURA_ACTIONS_UI = { enabled, render };
+  /* ---------- resumo no cliente ---------- */
+  async function clientSummary(host, clientId) {
+    if (!enabled() || !host || !clientId) return;
+    const { el, api } = ui();
+    const box = el('section', { class: 'act-meeting-panel act-client-panel', 'aria-label': 'Ações deste cliente' });
+    host.append(box);
+    try {
+      const space = encodeURIComponent(ui().space());
+      const [stats, list] = await Promise.all([
+        api('GET', '/api/actions/stats?org_id=' + space + '&client_id=' + clientId),
+        api('GET', '/api/actions?org_id=' + space + '&client_id=' + clientId + '&status=active&limit=5')]);
+      if (!stats.total) { box.remove(); return; }
+      const again = () => { box.remove(); clientSummary(host, clientId); };
+      box.replaceChildren(...[
+        el('div', { class: 'act-meeting-head' }, el('div', {}, el('span', { class: 'eyebrow', text: 'AÇÕES DESTE CLIENTE' }),
+          el('h3', { text: plural(stats.total, 'ação', 'ações') + ' · ' + plural(stats.overdue || 0, 'atrasada', 'atrasadas') + ' · conclusão ' + pct(stats.completion_rate) + ' · eficácia ' + pct(stats.effective_rate) }))),
+        list.actions.length ? el('div', { class: 'act-list' }, list.actions.map(a => actionRow(a, again))) : el('p', { class: 'aura-note', text: 'Nenhuma ação em aberto para este cliente.' }),
+        stats.closed_without_outcome ? el('p', { class: 'aura-note', text: plural(stats.closed_without_outcome, 'ação fechada ou vencida sem resultado registrado', 'ações fechadas ou vencidas sem resultado registrado') + '.' }) : null].filter(Boolean));
+    } catch { box.remove(); }
+  }
+
+  window.AURA_ACTIONS_UI = { enabled, render, clientSummary };
 })();

@@ -485,6 +485,121 @@ class Estatisticas(Base):
         self.assertEqual(self.stats("", "tok-d")["total"], 0)  # outra organização não vê nada
 
 
+class Feedback(Base):
+    def setUp(self):
+        super().setUp()
+        self.mid = self.add_meeting()
+        self.sync(self.mid)
+        self.ai, self.ai2 = [a["id"] for a in self.actions(self.mid)]
+        self.human = self.make(self.mid).json()["action"]["id"]
+
+    def vote(self, aid, rating="useful", tok="tok-a", **extra):
+        return self.client.put(f"/api/actions/{aid}/feedback", headers=self.h(tok), json={"rating": rating, **extra})
+
+    def mine(self, aid, tok="tok-a"):
+        rows = self.client.get(f"/api/meetings/{self.mid}/actions", headers=self.h(tok)).json()["actions"]
+        return [a for a in rows if a["id"] == aid][0]["feedback"]
+
+    def test_exige_login(self):
+        self.assertEqual(self.client.put(f"/api/actions/{self.ai}/feedback", json={"rating": "useful"}).status_code, 401)
+        self.assertEqual(self.client.delete(f"/api/actions/{self.ai}/feedback").status_code, 401)
+
+    def test_vota_troca_e_retira(self):
+        self.assertEqual(self.vote(self.ai).status_code, 200)
+        self.assertEqual(self.mine(self.ai), {"useful": 1, "not_useful": 0, "mine": "useful"})
+        self.assertEqual(self.vote(self.ai, "not_useful", note="Não serviu").status_code, 200)
+        self.assertEqual(len(self.fake.tables["action_feedback"]), 1)  # um voto por pessoa
+        self.assertEqual(self.mine(self.ai), {"useful": 0, "not_useful": 1, "mine": "not_useful"})
+        self.assertEqual(self.client.delete(f"/api/actions/{self.ai}/feedback", headers=self.h()).status_code, 200)
+        self.assertEqual(self.mine(self.ai), {"useful": 0, "not_useful": 0, "mine": None})
+
+    def test_cada_pessoa_ve_o_proprio_voto_e_a_contagem(self):
+        self.vote(self.ai, "useful", "tok-a")
+        self.vote(self.ai, "not_useful", "tok-b")
+        self.assertEqual(self.mine(self.ai, "tok-a"), {"useful": 1, "not_useful": 1, "mine": "useful"})
+        self.assertEqual(self.mine(self.ai, "tok-b"), {"useful": 1, "not_useful": 1, "mine": "not_useful"})
+        self.client.delete(f"/api/actions/{self.ai}/feedback", headers=self.h("tok-a"))  # retirar não apaga o voto do outro
+        deletes = [c[1] for c in self.fake.calls if c[0] == "DELETE" and "action_feedback" in c[1]]
+        self.assertTrue(deletes and f"user_id=eq.{UA}" in deletes[-1], deletes)  # o filtro pelo autor vai junto
+        self.assertEqual(self.mine(self.ai, "tok-b"), {"useful": 0, "not_useful": 1, "mine": "not_useful"})
+
+    def test_acao_digitada_nao_recebe_feedback(self):
+        self.assertEqual(self.vote(self.human).status_code, 409)
+        self.assertEqual(self.fake.tables["action_feedback"], [])
+        self.assertFalse([c for c in self.fake.calls if c[0] in ("POST", "PATCH") and "action_feedback" in c[1]])
+
+    def test_entradas_invalidas(self):
+        self.assertEqual(self.vote(self.ai, "otimo").status_code, 400)
+        self.assertFalse([c for c in self.fake.calls if c[0] in ("POST", "PATCH") and "action_feedback" in c[1]])  # nada chegou ao banco
+        self.assertEqual(self.vote(self.ai, "useful", note="x" * 501).status_code, 400)
+        self.assertEqual(self.client.put("/api/actions/xx/feedback", headers=self.h(), json={"rating": "useful"}).status_code, 400)
+        self.assertEqual(self.fake.tables["action_feedback"], [])
+
+    def test_outra_organizacao_nao_ve_nem_vota(self):
+        self.assertEqual(self.vote(self.ai, "useful", "tok-d").status_code, 404)
+        self.assertEqual(self.client.delete(f"/api/actions/{self.ai}/feedback", headers=self.h("tok-d")).status_code, 404)
+
+    def test_quem_so_ve_a_acao_tambem_vota(self):
+        self.fake.no_edit.add(self.mid)
+        self.assertEqual(self.vote(self.ai).status_code, 200)
+
+    def test_auditoria_so_com_a_avaliacao(self):
+        self.vote(self.ai, "useful", note="Texto livre sensível")
+        entry = [r for r in self.fake.tables["audit_log"] if r["action"] == "action.feedback"][0]
+        self.assertEqual(entry["metadata"], {"rating": "useful"})
+        self.assertNotIn("sensível", str(entry))
+
+    def test_falha_do_banco_vira_502(self):
+        self.fake.fail.add(("POST", "action_feedback"))
+        self.assertEqual(self.vote(self.ai).status_code, 502)
+
+
+class EstatisticasPorOrigem(Base):
+    def setUp(self):
+        super().setUp()
+        self.mid = self.add_meeting()
+        self.sync(self.mid)  # duas da IA: "dito" e "inferido"
+        self.dito, self.inferido = [a["id"] for a in sorted(self.actions(self.mid), key=lambda a: a["basis"])]
+        self.pessoa = self.make(self.mid).json()["action"]["id"]
+        for aid in (self.dito, self.inferido, self.pessoa):
+            self.patch(aid, status="done")
+
+    def outcome(self, aid, eff):
+        self.client.post(f"/api/actions/{aid}/outcomes", headers=self.h(), json={"result": "r", "effectiveness": eff})
+
+    def stats(self):
+        return self.client.get("/api/actions/stats", headers=self.h()).json()
+
+    def test_sem_avaliacoes_nao_inventa_taxa(self):
+        s = self.stats()
+        self.assertEqual((s["by_origin"], s["feedback"]), ({}, {"useful": 0, "not_useful": 0, "useful_rate": None}))
+
+    def test_eficacia_por_origem_e_base(self):
+        self.outcome(self.dito, "worked")
+        self.outcome(self.inferido, "not_worked")
+        self.outcome(self.pessoa, "worked")
+        by = self.stats()["by_origin"]
+        self.assertEqual(by["ia_dito"], {"evaluated": 1, "worked": 1, "effective_rate": 1.0})
+        self.assertEqual(by["ia_inferido"], {"evaluated": 1, "worked": 0, "effective_rate": 0.0})
+        self.assertEqual(by["pessoa"], {"evaluated": 1, "worked": 1, "effective_rate": 1.0})
+
+    def test_incerto_fica_fora_das_taxas_por_origem(self):
+        self.outcome(self.dito, "uncertain")
+        self.assertEqual(self.stats()["by_origin"], {})
+
+    def test_vale_o_resultado_mais_recente(self):
+        self.outcome(self.dito, "worked")
+        self.outcome(self.dito, "not_worked")
+        self.assertEqual(self.stats()["by_origin"]["ia_dito"]["worked"], 0)
+
+    def test_taxa_de_utilidade(self):
+        for tok, rating in (("tok-a", "useful"), ("tok-b", "useful")):
+            self.client.put(f"/api/actions/{self.dito}/feedback", headers=self.h(tok), json={"rating": rating})
+        self.client.put(f"/api/actions/{self.inferido}/feedback", headers=self.h("tok-a"), json={"rating": "not_useful"})
+        fb = self.stats()["feedback"]
+        self.assertEqual((fb["useful"], fb["not_useful"], fb["useful_rate"]), (2, 1, 0.667))
+
+
 class AoAnalisar(Base):
     def setUp(self):
         super().setUp()

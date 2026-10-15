@@ -19,7 +19,7 @@ class FakeSupabase:
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
                                               "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
-                                              "actions", "action_events", "action_outcomes")}
+                                              "actions", "action_events", "action_outcomes", "action_feedback")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
         self.no_edit = set()  # ids de reuniões cujas ações a pessoa vê, mas não pode editar (a política real distingue)
@@ -192,6 +192,33 @@ class FakeSupabase:
                                              "event": "outcome", "data": {"effectiveness": row["effectiveness"]}})
         return 201, [dict(row)]
 
+    def _feedback_write(self, method, payload, uid, match):
+        votes = self.tables["action_feedback"]
+        if method == "POST":
+            a = next((a for a in self.tables["actions"] if a["id"] == payload.get("action_id")), None)
+            if not a or not self._action_meeting_visible(a, uid):
+                return 403, {"message": "new row violates row-level security policy"}
+            if a["source"] != "ai":
+                return 400, {"code": "23514", "message": "feedback_only_ai"}
+            if payload.get("rating") not in ("useful", "not_useful"):
+                return 400, {"code": "23514", "message": "check constraint"}
+            if any(v["action_id"] == a["id"] and v["user_id"] == uid for v in votes):
+                return 409, {"code": "23505", "message": "duplicate key value violates unique constraint"}
+            row = {**payload, "id": str(uuid.uuid4()), "user_id": uid, "org_id": a.get("org_id"), "created_at": self._ts()}
+            votes.append(row)
+            return 201, [dict(row)]
+        acts = {a["id"]: a for a in self.tables["actions"]}
+        hit = [v for v in votes if v["user_id"] == uid and match(v) and self._action_meeting_visible(acts[v["action_id"]], uid)]
+        if method == "PATCH":
+            for v in hit:
+                v.update(payload)
+            return 200, [dict(v) for v in hit]
+        if method == "DELETE":
+            for v in hit:
+                votes.remove(v)
+            return 200, [dict(v) for v in hit]
+        return 405, {}
+
     def rows(self, table, **where):
         return [r for r in self.tables[table] if all(r.get(k) == v for k, v in where.items())]
 
@@ -289,7 +316,7 @@ class FakeSupabase:
                 return self._can_read_client(row, uid)
             if table == "actions":
                 return self._action_meeting_visible(row, uid)
-            if table in ("action_events", "action_outcomes"):
+            if table in ("action_events", "action_outcomes", "action_feedback"):
                 act = next((a for a in self.tables["actions"] if a["id"] == row["action_id"]), None)
                 return bool(act) and self._action_meeting_visible(act, uid)
             return False
@@ -308,6 +335,9 @@ class FakeSupabase:
             if table == "actions" and "action_outcomes(" in select:
                 for r in out:
                     r["action_outcomes"] = [dict(o) for o in self.tables["action_outcomes"] if o["action_id"] == r["id"]]
+            if table == "actions" and "action_feedback(" in select:
+                for r in out:
+                    r["action_feedback"] = [{"user_id": v["user_id"], "rating": v["rating"]} for v in self.tables["action_feedback"] if v["action_id"] == r["id"]]
             if table == "actions" and "(" in select:
                 select = "*" if select.startswith("*") else ""
             if select and select != "*":  # projeção de colunas, como o PostgREST faz
@@ -332,6 +362,8 @@ class FakeSupabase:
             self.tables["meetings"].append(row)
             return 201, [dict(row)]
 
+        if table == "action_feedback" and not is_service:
+            return self._feedback_write(method, payload or {}, caller["id"], match)
         if table == "action_outcomes" and not is_service and method == "POST":
             return self._outcome_write(payload or {}, caller["id"])
         if table == "actions" and not is_service:

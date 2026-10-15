@@ -13,7 +13,7 @@ const X = '10000000-0000-0000-0000-000000000001', Y = '10000000-0000-0000-0000-0
 const T1 = '20000000-0000-0000-0000-000000000001';
 const M = n => '30000000-0000-0000-0000-00000000000' + n;
 const MIGRATIONS = ['20261014120000_etapa2_identidade_organizacoes', '20261014120100_etapa2_reunioes_isolamento', '20261014130000_etapa2_acesso_exige_membro',
-  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014160000_etapa4_acoes', '20261014170000_etapa4_resultados', '20261014180000_etapa4_data_observada'];
+  '20261014140000_etapa3_analise_v2', '20261014150000_etapa3_clientes', '20261014160000_etapa4_acoes', '20261014170000_etapa4_resultados', '20261014180000_etapa4_data_observada', '20261014190000_etapa4_feedback'];
 
 async function as(uid, fn) {
   await db.exec('reset role');
@@ -213,8 +213,52 @@ await db.exec(`insert into public.memberships(org_id,user_id,role) values ('${X}
 await db.exec(`delete from public.actions where id='${o3}'`);
 check('apagar a ação apaga os resultados (cascata)', Number((await rows(`select count(*) c from public.action_outcomes where action_id='${o3}'`))[0].c) === 0);
 
+
+console.log('\n== feedback útil / não útil (migração 9) ==');
+const vote = (uid, action, rating = 'useful', extra = {}) => tryq(uid,
+  `insert into public.action_feedback(action_id,rating,note,user_id) values ($1,$2,$3,$4) returning id, user_id, org_id`,
+  [action, rating, extra.note ?? null, extra.user_id ?? uid]);
+const f1 = await vote(C, o1, 'useful', { user_id: A });
+check('dono vota numa ação da IA', f1.ok, f1.err);
+check('o autor do voto é sempre quem está logado (user_id forjado é ignorado)', f1.ok && f1.rows[0].user_id === C && f1.rows[0].org_id === X, JSON.stringify(f1.rows));
+const humana = (await add(C, M(1), 'Ação digitada para votar')).rows[0].id;
+check('ação digitada por pessoa NÃO recebe feedback', /feedback_only_ai/.test((await vote(C, humana)).err || ''));
+check('um voto por pessoa por ação', /duplicate|unique/i.test((await vote(C, o1, 'not_useful')).err || ''));
+check('voto inválido é recusado', !(await vote(A, o1, 'otimo')).ok);
+check('observação longa demais é recusada', !(await vote(A, o1, 'useful', { note: 'x'.repeat(501) })).ok);
+check('quem só VÊ a ação (admin da org) também vota', (await vote(A, o1, 'not_useful', { note: 'Não serviu' })).ok);
+check('outra organização NÃO vota', !(await vote(D, o1)).ok);
+check('outra organização NÃO vota nem sem pedir o registro de volta (return=minimal)', !(await tryq(D, `insert into public.action_feedback(action_id,rating) values ($1,'useful')`, [o1])).ok);
+check('pessoa sem org NÃO vota', !(await vote(E, o1)).ok);
+check('anon NÃO vota nem lê', !(await vote(null, o1)).ok && !(await tryq(null, 'select 1 from public.action_feedback')).ok);
+let r2 = await tryq(C, `update public.action_feedback set rating='not_useful', note='Mudei de ideia' where action_id=$1 and user_id=$2`, [o1, C]);
+check('a pessoa muda o próprio voto', r2.ok && r2.n === 1, r2.err);
+r2 = await tryq(C, `update public.action_feedback set rating='useful' where action_id=$1 and user_id=$2`, [o1, A]);
+check('NÃO altera o voto de outra pessoa', r2.ok && r2.n === 0, JSON.stringify(r2));
+r2 = await tryq(C, `delete from public.action_feedback where action_id=$1 and user_id=$2`, [o1, A]);
+check('NÃO apaga o voto de outra pessoa', r2.ok && r2.n === 0, JSON.stringify(r2));
+check('autor do voto não muda', /feedback_immutable|row-level security/.test((await tryq(C, `update public.action_feedback set user_id=$2 where action_id=$1 and user_id=$3`, [o1, A, C])).err || ''));
+check('ação do voto não muda', /feedback_immutable/.test((await tryq(C, `update public.action_feedback set action_id=$2 where action_id=$1 and user_id=$3`, [o1, o2, C])).err || ''));
+check('colaborador vê os votos da ação que vê', await count(C, `select 1 from public.action_feedback where action_id='${o1}'`) === 2);
+const ia7 = (await add(A, M(7), 'Ação IA privada do admin', { source: 'ai', key: 'p7', basis: 'dito' })).rows[0].id;
+await vote(A, ia7);
+check('colaborador NÃO vê votos de ação de reunião privada alheia', await count(C, `select 1 from public.action_feedback where action_id='${ia7}'`) === 0);
+check('colaborador NÃO vota em ação que não vê', !(await vote(C, ia7)).ok);
+check('outra organização NÃO vê votos', await count(D, 'select 1 from public.action_feedback') === 0);
+await db.exec(`delete from public.memberships where org_id='${X}' and user_id='${C}'`);
+check('ex-membro NÃO vê, muda nem apaga o próprio voto antigo', await count(C, 'select 1 from public.action_feedback') === 0
+  && (await tryq(C, `update public.action_feedback set rating='useful' where user_id=$1`, [C])).n === 0
+  && (await tryq(C, `delete from public.action_feedback where user_id=$1`, [C])).n === 0);
+await db.exec(`insert into public.memberships(org_id,user_id,role) values ('${X}','${C}','member')`);
+r2 = await tryq(C, `delete from public.action_feedback where action_id=$1 and user_id=$2`, [o1, C]);
+check('a pessoa retira o próprio voto', r2.ok && r2.n === 1, JSON.stringify(r2));
+await db.exec(`delete from public.actions where id='${ia7}'`);
+check('apagar a ação apaga os votos (cascata)', Number((await rows(`select count(*) c from public.action_feedback where action_id='${ia7}'`))[0].c) === 0);
+
 console.log('\n== rollback e reaplicação ==');
 const meetingsBefore = (await rows('select count(*) c from public.meetings'))[0].c;
+await db.exec(read('rollbacks/20261014190000_etapa4_feedback.down.sql'));
+check('rollback da 9 remove o feedback e preserva ações e resultados', Number((await rows(`select count(*) c from information_schema.tables where table_name='action_feedback'`))[0].c) === 0 && Number((await rows('select count(*) c from public.action_outcomes'))[0].c) > 0);
 await db.exec(read('rollbacks/20261014180000_etapa4_data_observada.down.sql'));
 check('rollback do ajuste volta a recusar amanhã', /observed_in_future/.test((await out(A, o1, { at: await dbTomorrow() })).err || ''));
 await db.exec(read('rollbacks/20261014170000_etapa4_resultados.down.sql'));
@@ -228,6 +272,7 @@ check('rollback preserva o restante (clientes, organizações)', Number((await r
 await db.exec(read('migrations/20261014160000_etapa4_acoes.sql'));
 await db.exec(read('migrations/20261014170000_etapa4_resultados.sql'));
 await db.exec(read('migrations/20261014180000_etapa4_data_observada.sql'));
+await db.exec(read('migrations/20261014190000_etapa4_feedback.sql'));
 check('migrações 6 e 7 reaplicam após o rollback', true);
 
 console.log(`\n${pass} aprovados, ${fail} reprovados`);
