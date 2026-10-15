@@ -1,0 +1,14 @@
+/* AURA AI — formulário de contexto da Nova análise */
+.aura-ctx{margin-top:14px;padding:14px;border:1px solid rgba(170,220,230,.09);border-radius:12px;background:#071116}
+.aura-ctx-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-bottom:10px}
+.aura-ctx-head b{font-size:12px;color:#eaf8fa}
+.aura-ctx-head span{font-size:11px;color:#9bb2b9}
+.aura-ctx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.aura-ctx-field{display:grid;gap:5px;min-width:0}
+.aura-ctx-field.wide{grid-column:1/-1}
+.aura-ctx-field span{font:8px 'DM Mono';letter-spacing:.08em;text-transform:uppercase;color:#9bb2b9}
+.aura-ctx-field input{width:100%;box-sizing:border-box;border:1px solid rgba(170,220,230,.14);border-radius:8px;background:#050d11;color:#eaf8fa;padding:9px 10px;font:12px Manrope,sans-serif;outline:none}
+.aura-ctx-field input:focus{border-color:rgba(101,231,245,.5)}
+.aura-ctx-hint{margin:10px 0 0;font-size:11px;line-height:1.5;color:#9bb2b9}
+.aura-analysis-flow .aura-source-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:700px){.aura-ctx-grid{grid-template-columns:1fr}.aura-analysis-flow .aura-source-grid{grid-template-columns:1fr}}

@@ -19,6 +19,7 @@ from aura.core import security as sec
 from aura.core.errors import AppError
 from aura.features.chat import context, engine, repository
 from aura.features.chat.schemas import ConversationCreate, ConversationUpdate, MessageCreate
+from aura.features.clients import service as clients_mod
 
 log = logging.getLogger("aura.conversations")
 
@@ -120,7 +121,7 @@ def load_universe(user: sec.AuthUser, org_id: str | None, scope: dict | None) ->
     ids = {m["id"] for m in meetings}
     pool = [a for a in repository.action_pool(user, space, 200) if a.get("meeting_id") in ids]
     today = context.today_iso()
-    overview, clients = context.build_overview(meetings, pool, today)
+    overview, clients = context.build_overview(meetings, pool, today, clients_mod.groups_by_client(user, org_id))
     return {"meetings": meetings, "actions": pool, "scoped_actions": scoped_actions, "overview": overview, "clients": clients, "today": today}
 
 

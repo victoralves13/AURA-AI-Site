@@ -195,6 +195,16 @@ class ContextoPuro(unittest.TestCase):
         self.assertEqual(rows[0]["name"], "B")
         self.assertIn("1 em aberto (1 atrasada(s))", text)
 
+    def test_grupo_aparece_na_visao_geral_e_vale_como_citacao(self):
+        ms = [{"id": "1", "client_name": "Atlas Sul", "client_id": "a", "created_at": "2026-10-01", "risk": "Alto", "summary": "x"},
+              {"id": "2", "client_name": "Atlas Norte", "client_id": "b", "created_at": "2026-10-02", "risk": "Baixo", "summary": "y"},
+              {"id": "3", "client_name": "Horizonte", "client_id": "c", "created_at": "2026-10-03", "risk": "Baixo", "summary": "z"}]
+        text, rows = context.build_overview(ms, [], "2026-10-15", {"a": "Holding Delta", "b": "Holding Delta"})
+        self.assertIn("- Atlas Sul | grupo: Holding Delta | reuniões: 1", text)
+        self.assertNotIn("Horizonte | grupo", text)
+        self.assertEqual(sorted(context.mentioned_clients("como vai a holding delta?", rows)), ["a", "b"])
+        self.assertEqual(context.mentioned_clients("e o Atlas Sul na holding delta?", rows), ["a"])  # cliente citado vence o grupo
+
     def test_foco_nunca_passa_do_limite(self):
         ms = [{"id": str(i), "client_name": "A", "client_id": "a", "created_at": f"2026-10-{i:02d}", "risk": "Alto", "summary": "x"} for i in range(1, 12)]
         _text, rows = context.build_overview(ms, [], "2026-10-15")

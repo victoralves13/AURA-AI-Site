@@ -1,0 +1,25 @@
+/* AURA AI — trajetória do risco */
+.rt-summary{margin:0 0 10px;font-size:13px;line-height:1.5;color:#d8e7ea}
+.rt-empty{margin:0;padding:14px;border:1px dashed rgba(170,220,230,.25);border-radius:10px;font-size:13px;line-height:1.6;color:#b9ccd1}
+.rt-chart{display:block;width:100%;height:auto;max-height:200px}
+.rt-grid{stroke:rgba(170,220,230,.14);stroke-width:1;stroke-dasharray:3 4}
+.rt-axis{fill:#9bb2b9;font:10px 'DM Mono',monospace}
+.rt-seg{fill:none;stroke-width:2.5;stroke-linecap:round}
+.rt-seg.up{stroke:#ff7894}.rt-seg.down{stroke:#62e9a5}.rt-seg.same{stroke:#9bb2b9;stroke-dasharray:5 4}
+.rt-dot{stroke:#071116;stroke-width:2}
+.rt-dot.alto{fill:#ff7894}.rt-dot.medio{fill:#f2c86f}.rt-dot.baixo{fill:#62e9a5}
+.rt-dot.current{stroke:#eaf8fa;stroke-width:2.5}
+.rt-list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:0}
+.rt-row{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid rgba(170,220,230,.09)}
+.rt-row.current{background:rgba(101,231,245,.04)}
+.rt-date{font:11px 'DM Mono',monospace;color:#9bb2b9}
+.rt-level{font-size:12px;margin-right:8px}
+.rt-level.alto{color:#ff7894}.rt-level.medio{color:#f2c86f}.rt-level.baixo{color:#62e9a5}
+.rt-change{font-size:11px;color:#b9ccd1}
+.rt-change.up{color:#ff9db0}.rt-change.down{color:#8cf0bd}
+.rt-row p{margin:5px 0 0;font-size:12px;line-height:1.55;color:#b9ccd1}
+.rt-next{display:block;margin-top:5px;font-size:11px;color:#9bb2b9}
+.rt-open{margin-top:7px;border:1px solid rgba(101,231,245,.3);border-radius:8px;background:transparent;color:#65e7f5;padding:5px 9px;font:11px Manrope,sans-serif;cursor:pointer}
+.rt-open:hover{background:rgba(101,231,245,.08)}
+.rt-note{margin:12px 0 0;font-size:11px;line-height:1.5;color:#9bb2b9}
+@media(max-width:700px){.rt-row{grid-template-columns:1fr;gap:4px}}

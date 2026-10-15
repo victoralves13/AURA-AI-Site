@@ -172,15 +172,16 @@
     const name = el('input', { type: 'text', maxlength: '200', required: true, value: client.name, 'aria-label': 'Nome do cliente' });
     const aliases = el('textarea', { rows: '4', 'aria-label': 'Apelidos, um por linha', placeholder: 'Um apelido por linha' });
     aliases.value = (client.aliases || []).join('\n');
+    const group = el('input', { type: 'text', maxlength: '120', value: client.group_name || '', 'aria-label': 'Grupo do cliente', placeholder: 'Ex.: Grupo Atlas (opcional)' });
     const save = el('button', { type: 'submit', class: 'aura-btn', text: 'Salvar' });
     const form = el('form', { class: 'aura-form', novalidate: true },
-      el('label', {}, 'Nome do cliente', name), el('label', {}, 'Apelidos (nomes que também identificam este cliente)', aliases), status, save);
+      el('label', {}, 'Nome do cliente', name), el('label', {}, 'Grupo (opcional)', group), el('label', {}, 'Apelidos (nomes que também identificam este cliente)', aliases), status, save);
     form.addEventListener('submit', async e => {
       e.preventDefault();
       if (!name.value.trim()) return say(status, 'Informe o nome do cliente.', 'error');
       save.disabled = true;
       try {
-        await api('PATCH', '/api/clients/' + client.id, { name: name.value.trim(), aliases: aliases.value.split('\n').map(s => s.trim()).filter(Boolean) });
+        await api('PATCH', '/api/clients/' + client.id, { name: name.value.trim(), group_name: group.value.trim(), aliases: aliases.value.split('\n').map(s => s.trim()).filter(Boolean) });
         ui().closePanel();
         toast('Cliente atualizado.');
         syncMeetings().then(() => render(h));

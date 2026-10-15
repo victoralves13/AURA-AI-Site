@@ -63,7 +63,7 @@ def _is_late(a: dict, today: str) -> bool:
     return a.get("status") in ("open", "in_progress") and bool(a.get("due_date")) and str(a["due_date"]) < today
 
 
-def build_overview(meetings: list[dict], actions: list[dict], today: str) -> tuple[str, list[dict]]:
+def build_overview(meetings: list[dict], actions: list[dict], today: str, groups: dict[str, str] | None = None) -> tuple[str, list[dict]]:
     """Texto da visão geral (S0) e a lista de clientes ordenada do mais para o menos preocupante."""
     by_client: dict[str, list[dict]] = {}
     for a in actions:
@@ -79,7 +79,7 @@ def build_overview(meetings: list[dict], actions: list[dict], today: str) -> tup
         late = sum(1 for a in open_acts if _is_late(a, today))
         worry = RISK_WEIGHT[risks[-1]] * 10 + (5 if RISK_WEIGHT[risks[-1]] > RISK_WEIGHT[risks[0]] else 0) + 3 * late + len(open_acts)
         rows.append({"key": key, "name": client_label(last), "meetings": ms, "risks": risks, "last": last, "open": len(open_acts), "late": late,
-                     "worry": worry})
+                     "worry": worry, "group": (groups or {}).get(key, "")})
     rows.sort(key=lambda r: (r["worry"], _day(r["last"])), reverse=True)
     lines = []
     for r in rows[:OVERVIEW_CLIENTS]:
@@ -89,7 +89,8 @@ def build_overview(meetings: list[dict], actions: list[dict], today: str) -> tup
         direction = ("subiu" if RISK_WEIGHT[r["risks"][-1]] > RISK_WEIGHT[r["risks"][0]] else
                      "caiu" if RISK_WEIGHT[r["risks"][-1]] < RISK_WEIGHT[r["risks"][0]] else "estável") if len(ms) > 1 else "uma reunião só"
         acts = f"{r['open']} em aberto" + (f" ({r['late']} atrasada(s))" if r["late"] else "")
-        lines.append(f"- {r['name']} | reuniões: {len(ms)} ({dates}) | risco: {trend} ({direction}) | oportunidade atual: {risk_level(r['last'].get('opportunity'))}"
+        group = f" | grupo: {r['group']}" if r["group"] else ""
+        lines.append(f"- {r['name']}{group} | reuniões: {len(ms)} ({dates}) | risco: {trend} ({direction}) | oportunidade atual: {risk_level(r['last'].get('opportunity'))}"
                      f" | ações: {acts} | último resumo: {engine._clip(r['last'].get('summary'), 130)}")
     hidden = len(rows) - len(lines)
     head = f"[S0] VISÃO GERAL · {len(meetings)} reunião(ões) de {len(rows)} cliente(s) · do mais preocupante ao menos preocupante · hoje: {today}"
@@ -127,7 +128,14 @@ def mentioned_clients(text: str, clients: list[dict]) -> list[str]:
     if full:  # nomes inteiros: vale o mais específico ("Atlas Sul" vence "Grupo Atlas" quando a pergunta diz "Atlas Sul")
         top = max(n for n, _ in full)
         return list(dict.fromkeys(k for n, k in full if n == top))
-    return list(dict.fromkeys(head))
+    if head:
+        return list(dict.fromkeys(head))
+    # Nenhum cliente citado: "o grupo Atlas" vale para todos os clientes daquele grupo.
+    for group in dict.fromkeys(c["group"] for c in clients if c.get("group")):
+        words = _meaningful(group)
+        if words and words <= wanted:
+            return [c["key"] for c in clients if c.get("group") == group]
+    return []
 
 
 def carried_over(history: list[dict], clients: list[dict], meeting_client: dict[str, str]) -> list[str]:

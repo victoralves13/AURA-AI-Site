@@ -39,6 +39,33 @@ def _guarded(call):
         raise AppError(502, GENERIC) from exc
 
 
+# O grupo do cliente (coluna group_name) vem de uma migração aditiva. Enquanto o banco não a tem, tudo continua funcionando sem grupo.
+_GROUPS = {"supported": None}  # None = ainda não sabemos; False = o banco não tem a coluna
+
+
+def groups_supported() -> bool:
+    return _GROUPS["supported"] is not False
+
+
+def _missing_group_column(exc: Exception) -> bool:
+    return isinstance(exc, sec.SupabaseError) and (exc.db_code in ("42703", "PGRST204") or "group_name" in exc.db_message)
+
+
+def _with_group(call_with, call_without):
+    """Tenta com o grupo; se o banco ainda não tem a coluna, lembra disso e refaz sem ela."""
+    if _GROUPS["supported"] is False:
+        return call_without()
+    try:
+        result = call_with()
+        _GROUPS["supported"] = True
+        return result
+    except sec.SupabaseError as exc:
+        if not _missing_group_column(exc):
+            raise
+        _GROUPS["supported"] = False
+        return call_without()
+
+
 def scope_filter(user: sec.AuthUser, org_id: str | None) -> str:
     return f"org_id=eq.{org_id}" if org_id else f"org_id=is.null&owner_id=eq.{user.id}"
 
@@ -46,12 +73,15 @@ def scope_filter(user: sec.AuthUser, org_id: str | None) -> str:
 # --- leitura -------------------------------------------------------------------------------------------------------------
 def list_scope_clients(user, org_id: str | None) -> list[dict]:
     """Clientes do espaço para a correspondência de nomes (falha original sobe)."""
-    return sec.user_rest(user, "GET", f"clients?select=id,name,normalized_name,aliases&merged_into=is.null&{scope_filter(user, org_id)}"
-                                      f"&order=name.asc&limit={MAX_CLIENTS_SCANNED}") or []
+    def get(cols):
+        return sec.user_rest(user, "GET", f"clients?select={cols}&merged_into=is.null&{scope_filter(user, org_id)}&order=name.asc&limit={MAX_CLIENTS_SCANNED}") or []
+    return _with_group(lambda: get("id,name,normalized_name,aliases,group_name"), lambda: get("id,name,normalized_name,aliases"))
 
 
 def list_clients(user, where: str) -> list[dict]:
-    return _guarded(lambda: sec.user_rest(user, "GET", f"clients?select=id,name,aliases,created_via,created_at&merged_into=is.null&{where}&order=name.asc&limit=500")) or []
+    def get(cols):
+        return sec.user_rest(user, "GET", f"clients?select={cols}&merged_into=is.null&{where}&order=name.asc&limit=500") or []
+    return _guarded(lambda: _with_group(lambda: get("id,name,aliases,created_via,created_at,group_name"), lambda: get("id,name,aliases,created_via,created_at")))
 
 
 def linked_meeting_rows(user, where: str) -> list[dict]:
@@ -79,8 +109,11 @@ def get_meeting_scope(user, meeting_id: str) -> dict | None:
 
 # --- escrita -------------------------------------------------------------------------------------------------------------
 def insert_client(user, row: dict) -> dict:
-    """Cria o cliente (falha original sobe)."""
-    return (sec.user_rest(user, "POST", "clients", row) or [row])[0]
+    """Cria o cliente (falha original sobe). Sem a coluna de grupo no banco, o cliente é criado sem ela."""
+    plain = {k: v for k, v in row.items() if k != "group_name"}
+    if "group_name" not in row:
+        return (sec.user_rest(user, "POST", "clients", plain) or [plain])[0]
+    return _with_group(lambda: (sec.user_rest(user, "POST", "clients", row) or [row])[0], lambda: (sec.user_rest(user, "POST", "clients", plain) or [plain])[0])
 
 
 def insert_client_guarded(user, row: dict) -> dict:
@@ -88,7 +121,11 @@ def insert_client_guarded(user, row: dict) -> dict:
 
 
 def patch_client(user, client_id: str, changes: dict) -> dict | None:
-    rows = _guarded(lambda: sec.user_rest(user, "PATCH", f"clients?id=eq.{client_id}", changes)) or []
+    plain = {k: v for k, v in changes.items() if k != "group_name"}
+
+    def go(body):
+        return sec.user_rest(user, "PATCH", f"clients?id=eq.{client_id}", body) if body else sec.user_rest(user, "GET", f"clients?select=*&id=eq.{client_id}&limit=1")
+    rows = _guarded(lambda: _with_group(lambda: go(changes), lambda: go(plain))) or []
     return rows[0] if rows else None
 
 
