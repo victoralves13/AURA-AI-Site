@@ -142,8 +142,14 @@ Use uma conta de teste, áudios curtos e uma chave da OpenAI própria para teste
 **Caminho A (recomendado): projeto novo seu, pela CLI, sem enviar nada ao GitHub.** Não toca no projeto
 nem no domínio de produção de ninguém.
 
+> **Já feito (15/10/2026):** o projeto `aura-ai-preview` foi criado na conta Vercel de teste, sem Git e sem
+> domínio, com a proteção de login da Vercel nos previews, e as variáveis NÃO secretas já estão no ambiente
+> *preview* (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `AURA_AUDIO_BUCKET`, `AURA_OPENAI_TRANSCRIPTION_MODEL`,
+> `AURA_MAX_ANALYSES_PER_HOUR`). Faltam os dois segredos (`OPENAI_API_KEY`, `SUPABASE_SECRET_KEY`) e, se
+> necessário, `AURA_OPENAI_ANALYSIS_MODEL`. Se o projeto já existir, pule a criação e use `link --project`.
+
 1. `npx vercel@latest login` (autentica no navegador).
-2. Na pasta do projeto: `npx vercel@latest link` e criar um projeto NOVO (ex.: `aura-ai-preview`).
+2. Na pasta do projeto: `npx vercel@latest link --project aura-ai-preview` (ou, sem o projeto, criar um NOVO).
 3. Variáveis, sempre no ambiente **preview** (`npx vercel@latest env add NOME preview`). Segredos: digite
    o valor quando a CLI pedir e marque "sensitive"; nunca os passe em argumentos.
 
