@@ -6,11 +6,13 @@ class ClientCreate(BaseModel):
     name: str
     aliases: list[str] = []
     org_id: str | None = None
+    group_name: str | None = None
 
 
 class ClientUpdate(BaseModel):
     name: str | None = None
     aliases: list[str] | None = None
+    group_name: str | None = None  # "" remove o grupo; omitido não altera
 
 
 class LinkChange(BaseModel):

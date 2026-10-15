@@ -25,6 +25,8 @@ def save_meeting(data: dict, user=None) -> dict:
     if data.get("client_link") == "unlinked" and not data.get("client_suggestion"):
         payload.pop("client_link", None)  # padrão do banco; evita enviar coluna nova sem necessidade
         payload.pop("client_suggestion", None)
+    if data.get("meeting_at"):  # data real da reunião informada na Nova análise (senão o banco usa "agora")
+        payload["created_at"] = data["meeting_at"]
     if user is not None:
         org_id = data.get("org_id") or None
         payload["owner_id"] = user.id

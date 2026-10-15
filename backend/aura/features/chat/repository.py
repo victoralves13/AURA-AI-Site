@@ -12,7 +12,8 @@ from aura.core.errors import db_call
 SCOPE_TABLES = {"meeting_id": "meetings", "client_id": "clients", "action_id": "actions"}
 CONVERSATION_COLUMNS = "id,title,scope,org_id,owner_id,created_at,last_message_at"
 MEETING_COLUMNS = ("id,org_id,owner_id,meeting_title,client_name,client_id,created_at,summary,risk,opportunity,sentiment,topics,"
-                   "decisions,decisions_detail,pending_actions,actions_detail,important_signals,risk_signals,opportunity_signals,insights,financial_data")
+                   "decisions,decisions_detail,pending_actions,actions_detail,important_signals,risk_signals,opportunity_signals,insights,financial_data,"
+                   "next_move,owner,deadline,participants,objections")
 ACTION_COLUMNS = "id,meeting_id,text,status,assignee_text,due_text,due_date,evidence,meetings(meeting_title,client_name,client_id)"
 GENERIC = "Não foi possível concluir a operação com a conversa. Tente novamente."
 FORBIDDEN = "Você não tem permissão para usar o chat neste espaço."
@@ -71,7 +72,8 @@ def set_title(user, conversation_id: str, title: str) -> None:
 
 
 def history(user, conversation_id: str, limit: int = 60) -> list[dict]:
-    return _db(lambda: sec.user_rest(user, "GET", f"messages?select=role,content&conversation_id=eq.{conversation_id}&order=created_at.asc&limit={limit}")) or []
+    """Mensagens da conversa em ordem. As fontes das respostas do AURA ficam junto: dizem de que cliente/reunião se falava."""
+    return _db(lambda: sec.user_rest(user, "GET", f"messages?select=role,content,sources&conversation_id=eq.{conversation_id}&order=created_at.asc&limit={limit}")) or []
 
 
 def last_message(user, conversation_id: str) -> dict | None:
@@ -112,6 +114,11 @@ def recent_meetings(user, space: str, limit: int) -> list[dict]:
 
 def transcripts(user, ids: list[str]) -> list[dict]:
     return sec.user_rest(user, "GET", f"meetings?select=id,transcript&id=in.({','.join(ids)})&limit={len(ids)}") or []
+
+
+def portfolio_meetings(user, space: str, limit: int = 60) -> list[dict]:
+    """As reuniões mais recentes do espaço (sem a transcrição), para a visão geral e para escolher o detalhe."""
+    return sec.user_rest(user, "GET", f"meetings?select={MEETING_COLUMNS}&{space}&is_demo=is.false&order=created_at.desc&limit={limit}") or []
 
 
 def action_pool(user, space: str, limit: int = 80) -> list[dict]:

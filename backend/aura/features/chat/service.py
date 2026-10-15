@@ -16,10 +16,10 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from aura.core import security as sec
-from aura.core import verification
 from aura.core.errors import AppError
-from aura.features.chat import engine, repository
+from aura.features.chat import context, engine, repository
 from aura.features.chat.schemas import ConversationCreate, ConversationUpdate, MessageCreate
+from aura.features.clients import service as clients_mod
 
 log = logging.getLogger("aura.conversations")
 
@@ -99,56 +99,63 @@ def append_assistant(user: sec.AuthUser, conversation_id: str, content: str, sou
 # ---------------------------------------------------------------------------
 # Recuperação, limite de uso e resposta
 # ---------------------------------------------------------------------------
-def retrieve(user: sec.AuthUser, org_id: str | None, scope: dict | None, question: str) -> list[engine.Source]:
-    """Reúne as fontes que a pessoa pode ler, no espaço e no escopo da conversa."""
+def load_universe(user: sec.AuthUser, org_id: str | None, scope: dict | None) -> dict:
+    """Lê (uma vez por pergunta) as reuniões e ações que a pessoa pode ver no espaço e no escopo da conversa, e monta a visão geral.
+
+    Sem escopo: as reuniões mais recentes do espaço. Escopo de reunião/ação: SÓ aquela reunião (a conversa continua limitada ao item).
+    Escopo de cliente: as reuniões dele. Tudo com o JWT da pessoa (RLS) e sem valores financeiros de terceiros."""
     scope = scope or {}
     space = f"org_id=eq.{org_id}" if org_id else "org_id=is.null"
-    meetings: list[dict]
-    actions: list[dict] = []
+    scoped_actions: list[dict] = []
     if scope.get("action_id"):
-        actions = repository.action_in_scope(user, space, scope["action_id"])
-        ids = ",".join(sorted({a["meeting_id"] for a in actions}))
+        scoped_actions = repository.action_in_scope(user, space, scope["action_id"])
+        ids = ",".join(sorted({a["meeting_id"] for a in scoped_actions}))
         meetings = repository.meetings_by_ids(user, ids) if ids else []
     elif scope.get("meeting_id"):
         meetings = repository.meeting_in_scope(user, space, scope["meeting_id"])
     elif scope.get("client_id"):
-        meetings = repository.client_meetings(user, space, scope["client_id"], engine.CANDIDATE_MEETINGS)
+        meetings = repository.client_meetings(user, space, scope["client_id"], context.OVERVIEW_CLIENTS * 3)
     else:
-        meetings = repository.recent_meetings(user, space, engine.CANDIDATE_MEETINGS)
-    meetings = sec.redact_meetings(meetings, user)  # sem finance.read, sem valores financeiros de terceiros
-    chosen = engine.rank_meetings(question, meetings)
-    ids = [m["id"] for m in chosen]
+        meetings = repository.portfolio_meetings(user, space)
+    meetings = sec.redact_meetings(meetings, user)
+    ids = {m["id"] for m in meetings}
+    pool = [a for a in repository.action_pool(user, space, 200) if a.get("meeting_id") in ids]
+    today = context.today_iso()
+    overview, clients = context.build_overview(meetings, pool, today, clients_mod.groups_by_client(user, org_id))
+    return {"meetings": meetings, "actions": pool, "scoped_actions": scoped_actions, "overview": overview, "clients": clients, "today": today}
+
+
+def build_sources(user: sec.AuthUser, universe: dict, scope: dict | None, question: str, history: list[dict],
+                  extra_clients: list[str] | None = None, limit: int = context.MAX_DETAIL_MEETINGS) -> tuple[list[engine.Source], str]:
+    """Fontes para o prompt: S0 (visão geral) + o detalhe escolhido (S1…), e a frase de foco da conversa."""
+    scope = scope or {}
+    chosen, _keys, note = context.choose_focus(question, history, scope, universe["meetings"], universe["clients"], extra_clients, limit)
     transcripts: dict[str, str] = {}
-    if ids:
-        for row in repository.transcripts(user, ids):
+    if chosen:
+        for row in repository.transcripts(user, [m["id"] for m in chosen]):
             transcripts[row["id"]] = (row.get("transcript") or "")[:engine.MAX_TRANSCRIPT_CHARS]
-    if not actions and not scope.get("meeting_id") and not scope.get("action_id"):
-        wants_actions = any(w in verification.normalize(question) for w in engine.ACTION_WORDS)
-        wanted = engine.tokens(question)
-        pool = repository.action_pool(user, space)
-        if scope.get("client_id"):
-            pool = [a for a in pool if (a.get("meetings") or {}).get("client_id") == scope["client_id"]]
-        ranked = sorted(pool, key=lambda a: (len(wanted & engine.tokens(a.get("text") or "")) + (1 if a.get("status") in ("open", "in_progress") and wants_actions else 0)), reverse=True)
-        actions = [a for a in ranked if (len(wanted & engine.tokens(a.get("text") or "")) > 0) or (wants_actions and a.get("status") in ("open", "in_progress"))][:engine.TOP_ACTIONS]
-    elif scope.get("meeting_id") and ids:
-        actions = repository.meeting_actions(user, ids[0])
     by_meeting: dict[str, list[dict]] = {}
-    for a in actions:
+    for a in universe["actions"] + universe["scoped_actions"]:
         by_meeting.setdefault(a["meeting_id"], []).append(a)
-    sources: list[engine.Source] = []
+    sources: list[engine.Source] = [context.overview_source(universe["overview"])]
+    forced = bool(scope.get("meeting_id") or scope.get("action_id") or scope.get("client_id"))
     for i, m in enumerate(chosen, 1):
         key = f"S{i}"
         tr = transcripts.get(m["id"], "")
-        block, analysis = engine._meeting_block(key, m, by_meeting.get(m["id"], []), engine.best_lines(tr, question, fallback=bool(scope.get("meeting_id") or scope.get("action_id") or scope.get("client_id"))))
+        block, analysis = engine._meeting_block(key, m, by_meeting.get(m["id"], []), engine.best_lines(tr, question, fallback=forced))
         sources.append(engine.Source(key, "meeting", m["id"], engine._clip(m.get("meeting_title") or m.get("client_name") or "Reunião", 120), block,
                                      transcript=tr, analysis=analysis, meta={"client_name": m.get("client_name"), "date": str(m.get("created_at") or "")[:10]}))
-    in_meetings = {s.item_id for s in sources}
-    n = len(sources)
-    for a in actions:
-        if scope.get("action_id") or a["meeting_id"] not in in_meetings:  # ação cuja reunião já está no contexto aparece dentro dela
-            n += 1
-            sources.append(engine._action_source(f"S{n}", a))
-    return sources
+    n = len(sources) - 1
+    for a in universe["scoped_actions"]:
+        n += 1
+        sources.append(engine._action_source(f"S{n}", a))
+    return sources, note
+
+
+def retrieve(user: sec.AuthUser, org_id: str | None, scope: dict | None, question: str, history: list[dict] | None = None) -> list[engine.Source]:
+    """Fontes (S0 + detalhe) para uma pergunta, no espaço e no escopo da conversa."""
+    universe = load_universe(user, org_id, scope)
+    return build_sources(user, universe, scope, question, history or [])[0]
 
 
 def enforce_chat_limit(user: sec.AuthUser) -> None:
@@ -163,14 +170,30 @@ def enforce_chat_limit(user: sec.AuthUser) -> None:
         raise AppError(429, "Limite de perguntas por hora atingido. Tente novamente mais tarde.")
 
 
+def _ask(question: str, history: list[dict], sources: list[engine.Source], note: str, today: str) -> engine.ChatAnswer:
+    return engine.ask_model(engine.SYSTEM_PROMPT, engine.build_prompt(question, history, sources, focus=note, today=today))
+
+
 def answer(user: sec.AuthUser, org_id: str | None, scope: dict | None, question: str, history: list[dict]) -> dict:
-    """Responde a uma pergunta: recupera, redige, confere e monta. Retorna {content, sources, evidence_level, stats}."""
-    sources = retrieve(user, org_id, scope, question)
-    draft = engine.ask_model(engine.SYSTEM_PROMPT, engine.build_prompt(question, history, sources))
+    """Responde a uma pergunta: monta o contexto, redige, confere cada afirmação e monta. Retorna {content, sources, evidence_level, stats}.
+
+    Normalmente é UMA chamada à IA. Se a IA disser que faltou detalhe de algum cliente (`needs`), há UMA segunda rodada com esse detalhe."""
+    universe = load_universe(user, org_id, scope)
+    sources, note = build_sources(user, universe, scope, question, history)
+    draft = _ask(question, history, sources, note, universe["today"])
+    rounds = 1
+    if draft.needs and not draft.reply:
+        extra = context.mentioned_clients(", ".join(draft.needs), universe["clients"])
+        if extra:  # só se o pedido bater com clientes reais da carteira
+            sources, note = build_sources(user, universe, scope, question, history, extra, context.MAX_DETAIL_AFTER_NEEDS)
+            draft = _ask(question, history, sources, note, universe["today"])
+            rounds = 2
     kept, dropped = engine.verify_claims(draft.claims, sources)
-    content, out_sources = engine.assemble(kept, draft.not_found, sources, dropped)
-    return {"content": content, "sources": out_sources, "evidence_level": engine.evidence_level(kept, dropped),
-            "stats": {"searched": len(sources), "kept": len(kept), "dropped": dropped}}
+    direct = draft.reply if not draft.claims else None  # resposta direta só quando a IA não afirmou nada sobre os dados
+    content, out_sources = engine.assemble(kept, draft.not_found, sources, dropped, reply=direct)
+    level = None if (not kept and direct and direct.strip()) else engine.evidence_level(kept, dropped)
+    return {"content": content, "sources": out_sources, "evidence_level": level,
+            "stats": {"searched": len(sources) - 1, "kept": len(kept), "dropped": dropped, "rounds": rounds}}
 
 
 def _answer(user: sec.AuthUser, conversation: dict, question: str) -> tuple[dict | None, str | None]:
@@ -181,7 +204,7 @@ def _answer(user: sec.AuthUser, conversation: dict, question: str) -> tuple[dict
         history = past[:-1] if past and past[-1].get("role") == "user" else past  # a pergunta atual não é "conversa anterior"
         result = answer(user, conversation.get("org_id"), conversation.get("scope") or {}, question, history)
         message = append_assistant(user, cid, result["content"], result["sources"], result["evidence_level"])
-    except engine.ChatUnavailable as exc:
+    except (engine.ChatUnavailable, engine.ChatFailure) as exc:
         return None, str(exc)
     except AppError as exc:
         return None, exc.detail if isinstance(exc.detail, str) else repository.GENERIC

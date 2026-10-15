@@ -72,6 +72,13 @@ body.aura-light .act-insight h3{color:#516b79!important}
 body.aura-light .act-insight li{color:#467078!important}
 body.aura-light .act-insight li b{color:#1e737f!important}
 body.aura-light .act-insight li small{color:#516b79!important}
+body.aura-light .aura-ctx{background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .aura-ctx-head b{color:#1e737f!important}
+body.aura-light .aura-ctx-head span{color:#516c74!important}
+body.aura-light .aura-ctx-field span{color:#516c74!important}
+body.aura-light .aura-ctx-field input{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.14)!important}
+body.aura-light .aura-ctx-field input:focus{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-ctx-hint{color:#516c74!important}
 body.aura-light .ev-badge.said{color:#007195!important;border-color:rgba(8,45,57,0.30)!important}
 body.aura-light .ev-badge.inferred{color:#89610c!important;border-color:rgba(8,45,57,0.30)!important}
 body.aura-light .ev-badge.ok{color:#12785a!important;border-color:rgba(8,45,57,0.30)!important}
@@ -111,6 +118,7 @@ body.aura-light .chat-suggest{color:#2c727e!important;border:1px solid rgba(8,45
 body.aura-light .chat-bubble{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
 body.aura-light .chat-msg.user .chat-bubble{border-color:rgba(8,45,57,0.30)!important}
 body.aura-light .chat-note{color:#536e76!important}
+body.aura-light .chat-advice{border-left:3px solid rgba(8,45,57,0.30)!important}
 body.aura-light .chat-who{color:#047482!important}
 body.aura-light .chat-evidence{border:1px solid rgba(8,45,57,0.30)!important}
 body.aura-light .chat-evidence.lv-forte{color:#12773e!important;border-color:rgba(8,45,57,0.30)!important}
@@ -202,6 +210,20 @@ body.aura-light .onb-step b{color:#1e737f!important}
 body.aura-light .onb-step small{color:#546d76!important}
 body.aura-light .onb-status{color:#546d76!important}
 body.aura-light .onb-step.done .onb-status{color:#137642!important}
+body.aura-light .rt-summary{color:#416f78!important}
+body.aura-light .rt-empty{color:#4d6d76!important;border:1px dashed rgba(8,45,57,0.25)!important}
+body.aura-light .rt-row{border-top:1px solid rgba(8,45,57,0.12)!important}
+body.aura-light .rt-date{color:#516c74!important}
+body.aura-light .rt-level.alto{color:#d4002c!important}
+body.aura-light .rt-level.medio{color:#89610c!important}
+body.aura-light .rt-level.baixo{color:#117844!important}
+body.aura-light .rt-change{color:#4d6d76!important}
+body.aura-light .rt-change.up{color:#d50029!important}
+body.aura-light .rt-change.down{color:#107843!important}
+body.aura-light .rt-row p{color:#4d6d76!important}
+body.aura-light .rt-next{color:#516c74!important}
+body.aura-light .rt-open{color:#087581!important;border:1px solid rgba(8,45,57,0.30)!important}
+body.aura-light .rt-note{color:#516c74!important}
 body.aura-light .command-card{background:#fff!important}
 body.aura-light .command-item{background:#fff!important}
 body.aura-light .command-item small{color:#546d76!important}

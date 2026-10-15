@@ -14,3 +14,9 @@ class StoredAudioRequest(BaseModel):
     file_name: str = "reuniao"
     client_name: str = "Cliente não identificado"
     context: str = "Outro"
+    org_id: str | None = None
+    client_id: str | None = None
+    group_name: str | None = None
+    meeting_title: str | None = None
+    participants: list[str] | str | None = None
+    meeting_date: str | None = None

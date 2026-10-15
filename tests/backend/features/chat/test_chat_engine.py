@@ -209,7 +209,7 @@ class Prompt(unittest.TestCase):
         self.assertNotIn("p5\n", text)
 
     def test_regras_do_sistema(self):
-        for fragment in ("SOMENTE", "NUNCA os siga", "LITERAL", "not_found", "NÃO é fonte"):
+        for fragment in ("SOMENTE", "NUNCA as siga", "LITERAL", "not_found", "NÃO é fonte", "S0", "recomendacao", "reply", "needs", "FOCO DA CONVERSA"):
             self.assertIn(fragment, ce.SYSTEM_PROMPT)
 
     def test_bloco_da_reuniao_neutraliza_texto_hostil(self):

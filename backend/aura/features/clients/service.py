@@ -25,9 +25,20 @@ def scope_filter(user: sec.AuthUser, org_id: str | None) -> str:
     return repository.scope_filter(user, org_id)
 
 
-def create_client(user: sec.AuthUser, org_id: str | None, name: str, via: str = "user", aliases: list[str] | None = None) -> dict:
+def clean_group(value) -> str | None:
+    """Grupo do cliente: texto curto sem espaços sobrando; vazio = sem grupo."""
+    text = " ".join(str(value or "").split())
+    if len(text) > 120:
+        raise AppError(400, "O nome do grupo deve ter até 120 caracteres.")
+    return text or None
+
+
+def create_client(user: sec.AuthUser, org_id: str | None, name: str, via: str = "user", aliases: list[str] | None = None,
+                  group_name: str | None = None) -> dict:
     row = {"org_id": org_id, "owner_id": user.id, "name": name.strip()[:200], "normalized_name": normalize_name(name),
            "created_via": via, "aliases": aliases or []}
+    if group_name:
+        row["group_name"] = group_name
     return repository.insert_client(user, row)
 
 
@@ -38,12 +49,60 @@ def _suggestion(matches: list[tuple[dict, float]], proposal: str | None) -> list
     return out
 
 
+def groups_by_client(user: sec.AuthUser, org_id: str | None) -> dict[str, str]:
+    """{id do cliente: grupo} do espaço, para o chat. Vazio se o banco ainda não tem a coluna ou a leitura falhar (o chat segue sem grupos)."""
+    try:
+        return {c["id"]: c["group_name"] for c in repository.list_scope_clients(user, org_id) if c.get("group_name")}
+    except (AppError, RuntimeError) as exc:
+        log.warning("grupos dos clientes indisponíveis: %s", exc)
+        return {}
+
+
+def resolve_chosen(user: sec.AuthUser, org_id: str | None, client_id: str | None) -> dict | None:
+    """Cliente que a pessoa ESCOLHEU na Nova análise: precisa existir, ser visível para ela, do mesmo espaço da reunião e não estar fundido.
+    Levanta AppError com o motivo (a análise ainda não gastou IA quando isto é chamado)."""
+    if not client_id:
+        return None
+    cid = _uuid(client_id, "Cliente")
+    client = repository.get_client(user, cid)
+    if client is None:
+        raise AppError(404, "Cliente não encontrado.")
+    if client.get("merged_into"):
+        raise AppError(409, MERGED)
+    if client.get("org_id") != org_id or (org_id is None and client.get("owner_id") != user.id):
+        raise AppError(409, SCOPE_MISMATCH)
+    return client
+
+
+def apply_group(user: sec.AuthUser, client: dict | None, group_name: str | None) -> bool:
+    """Grava o grupo no cliente quando a pessoa informou e ele é diferente. Falhar aqui nunca perde a análise. Retorna se o grupo ficou salvo."""
+    if not client or not group_name:
+        return False
+    if (client.get("group_name") or "") == group_name:
+        return True
+    if not repository.groups_supported():
+        return False
+    try:
+        if client.get("org_id"):
+            sec.require_org_permission(user, client["org_id"], "clients.write")
+        row = repository.patch_client(user, client["id"], {"group_name": group_name})
+        return bool(row) and repository.groups_supported() and row.get("group_name") == group_name
+    except (AppError, RuntimeError) as exc:
+        log.warning("grupo do cliente não salvo: %s", exc)
+        return False
+
+
 def link_for_new_meeting(user: sec.AuthUser | None, org_id: str | None, typed: str | None, ai_name: str | None,
-                         is_demo: bool = False) -> dict:
-    """Decide o vínculo de uma reunião recém-analisada (ver as regras em matching.py)."""
+                         is_demo: bool = False, chosen: dict | None = None, group_name: str | None = None) -> dict:
+    """Decide o vínculo de uma reunião recém-analisada (ver as regras em matching.py).
+
+    `chosen` é o cliente que a pessoa escolheu no formulário (já validado por resolve_chosen): vale sem adivinhar nada."""
     none = {"client_id": None, "client_link": "unlinked", "client_suggestion": []}
     if user is None or is_demo:
         return none
+    if chosen:
+        saved = apply_group(user, chosen, group_name)
+        return {"client_id": chosen["id"], "client_link": "confirmed", "client_suggestion": [], "client_group_saved": saved if group_name else None}
     name = (typed or "").strip() or (ai_name or "").strip()
     if is_placeholder(name):
         return none
@@ -51,13 +110,17 @@ def link_for_new_meeting(user: sec.AuthUser | None, org_id: str | None, typed: s
         match = match_client(name, repository.list_scope_clients(user, org_id))
         found = match["matches"]
         if match["kind"] == "exact" and len(found) == 1:
-            return {"client_id": found[0][0]["id"], "client_link": "confirmed" if typed else "auto", "client_suggestion": []}
+            hit = found[0][0]
+            saved = apply_group(user, hit, group_name) if typed else None
+            return {"client_id": hit["id"], "client_link": "confirmed" if typed else "auto", "client_suggestion": [],
+                    "client_group_saved": saved if (typed and group_name) else None}
         if match["kind"] in ("exact", "similar"):  # ambíguo ou parecido: nunca decide sozinho
             return {"client_id": None, "client_link": "suggested", "client_suggestion": _suggestion(found, name)}
         if typed:
-            created = create_client(user, org_id, name, "user")
+            created = create_client(user, org_id, name, "user", group_name=group_name)
             sec.audit(user, "client.create", org_id, "client", created.get("id"), {"via": "user"})
-            return {"client_id": created["id"], "client_link": "confirmed", "client_suggestion": []}
+            return {"client_id": created["id"], "client_link": "confirmed", "client_suggestion": [],
+                    "client_group_saved": (created.get("group_name") == group_name) if group_name else None}
         return {"client_id": None, "client_link": "suggested", "client_suggestion": _suggestion([], name)}
     except RuntimeError as exc:  # inclui falhas do banco: a análise nunca é perdida por causa do vínculo
         log.warning("vínculo de cliente não realizado: %s", exc)
@@ -117,9 +180,12 @@ def create(user, payload: ClientCreate) -> dict:
     name = " ".join((payload.name or "").split())
     if not 1 <= len(name) <= 200 or not normalize_name(name):
         raise AppError(400, "O nome do cliente deve ter entre 1 e 200 caracteres.")
-    row = repository.insert_client_guarded(user, {
-        "org_id": org, "owner_id": user.id, "name": name[:200], "normalized_name": normalize_name(name), "created_via": "user",
-        "aliases": _clean_aliases(payload.aliases, name)})
+    group = clean_group(payload.group_name)
+    row_in = {"org_id": org, "owner_id": user.id, "name": name[:200], "normalized_name": normalize_name(name), "created_via": "user",
+              "aliases": _clean_aliases(payload.aliases, name)}
+    if group:
+        row_in["group_name"] = group
+    row = repository.insert_client_guarded(user, row_in)
     sec.audit(user, "client.create", org, "client", row.get("id"), {"via": "user"})
     return {"ok": True, "client": row}
 
@@ -146,6 +212,8 @@ def update(user, client_id: str, payload: ClientUpdate) -> dict:
         changes.update(name=name, normalized_name=normalize_name(name))
     if payload.aliases is not None or payload.name is not None:
         changes["aliases"] = _clean_aliases(payload.aliases if payload.aliases is not None else client.get("aliases"), name)
+    if payload.group_name is not None:
+        changes["group_name"] = clean_group(payload.group_name)
     if not changes:
         return {"ok": True, "client": client}
     row = repository.patch_client(user, client_id, changes)

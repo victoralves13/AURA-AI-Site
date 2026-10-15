@@ -19,7 +19,7 @@
     parcial: ['Evidência parcial', 'Parte da resposta foi comprovada; trechos só da análise do AURA ou afirmações sem prova foram tratados com cautela.'],
     insuficiente: ['Sem evidência suficiente', 'Nenhuma afirmação pôde ser comprovada com um trecho dos seus dados.']
   };
-  const SUGGESTIONS = ['Quais clientes têm risco alto e por quê?', 'O que ficou pendente nas últimas reuniões?', 'Quais ações estão atrasadas?', 'Resuma a reunião mais recente.'];
+  const SUGGESTIONS = ['Quais clientes mais preocupam?', 'O que mudou desde a última reunião de cada cliente?', 'Quais compromissos estão pendentes?', 'Qual oportunidade priorizar?'];
   let state = { list: [], current: null, messages: [], busy: false, space: null, pendingScope: null, intent: null };
   let host = null;
   let landed = false;
@@ -123,7 +123,7 @@
     const rest = lines.filter(l => !l.startsWith('• '));
     const kids = [];
     if (bullets.length) kids.push(el('ul', {}, bullets.map(l => el('li', { text: l.slice(2) }))));
-    rest.forEach(l => kids.push(el('p', { class: l.startsWith('(') ? 'chat-note' : '', text: l })));
+    rest.forEach(l => kids.push(el('p', { class: l.startsWith('(') ? 'chat-note' : l.startsWith('→ ') ? 'chat-advice' : '', text: l })));
     return kids;
   }
 
@@ -131,7 +131,7 @@
     const { el } = ui();
     if (m.role === 'user') return el('div', { class: 'chat-msg user' }, el('div', { class: 'chat-bubble' }, el('p', { text: m.content })));
     return el('div', { class: 'chat-msg assistant' }, el('div', { class: 'chat-bubble' },
-      el('div', { class: 'chat-bubble-top' }, el('span', { class: 'chat-who', text: 'AURA' }), evidenceBadge(m.evidence_level)),
+      el('div', { class: 'chat-bubble-top' }, el('span', { class: 'chat-who', text: 'AURA' }), m.evidence_level ? evidenceBadge(m.evidence_level) : null),
       renderContent(m.content), sourcesBlock(m.sources)));
   }
 
