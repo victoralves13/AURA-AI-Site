@@ -6,7 +6,7 @@ Reproduz o que importa para a segurança:
   * leituras/escritas com a chave de serviço ignoram o RLS.
 """
 import itertools
-from datetime import date
+from datetime import date, datetime, timezone
 import uuid
 from urllib.parse import parse_qsl, urlsplit
 
@@ -400,6 +400,8 @@ class FakeSupabase:
                 cols.append(cur)
                 keep = {c.split("(")[0] for c in cols}
                 out = [{k: v for k, v in r.items() if k in keep} for r in out]
+            if dict(query).get("order", "").endswith(".desc"):  # a ordem de inserção é a cronológica
+                out.reverse()
             limit = dict(query).get("limit")
             return 200, out[: int(limit)] if limit else out
 
@@ -454,6 +456,7 @@ class FakeSupabase:
                 row.setdefault("id", str(uuid.uuid4()))
             if table == "audit_log":
                 row.setdefault("id", next(self._seq))
+                row.setdefault("at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
             if table == "memberships" and any(m["org_id"] == row["org_id"] and m["user_id"] == row["user_id"] for m in self.tables[table]):
                 return 409, {"message": "duplicate"}
             if table == "invitations":

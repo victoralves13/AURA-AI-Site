@@ -340,3 +340,23 @@ Migração `20261014200000_etapa5_conversas.sql` (aditiva; **aplique antes de us
 - Endpoints (todos exigem login): `GET|POST /api/conversations`, `GET|PATCH|DELETE /api/conversations/{id}`,
   `POST /api/conversations/{id}/messages` (nesta fase só guarda a pergunta; a resposta vem na 5.2).
 Testes: `python -m unittest discover -s tests` e `node tests/db/chat.test.mjs`.
+
+## Etapa 5.2 — Motor de resposta do chat (sem migração nova)
+
+`api/chat_engine.py` + o fluxo em `api/conversations.py`. **Não há migração nova**: usa as da 5.1 (aplique a 10 antes).
+- **Recuperação:** só dados que a pessoa já lê (JWT dela, RLS, redação financeira), só do espaço da conversa e respeitando o escopo
+  (reunião, cliente ou ação). Ranqueia por palavras da pergunta; sem coincidência, usa as reuniões mais recentes. Demonstrações ficam de fora.
+- **Redação pela IA:** os dados entram como texto NÃO confiável (marcadores neutralizados; ordens dentro de transcrições nunca são seguidas).
+  A IA devolve afirmações estruturadas: fonte (S1, S2…), trecho literal e fato/inferência.
+- **Conferência:** o backend confere cada afirmação (fonte existe; trecho aparece na transcrição ou, no máximo, na análise; mínimo de 3 palavras).
+  Afirmação sem prova é descartada; a resposta final é montada só com o que foi comprovado. Nada comprovado = "não encontrei evidência".
+  Nível: `forte` (tudo comprovado na transcrição), `parcial` (parte, só na análise, ou algo descartado), `insuficiente`.
+- **Limite honesto:** a conferência é mecânica. Ela garante que o trecho citado EXISTE na fonte, não que a conclusão tirada dele esteja certa
+  (por exemplo, uma ordem escondida na transcrição é um trecho que existe). Por isso a tela mostra sempre o trecho, o horário e o
+  interlocutor, e rotula inferências.
+- **Endpoints:** `POST /api/conversations/{id}/messages` grava a pergunta e devolve `answer` (ou `answer_error`); se a IA falhar, a
+  pergunta fica gravada e `POST /api/conversations/{id}/answer` pede a resposta de novo (nunca responde duas vezes a mesma pergunta).
+- **Custo e abuso:** `AURA_MAX_CHAT_PER_HOUR` (padrão 60 respostas por pessoa/hora; falha ao verificar bloqueia). O modelo vem de
+  `AURA_OPENAI_CHAT_MODEL` (padrão = o da análise; o nome padrão `gpt-6-sol` continua sem confirmação).
+- **Avaliação com a IA real (você roda, com a chave só na janela do terminal):** `python tests/eval/chat_eval.py --dry` valida os exemplos sem custo;
+  sem `--dry` faz 5 chamadas e mostra, por pergunta, nível de evidência, afirmações comprovadas/descartadas e se algo proibido vazou.

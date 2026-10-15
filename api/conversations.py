@@ -8,6 +8,8 @@ Regras:
   * O navegador só grava a pergunta da pessoa. A resposta do AURA, com as fontes citadas, é gravada só pelo
     backend com a chave de serviço (`append_assistant`), depois de conferir que a conversa é da pessoa.
   * Quem sai da organização tem as conversas feitas nela apagadas pelo banco.
+  * Ao receber uma pergunta, o chat responde pelo motor `chat_engine` (só com dados que a pessoa lê, com cada afirmação
+    comprovada por um trecho). Se a IA falhar, a pergunta continua gravada e a pessoa pode pedir a resposta de novo.
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+import chat_engine
 import security as sec
 
 log = logging.getLogger("aura.conversations")
@@ -196,15 +199,36 @@ def delete_conversation(conversation_id: str, user=Depends(sec.current_user)):
     return {"ok": True}
 
 
+def _answer(user: sec.AuthUser, conversation: dict, question: str) -> tuple[dict | None, str | None]:
+    """Gera e grava a resposta do AURA. Retorna (mensagem, None) ou (None, texto do erro). Nunca perde a pergunta."""
+    cid = conversation["id"]
+    try:
+        past = _db(lambda: sec.user_rest(user, "GET", f"messages?select=role,content&conversation_id=eq.{cid}&order=created_at.asc&limit=60")) or []
+        history = past[:-1] if past and past[-1].get("role") == "user" else past  # a pergunta atual não é "conversa anterior"
+        result = chat_engine.answer(user, conversation.get("org_id"), conversation.get("scope") or {}, question, history)
+        message = append_assistant(user, cid, result["content"], result["sources"], result["evidence_level"])
+    except chat_engine.ChatUnavailable as exc:
+        return None, str(exc)
+    except HTTPException as exc:
+        return None, exc.detail if isinstance(exc.detail, str) else GENERIC
+    except Exception as exc:  # falha da IA, da rede ou de validação: a pessoa pode tentar de novo
+        log.warning("resposta do chat não gerada: %s", type(exc).__name__)
+        return None, "Não consegui gerar a resposta agora. Tente novamente."
+    sec.audit(user, "chat.answer", conversation.get("org_id"), "conversation", cid,
+              {"evidence": result["evidence_level"], "sources": len(result["sources"]), "dropped": result["stats"]["dropped"]})
+    return message, None
+
+
 @router.post("/api/conversations/{conversation_id}/messages")
 def add_message(conversation_id: str, payload: MessageCreate, user=Depends(sec.current_user)):
-    """Grava a pergunta da pessoa. (A resposta do AURA entra pela fase 5.2, via `append_assistant`.)"""
+    """Grava a pergunta da pessoa e devolve a resposta do AURA (ou o motivo de não ter sido gerada)."""
     user = _need_user(user)
     cid = _uuid(conversation_id, "Conversa")
     content = _clean_content(payload.content)
     conversation = _get_conversation(user, cid)
     if conversation.get("org_id"):  # a permissão pode ter sido retirada depois da criação
         sec.require_org_permission(user, conversation["org_id"], "chat.use")
+    chat_engine.enforce_chat_limit(user)  # antes de gravar: pergunta barrada pelo limite não fica sem resposta
     row = {"conversation_id": cid, "role": "user", "content": content}
     message = (_db(lambda: sec.user_rest(user, "POST", "messages", row)) or [row])[0]
     if conversation.get("title") == DEFAULT_TITLE:  # a primeira pergunta nomeia a conversa
@@ -212,4 +236,21 @@ def add_message(conversation_id: str, payload: MessageCreate, user=Depends(sec.c
             sec.user_rest(user, "PATCH", f"conversations?id=eq.{cid}", {"title": _clean(content, 60)})
         except RuntimeError as exc:
             log.warning("título da conversa não atualizado: %s", exc)
-    return {"ok": True, "message": message}
+    reply, error = _answer(user, conversation, content)
+    return {"ok": True, "message": message, "answer": reply, "answer_error": error}
+
+
+@router.post("/api/conversations/{conversation_id}/answer")
+def retry_answer(conversation_id: str, user=Depends(sec.current_user)):
+    """Pede de novo a resposta da última pergunta (quando a primeira tentativa falhou)."""
+    user = _need_user(user)
+    cid = _uuid(conversation_id, "Conversa")
+    conversation = _get_conversation(user, cid)
+    if conversation.get("org_id"):
+        sec.require_org_permission(user, conversation["org_id"], "chat.use")
+    last = _db(lambda: sec.user_rest(user, "GET", f"messages?select=role,content&conversation_id=eq.{cid}&order=created_at.desc&limit=1")) or []
+    if not last or last[0].get("role") != "user":
+        raise HTTPException(status_code=409, detail="Não há pergunta sem resposta nesta conversa.")
+    chat_engine.enforce_chat_limit(user)
+    reply, error = _answer(user, conversation, last[0]["content"])
+    return {"ok": True, "answer": reply, "answer_error": error}
