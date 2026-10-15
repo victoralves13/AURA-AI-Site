@@ -202,7 +202,8 @@ class Escopo(Base):
         self.ask(self.new(org_id=ORG1), "quais ações estão pendentes?")
         data = self.prompts[0].split("<dados>")[1]
         self.assertIn("Tarefa número 0 do Beta", data)
-        self.assertNotIn("Tarefa número 1 do Beta", data)  # concluída, e a pergunta é sobre pendentes
+        self.assertIn("1 em aberto", data)  # a visão geral conta só as abertas; a concluída aparece no detalhe com o estado "done"
+        self.assertIn("Tarefa número 1 do Beta (done", data)
 
 
 class Seguranca(Base):

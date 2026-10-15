@@ -38,6 +38,7 @@
 .chat-bubble ul{margin:0 0 8px;padding-left:18px;display:grid;gap:6px}
 .chat-bubble li{overflow-wrap:anywhere}
 .chat-note{color:#8fa8b0;font-size:12px}
+.chat-advice{margin-top:8px!important;padding:8px 10px;border-left:3px solid #62e9fa;background:rgba(98,233,250,.07);border-radius:0 8px 8px 0}
 .chat-bubble-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
 .chat-who{color:#62e9fa;font:700 10.5px 'DM Mono',monospace;letter-spacing:.1em}
 .chat-evidence{display:inline-block;padding:3px 9px;border-radius:999px;border:1px solid rgba(170,220,230,.3);font:600 11px Manrope,system-ui,sans-serif;cursor:help}

@@ -111,6 +111,7 @@ body.aura-light .chat-suggest{color:#2c727e!important;border:1px solid rgba(8,45
 body.aura-light .chat-bubble{color:#00748d!important;background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
 body.aura-light .chat-msg.user .chat-bubble{border-color:rgba(8,45,57,0.30)!important}
 body.aura-light .chat-note{color:#536e76!important}
+body.aura-light .chat-advice{border-left:3px solid rgba(8,45,57,0.30)!important}
 body.aura-light .chat-who{color:#047482!important}
 body.aura-light .chat-evidence{border:1px solid rgba(8,45,57,0.30)!important}
 body.aura-light .chat-evidence.lv-forte{color:#12773e!important;border-color:rgba(8,45,57,0.30)!important}
