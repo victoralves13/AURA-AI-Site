@@ -16,7 +16,7 @@ except Exception:
     create_client = None
 
 from aura.core import security as sec
-from aura.features.actions import router as actions_mod
+from aura.features.actions import service as actions_mod
 from aura.features.clients import service as clients_mod
 from aura.features.meetings.router import _save_meeting
 

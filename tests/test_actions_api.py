@@ -10,7 +10,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from aura.features.actions import router as act  # noqa: E402
+from aura.features.actions import derivation as act  # noqa: E402
 from test_orgs import OrgBase, ORG1, ORG2, UA, UB, UC, UD, UE  # noqa: E402
 from test_security import minimal_analysis  # noqa: E402
 
