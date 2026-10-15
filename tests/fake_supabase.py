@@ -19,7 +19,7 @@ class FakeSupabase:
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
                                               "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
-                                              "actions", "action_events", "action_outcomes", "action_feedback")}
+                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
         self.no_edit = set()  # ids de reuniões cujas ações a pessoa vê, mas não pode editar (a política real distingue)
@@ -192,6 +192,49 @@ class FakeSupabase:
                                              "event": "outcome", "data": {"effectiveness": row["effectiveness"]}})
         return 201, [dict(row)]
 
+    def _conv_visible(self, conv, uid):  # privada: só o dono, e (em organização) enquanto puder usar o chat
+        if conv.get("owner_id") != uid:
+            return False
+        return conv.get("org_id") is None or self._role(uid, conv["org_id"]) is not None
+
+    def _chat_write(self, table, method, payload, uid, match):
+        convs, msgs = self.tables["conversations"], self.tables["messages"]
+        if table == "conversations":
+            if method == "POST":
+                row = {**payload, "id": str(uuid.uuid4()), "created_at": self._ts(), "last_message_at": self._ts(), "scope": payload.get("scope") or {}}
+                if row.get("owner_id") != uid or not self._conv_visible(row, uid):
+                    return 403, {"message": "new row violates row-level security policy"}
+                if not 1 <= len(row.get("title") or "") <= 200:
+                    return 400, {"code": "23514", "message": "check constraint"}
+                if len([c for c in convs if c["owner_id"] == uid]) >= 500:
+                    return 400, {"code": "23514", "message": "too_many_conversations"}
+                convs.append(row)
+                return 201, [dict(row)]
+            hit = [c for c in convs if self._conv_visible(c, uid) and match(c)]
+            if method == "PATCH":
+                if any(k in payload for k in ("owner_id", "org_id", "scope")):
+                    return 400, {"code": "23514", "message": "conversation_immutable"}
+                for c in hit:
+                    c.update(payload)
+                return 200, [dict(c) for c in hit]
+            if method == "DELETE":
+                for c in hit:
+                    convs.remove(c)
+                    self.tables["messages"] = [m for m in self.tables["messages"] if m["conversation_id"] != c["id"]]
+                return 200, [dict(c) for c in hit]
+            return 405, {}
+        if method == "POST":
+            conv = next((c for c in convs if c["id"] == payload.get("conversation_id")), None)
+            if not conv or not self._conv_visible(conv, uid) or payload.get("role") != "user":
+                return 403, {"message": "new row violates row-level security policy"}
+            if len([m for m in msgs if m["conversation_id"] == conv["id"]]) >= 400:
+                return 400, {"code": "23514", "message": "conversation_full"}
+            row = {**payload, "id": str(uuid.uuid4()), "owner_id": conv["owner_id"], "sources": [], "evidence_level": None, "created_at": self._ts()}
+            msgs.append(row)
+            conv["last_message_at"] = self._ts()
+            return 201, [dict(row)]
+        return 405, {}
+
     def _feedback_write(self, method, payload, uid, match):
         votes = self.tables["action_feedback"]
         if method == "POST":
@@ -316,6 +359,11 @@ class FakeSupabase:
                 return self._can_read_client(row, uid)
             if table == "actions":
                 return self._action_meeting_visible(row, uid)
+            if table == "conversations":
+                return self._conv_visible(row, uid)
+            if table == "messages":
+                conv = next((c for c in self.tables["conversations"] if c["id"] == row["conversation_id"]), None)
+                return bool(conv) and self._conv_visible(conv, uid)
             if table in ("action_events", "action_outcomes", "action_feedback"):
                 act = next((a for a in self.tables["actions"] if a["id"] == row["action_id"]), None)
                 return bool(act) and self._action_meeting_visible(act, uid)
@@ -362,6 +410,8 @@ class FakeSupabase:
             self.tables["meetings"].append(row)
             return 201, [dict(row)]
 
+        if table in ("conversations", "messages") and not is_service:
+            return self._chat_write(table, method, payload or {}, caller["id"], match)
         if table == "action_feedback" and not is_service:
             return self._feedback_write(method, payload or {}, caller["id"], match)
         if table == "action_outcomes" and not is_service and method == "POST":
@@ -400,7 +450,7 @@ class FakeSupabase:
         if method == "POST":
             row = dict(payload)
             row.setdefault("created_at", self._ts())
-            if table in ("organizations", "invitations", "teams"):
+            if table in ("organizations", "invitations", "teams", "messages"):
                 row.setdefault("id", str(uuid.uuid4()))
             if table == "audit_log":
                 row.setdefault("id", next(self._seq))

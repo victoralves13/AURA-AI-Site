@@ -34,13 +34,13 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "admin": frozenset({
         "org.settings", "members.manage", "integrations.manage", "meetings.read_all",
         "meetings.write", "meetings.manage", "meetings.delete", "finance.read", "export.data",
-        "actions.manage", "clients.read", "clients.write", "clients.manage", "audit.read",
+        "actions.manage", "clients.read", "clients.write", "clients.manage", "audit.read", "chat.use",
     }),
     "manager": frozenset({
         "meetings.read_all", "meetings.write", "meetings.manage", "finance.read", "export.data",
-        "actions.manage", "clients.read", "clients.write", "clients.manage",
+        "actions.manage", "clients.read", "clients.write", "clients.manage", "chat.use",
     }),
-    "member": frozenset({"meetings.write", "clients.read", "clients.write"}),
+    "member": frozenset({"meetings.write", "clients.read", "clients.write", "chat.use"}),
 }
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)

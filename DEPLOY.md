@@ -326,3 +326,17 @@ Migração `20261014190000_etapa4_feedback.sql` (aditiva; **aplique antes de usa
   (taxa de utilidade). "Incerto" fica fora das taxas e nenhuma taxa é calculada sem avaliações; a tela avisa "amostra pequena" abaixo de 5.
 - Tela: botões "Útil / Não útil" no painel da ação; "Eficácia por origem" e "Utilidade das sugestões" na área Ações; resumo das ações no Customer 360 do cliente.
 Atenção ao publicar: `index.html` passou a referenciar `clients-ui.js` v2 e `actions-ui.js` v3 (os arquivos são cacheados por versão).
+
+## Etapa 5.1 — Conversas do chat (armazenamento)
+
+Migração `20261014200000_etapa5_conversas.sql` (aditiva; **aplique antes de usar os endpoints de conversas**; rollback em
+`supabase/rollbacks/20261014200000_etapa5_conversas.down.sql`, que apaga todas as conversas e mensagens do chat, mas nada mais):
+- Cria `conversations` e `messages` e a permissão `chat.use` (os três papéis a recebem; pode ser retirada por pessoa com um ajuste "deny").
+- **Privacidade:** a conversa é só de quem a criou; nem o administrador da organização lê o chat de outra pessoa.
+  Quem sai (ou é removido) da organização tem as conversas feitas nela apagadas pelo banco.
+- O navegador só grava a pergunta da pessoa. A resposta do AURA (com fontes e nível de evidência) é gravada só pelo backend com a chave
+  de serviço (`append_assistant`), então ninguém consegue forjar uma resposta. Mensagens não são editadas; apaga-se a conversa inteira.
+- Limites: 400 mensagens por conversa e 500 conversas por pessoa. Escopo opcional (reunião, cliente ou ação do mesmo espaço).
+- Endpoints (todos exigem login): `GET|POST /api/conversations`, `GET|PATCH|DELETE /api/conversations/{id}`,
+  `POST /api/conversations/{id}/messages` (nesta fase só guarda a pergunta; a resposta vem na 5.2).
+Testes: `python -m unittest discover -s tests` e `node tests/db/chat.test.mjs`.

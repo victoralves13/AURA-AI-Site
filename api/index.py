@@ -28,6 +28,7 @@ import clients as clients_mod
 import security as sec
 from actions import router as actions_router
 from clients import router as clients_router
+from conversations import router as conversations_router
 from orgs import router as orgs_router
 
 app = FastAPI(title="AURA AI API", version="1.0.0-cloud")
@@ -35,6 +36,7 @@ handler = app
 app.include_router(orgs_router)
 app.include_router(clients_router)
 app.include_router(actions_router)
+app.include_router(conversations_router)
 # O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
 # Para liberar origens específicas: AURA_ALLOWED_ORIGINS="https://app.exemplo.com,https://outra.com"
 if sec.allowed_origins():
