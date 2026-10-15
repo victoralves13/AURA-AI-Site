@@ -23,7 +23,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "backend"))
 
 from aura.features.live import alerts as la  # noqa: E402
-from aura.features.live import transcribe as lt  # noqa: E402
+from aura.features.live import transcription as lt  # noqa: E402
 
 DEFAULT_SECONDS = 30
 

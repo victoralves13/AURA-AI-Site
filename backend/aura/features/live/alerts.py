@@ -17,16 +17,18 @@ import logging
 import os
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import timedelta
+
 from pydantic import BaseModel
 
-from aura.features.live import router as live
-from aura.features.live import transcribe as lt
 from aura.core import security as sec
 from aura.core import verification
+from aura.core.errors import AppError
+from aura.features.live import repository, service
+from aura.features.live import transcription as lt
+from aura.features.live.schemas import ScanRequest
 
 log = logging.getLogger("aura.live.alerts")
-router = APIRouter()
 
 ALERT_MODEL = os.getenv("AURA_OPENAI_LIVE_ALERT_MODEL") or os.getenv("AURA_OPENAI_ANALYSIS_MODEL", "gpt-6-sol")
 MAX_ALERTS = 4
@@ -44,10 +46,6 @@ class AlertItem(BaseModel):
 
 class AlertBatch(BaseModel):
     alerts: list[AlertItem]
-
-
-class ScanRequest(BaseModel):
-    from_seq: int = 0
 
 
 SYSTEM_PROMPT = """Você acompanha uma reunião comercial EM ANDAMENTO e sugere, em silêncio, poucos alertas curtos para quem está na reunião.
@@ -145,28 +143,25 @@ def verify_alerts(items: list[AlertItem], window: str) -> tuple[list[dict], int]
 
 
 def enforce_scan_limit(user: sec.AuthUser) -> None:
-    from datetime import timedelta
     limit = int(os.getenv("AURA_MAX_LIVE_SCANS_PER_HOUR", "40") or "40")
-    since = (live._now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    since = (service._now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
-        rows = sec.service_rest("GET", f"audit_log?select=id&actor_id=eq.{user.id}&action=eq.live.scan&at=gte.{since}&limit={limit + 1}") or []
+        used = repository.count_recent_scans(user.id, since, limit)
     except RuntimeError as exc:
         raise sec.limit_check_failed(exc) from exc
-    if len(rows) >= limit:
-        raise HTTPException(status_code=429, detail="Limite de varreduras de alertas por hora atingido. A transcrição continua normalmente.")
+    if used >= limit:
+        raise AppError(429, "Limite de varreduras de alertas por hora atingido. A transcrição continua normalmente.")
 
 
-@router.post("/api/live/{session_id}/alerts/scan")
-def scan(session_id: str, payload: ScanRequest | None = None, user=Depends(sec.current_user)):
-    user = live._need_user(user)
-    sid = live._uuid(session_id, "Gravação")
+def scan(user, session_id: str, payload: ScanRequest | None = None) -> dict:
+    sid = service._uuid(session_id, "Gravação")
     from_seq = payload.from_seq if payload else 0
-    if not isinstance(from_seq, int) or not 0 <= from_seq <= live.MAX_SEQ + 1:
-        raise HTTPException(status_code=400, detail="Ponto de partida inválido.")
-    session = live._get_session(user, sid)
+    if not isinstance(from_seq, int) or not 0 <= from_seq <= service.MAX_SEQ + 1:
+        raise AppError(400, "Ponto de partida inválido.")
+    session = service.get_session(user, sid)
     if not session.get("alerts_enabled"):
-        raise HTTPException(status_code=409, detail="Os alertas estão desligados nesta gravação.")
-    rows = live._db(lambda: sec.user_rest(user, "GET", f"live_chunks?select=seq,status,duration_ms,attempts,text&session_id=eq.{sid}&order=seq.asc&limit=400")) or []
+        raise AppError(409, "Os alertas estão desligados nesta gravação.")
+    rows = repository.chunks_with_text(user, sid)
     built = lt.assemble(rows)
     nxt = next_seq(built["lines"], from_seq)
     fresh = [l for l in built["lines"] if l["seq"] >= from_seq and l["status"] == "transcribed" and l["text"]]
@@ -178,10 +173,10 @@ def scan(session_id: str, payload: ScanRequest | None = None, user=Depends(sec.c
     try:
         batch = ask_model(window)
     except lt.Unavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise AppError(503, str(exc)) from exc
     except Exception as exc:
         log.warning("varredura de alertas falhou: %s", type(exc).__name__)
-        raise HTTPException(status_code=502, detail="Não foi possível analisar agora. Tentaremos de novo na próxima varredura.") from exc
+        raise AppError(502, "Não foi possível analisar agora. Tentaremos de novo na próxima varredura.") from exc
     alerts, dropped = verify_alerts(batch.alerts, window)
     sec.audit(user, "live.scan", session.get("org_id"), "live_session", sid, {"alerts": len(alerts), "dropped": dropped, "chunks": len(fresh)})
     return {"ok": True, "alerts": alerts, "next_seq": nxt, "scanned": len(fresh), "dropped": dropped}

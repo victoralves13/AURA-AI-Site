@@ -14,11 +14,8 @@ from aura.features.clients.router import router as clients_router
 from aura.features.integrations import providers
 from aura.features.integrations.router import router as integrations_router
 from aura.features.integrations.webhook import WebhookProvider
-from aura.features.live import consolidate as live_consolidate
-from aura.features.live.alerts import router as live_alerts_router
-from aura.features.live.consolidate import router as live_consolidate_router
+from aura.features.live import consolidation as live_consolidation
 from aura.features.live.router import router as live_router
-from aura.features.live.transcribe import router as live_transcribe_router
 from aura.features.meetings.router import router as meetings_router
 from aura.features.onboarding.router import router as onboarding_router
 from aura.features.orgs.router import router as orgs_router
@@ -41,9 +38,6 @@ def register_default_providers() -> None:
 
 register_default_providers()
 app.include_router(live_router)
-app.include_router(live_transcribe_router)
-app.include_router(live_alerts_router)
-app.include_router(live_consolidate_router)
 app.include_router(meetings_router)
 app.include_router(analysis_router)
 # O front-end é servido pela mesma origem, então CORS fica desligado por padrão.
@@ -51,7 +45,7 @@ app.include_router(analysis_router)
 if sec.allowed_origins():
     app.add_middleware(CORSMiddleware, allow_origins=sec.allowed_origins(), allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
 
-live_consolidate.set_pipeline(analysis_mod._build_result)  # reuniões ao vivo usam a mesma análise
+live_consolidation.set_pipeline(analysis_mod._build_result)  # reuniões ao vivo usam a mesma análise
 
 @app.get("/api/health")
 def health():

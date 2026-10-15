@@ -20,18 +20,16 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-
-from aura.features.live import router as live
 from aura.core import security as sec
-from aura.core import storage as storage_io
+from aura.core import storage
 from aura.core import verification
+from aura.core.errors import AppError
+from aura.features.live import repository, service
+from aura.features.live.schemas import TranscribeRequest
 
 log = logging.getLogger("aura.live.transcribe")
-router = APIRouter()
 
 LIVE_MODEL = os.getenv("AURA_OPENAI_LIVE_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
 MAX_ATTEMPTS = 3
@@ -41,11 +39,6 @@ OVERLAP_WORDS = 5
 CONTEXT_CHARS = 220            # fim do texto anterior, passado ao modelo como contexto
 HALLUCINATIONS = {"obrigado", "obrigada", "obrigado por assistir", "obrigada por assistir", "legendas pela comunidade amara org",
                   "inscreva se no canal", "ate a proxima", "tchau", "tchau tchau", "musica"}
-CHUNK_COLUMNS = "id,seq,status,attempts,claimed_at,duration_ms,storage_path"
-
-
-class TranscribeRequest(BaseModel):
-    retry_failed: bool = False
 
 
 class Unavailable(RuntimeError):
@@ -74,8 +67,8 @@ def hourly_limit_minutes() -> float:
 
 
 def minutes_last_hour(user: sec.AuthUser) -> float:
-    since = (live._now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")  # sem "+00:00": o "+" na URL viraria espaço e o banco recusaria
-    rows = sec.service_rest("GET", f"live_chunks?select=duration_ms&owner_id=eq.{user.id}&status=eq.transcribed&transcribed_at=gte.{since}&limit=2000") or []
+    since = (service._now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")  # sem "+00:00": o "+" na URL viraria espaço e o banco recusaria
+    rows = repository.transcribed_durations(user.id, since)
     return sum(int(r.get("duration_ms") or 0) for r in rows) / 60000
 
 
@@ -85,7 +78,7 @@ def enforce_hourly_limit(user: sec.AuthUser) -> float:
     except RuntimeError as exc:
         raise sec.limit_check_failed(exc) from exc
     if used >= hourly_limit_minutes():
-        raise HTTPException(status_code=429, detail="Limite de transcrição por hora atingido. O áudio continua guardado e a transcrição segue quando o limite liberar.")
+        raise AppError(429, "Limite de transcrição por hora atingido. O áudio continua guardado e a transcrição segue quando o limite liberar.")
     return used
 
 
@@ -158,7 +151,7 @@ def transcribe_audio(data: bytes, ext: str, context: str = "") -> str:
 # Processamento de pedaços
 # ---------------------------------------------------------------------------
 def _stale_claim(chunk: dict, now: datetime) -> bool:
-    claimed = live._iso(chunk.get("claimed_at"))
+    claimed = service._iso(chunk.get("claimed_at"))
     return chunk.get("status") == "transcribing" and (claimed is None or now - claimed > CLAIM_TTL)
 
 
@@ -173,32 +166,29 @@ def pick_pending(chunks: list[dict], now: datetime, retry_failed: bool) -> list[
 def _claim(chunk: dict, now: datetime, reset: bool) -> bool:
     """Reserva o pedaço com um UPDATE condicional: só uma chamada vence."""
     attempts = 1 if reset else int(chunk.get("attempts") or 0) + 1
-    rows = sec.service_rest("PATCH", f"live_chunks?id=eq.{chunk['id']}&status=eq.{chunk['status']}",
-                            {"status": "transcribing", "claimed_at": now.isoformat(), "attempts": attempts}) or []
-    return bool(rows)
+    return repository.claim_chunk(chunk["id"], chunk["status"], {"status": "transcribing", "claimed_at": now.isoformat(), "attempts": attempts})
 
 
 def _previous_text(session_id: str, seq: int) -> str:
     if seq <= 0:
         return ""
-    rows = sec.service_rest("GET", f"live_chunks?select=text,status&session_id=eq.{session_id}&seq=eq.{seq - 1}&limit=1") or []
-    return clean_text(rows[0].get("text")) if rows and rows[0].get("status") == "transcribed" else ""
+    row = repository.previous_chunk(session_id, seq - 1)
+    return clean_text(row.get("text")) if row and row.get("status") == "transcribed" else ""
 
 
 def process_chunk(session_id: str, chunk: dict, now: datetime, restore_attempts: int = 0) -> str:
     """Transcreve UM pedaço já reservado por esta chamada. Retorna 'transcribed' ou 'failed'. Nunca apaga o áudio."""
     try:
-        data = storage_io.download(chunk["storage_path"])
+        data = storage.download(chunk["storage_path"])
         text = clean_text(transcribe_audio(data, os.path.splitext(chunk["storage_path"])[1] or ".webm", _previous_text(session_id, chunk["seq"])))
     except Unavailable:
-        sec.service_rest("PATCH", f"live_chunks?id=eq.{chunk['id']}", {"status": "uploaded", "claimed_at": None, "attempts": restore_attempts})  # sem chave: devolve o pedaço à fila sem gastar tentativa
+        repository.update_chunk(chunk["id"], {"status": "uploaded", "claimed_at": None, "attempts": restore_attempts})  # sem chave: devolve o pedaço à fila sem gastar tentativa
         raise
     except Exception as exc:  # download, rede, modelo: o motivo detalhado vai só para o log
         log.warning("pedaço %s da sessão %s não transcrito: %s", chunk.get("seq"), session_id, type(exc).__name__)
-        sec.service_rest("PATCH", f"live_chunks?id=eq.{chunk['id']}", {"status": "failed", "claimed_at": None, "error": "transcription_failed"})
+        repository.update_chunk(chunk["id"], {"status": "failed", "claimed_at": None, "error": "transcription_failed"})
         return "failed"
-    sec.service_rest("PATCH", f"live_chunks?id=eq.{chunk['id']}",
-                     {"status": "transcribed", "text": text[:20000], "claimed_at": None, "error": None, "transcribed_at": now.isoformat()})
+    repository.update_chunk(chunk["id"], {"status": "transcribed", "text": text[:20000], "claimed_at": None, "error": None, "transcribed_at": now.isoformat()})
     return "transcribed"
 
 
@@ -206,7 +196,7 @@ def process_chunk(session_id: str, chunk: dict, now: datetime, restore_attempts:
 # API
 # ---------------------------------------------------------------------------
 def run_batch(sid: str, chunks: list[dict], now: datetime, retry: bool = False) -> tuple[list[int], list[int], int]:
-    """Transcreve até BATCH pedaços pendentes (reservando cada um). Retorna (transcritos, falhos, pulados). Levanta HTTPException 503/502."""
+    """Transcreve até BATCH pedaços pendentes (reservando cada um). Retorna (transcritos, falhos, pulados). Levanta AppError 503/502."""
     pending = pick_pending(chunks, now, retry)
     done, failed, skipped = [], [], 0
     for chunk in pending:
@@ -220,37 +210,33 @@ def run_batch(sid: str, chunks: list[dict], now: datetime, retry: bool = False) 
             result = process_chunk(sid, chunk, now, 0 if reset else int(chunk.get("attempts") or 0))
             (done if result == "transcribed" else failed).append(chunk["seq"])
         except Unavailable as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
+            raise AppError(503, str(exc)) from exc
         except RuntimeError as exc:
-            raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+            raise AppError(502, service.GENERIC) from exc
     return done, failed, skipped
 
 
-@router.post("/api/live/{session_id}/transcribe")
-def transcribe(session_id: str, payload: TranscribeRequest | None = None, user=Depends(sec.current_user)):
-    user = live._need_user(user)
-    sid = live._uuid(session_id, "Gravação")
-    session = live._get_session(user, sid)
+def transcribe(user, session_id: str, payload: TranscribeRequest | None = None) -> dict:
+    sid = service._uuid(session_id, "Gravação")
+    session = service.get_session(user, sid)
     if session.get("audio_deleted_at"):
-        raise HTTPException(status_code=409, detail="O áudio desta gravação foi apagado.")
+        raise AppError(409, "O áudio desta gravação foi apagado.")
     retry = bool(payload and payload.retry_failed)
     enforce_hourly_limit(user)
-    now = live._now()
+    now = service._now()
     try:
-        chunks = sec.service_rest("GET", f"live_chunks?select={CHUNK_COLUMNS}&session_id=eq.{sid}&order=seq.asc&limit=400") or []
+        chunks = repository.chunks_to_transcribe(sid)
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+        raise AppError(502, service.GENERIC) from exc
     done, failed, skipped = run_batch(sid, chunks, now, retry)
     remaining = len(pick_pending([c for c in chunks if c["seq"] not in done and c["seq"] not in failed], now, False))
     return {"ok": True, "transcribed": done, "failed": failed, "skipped": skipped, "remaining": remaining}
 
 
-@router.get("/api/live/{session_id}/transcript")
-def transcript(session_id: str, user=Depends(sec.current_user)):
-    user = live._need_user(user)
-    sid = live._uuid(session_id, "Gravação")
-    session = live._get_session(user, sid)
-    rows = live._db(lambda: sec.user_rest(user, "GET", f"live_chunks?select=seq,status,duration_ms,attempts,text&session_id=eq.{sid}&order=seq.asc&limit=400")) or []
+def transcript(user, session_id: str) -> dict:
+    sid = service._uuid(session_id, "Gravação")
+    session = service.get_session(user, sid)
+    rows = repository.chunks_with_text(user, sid)
     built = assemble(rows)
     done = [r for r in rows if r["status"] == "transcribed"]
     minutes = sum(int(r.get("duration_ms") or 0) for r in done) / 60000

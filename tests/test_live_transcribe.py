@@ -10,8 +10,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from aura.features.live import router as live  # noqa: E402
-from aura.features.live import transcribe as lt  # noqa: E402
+from aura.features.live import service as live  # noqa: E402
+from aura.features.live import transcription as lt  # noqa: E402
 from aura.core import storage as storage_io  # noqa: E402
 from test_live_api import Base, CLOCK  # noqa: E402
 from test_orgs import ORG1, UA, UB, UC  # noqa: E402

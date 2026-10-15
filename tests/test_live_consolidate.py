@@ -16,9 +16,9 @@ from aura import app as index
 from aura.features.meetings import router as meetings_mod
 
 from aura.features.analysis import router as analysis_mod  # noqa: E402
-from aura.features.live import router as live  # noqa: E402
-from aura.features.live import consolidate as lc  # noqa: E402
-from aura.features.live import transcribe as lt  # noqa: E402
+from aura.features.live import service as live  # noqa: E402
+from aura.features.live import consolidation as lc  # noqa: E402
+from aura.features.live import transcription as lt  # noqa: E402
 from aura.core import storage as storage_io  # noqa: E402
 from test_live_api import CLOCK  # noqa: E402
 from test_live_transcribe import Base63  # noqa: E402

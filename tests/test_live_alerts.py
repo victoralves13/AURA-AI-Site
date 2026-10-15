@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from aura.features.live import alerts as la  # noqa: E402
-from aura.features.live import transcribe as lt  # noqa: E402
+from aura.features.live import transcription as lt  # noqa: E402
 from test_live_transcribe import Base63  # noqa: E402
 
 PRAZO = "O prazo de entrega está apertado e preciso renegociar com o fornecedor"

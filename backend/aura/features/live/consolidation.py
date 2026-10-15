@@ -15,32 +15,24 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-
-from aura.features.live import router as live
-from aura.features.live import alerts as live_alerts
-from aura.features.live import transcribe as lt
 from aura.core import security as sec
+from aura.core.errors import AppError
 from aura.features.integrations.service import emit_safe
+from aura.features.live import alerts as live_alerts
+from aura.features.live import repository, service
+from aura.features.live import transcription as lt
+from aura.features.live.schemas import ConsolidateRequest
 
 log = logging.getLogger("aura.live.consolidate")
-router = APIRouter()
 
 PIPELINE = None            # definido por index.py: a função de análise que cria e salva a reunião (_build_result)
 BUSY_TTL = timedelta(minutes=10)
 GAP_LINE = "[trecho sem transcrição]"
-COLUMNS = "id,seq,status,attempts,claimed_at,duration_ms,storage_path,text"
 
 
 def set_pipeline(fn) -> None:
     global PIPELINE
     PIPELINE = fn
-
-
-class ConsolidateRequest(BaseModel):
-    allow_gaps: bool = False
-    retry_failed: bool = False
 
 
 def build_transcript(chunks: list[dict]) -> tuple[str, dict]:
@@ -61,20 +53,18 @@ def build_transcript(chunks: list[dict]) -> tuple[str, dict]:
 def _busy(session: dict, now: datetime) -> bool:
     if not str(session.get("error") or "").startswith("consolidating"):
         return False
-    updated = live._iso(session.get("updated_at"))
+    updated = service._iso(session.get("updated_at"))
     return bool(updated) and now - updated < BUSY_TTL
 
 
 def _find_existing_meeting(user: sec.AuthUser, sid: str) -> dict | None:
-    rows = sec.user_rest(user, "GET", f"meetings?select=id,meeting_title,summary&file_name=eq.live-{sid}&order=created_at.desc&limit=1") or []
-    return rows[0] if rows else None
+    return repository.find_meeting_of_session(user, sid)
 
 
 def _finish(sid: str, meeting_id: str) -> bool:
     for _ in range(2):  # uma nova tentativa se o banco falhar na hora de ligar a reunião
         try:
-            rows = sec.service_rest("PATCH", f"live_sessions?id=eq.{sid}&status=eq.processing", {"status": "ended", "meeting_id": meeting_id, "error": None}) or []
-            return bool(rows)
+            return repository.link_session_to_meeting(sid, meeting_id)
         except RuntimeError as exc:
             log.warning("sessão ao vivo não ligada à reunião: %s", exc)
     return False
@@ -85,37 +75,35 @@ def _done(meeting: dict, extra: dict | None = None) -> dict:
             "summary": (meeting.get("summary") or "")[:400], **(extra or {})}
 
 
-@router.post("/api/live/{session_id}/consolidate")
-def consolidate(session_id: str, payload: ConsolidateRequest | None = None, user=Depends(sec.current_user)):
-    user = live._need_user(user)
-    sid = live._uuid(session_id, "Gravação")
+def consolidate(user, session_id: str, payload: ConsolidateRequest | None = None) -> dict:
+    sid = service._uuid(session_id, "Gravação")
     allow_gaps, retry = bool(payload and payload.allow_gaps), bool(payload and payload.retry_failed)
-    session = live._get_session(user, sid)
+    session = service.get_session(user, sid)
     if session["status"] in ("recording", "paused"):
-        raise HTTPException(status_code=409, detail="Encerre a gravação antes de gerar a reunião.")
+        raise AppError(409, "Encerre a gravação antes de gerar a reunião.")
     if session["status"] == "ended" and session.get("meeting_id"):
         return {"ok": True, "state": "done", "meeting_id": session["meeting_id"], "already": True}
     if PIPELINE is None:
-        raise HTTPException(status_code=503, detail="A análise de reuniões não está disponível neste ambiente.")
-    now = live._now()
+        raise AppError(503, "A análise de reuniões não está disponível neste ambiente.")
+    now = service._now()
     try:
         # uma tentativa anterior pode ter salvo a reunião e falhado ao ligá-la: reaproveita em vez de duplicar
         existing = _find_existing_meeting(user, sid)
         if existing:
             if session["status"] != "processing":
-                sec.service_rest("PATCH", f"live_sessions?id=eq.{sid}&status=in.(failed,abandoned)", {"status": "processing", "error": None})
+                repository.revive_session(sid, "in.(failed,abandoned)")
             _finish(sid, existing["id"])
             return _done(existing, {"reused": True})
-        chunks = sec.service_rest("GET", f"live_chunks?select={COLUMNS}&session_id=eq.{sid}&order=seq.asc&limit=400") or []
+        chunks = repository.chunks_for_consolidation(sid)
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+        raise AppError(502, service.GENERIC) from exc
 
     # 1) transcrição pendente: um lote por chamada (a tela chama de novo)
     if not session.get("audio_deleted_at"):
         if lt.pick_pending(chunks, now, retry):
             lt.enforce_hourly_limit(user)
             lt.run_batch(sid, chunks, now, retry)
-            chunks = sec.service_rest("GET", f"live_chunks?select={COLUMNS}&session_id=eq.{sid}&order=seq.asc&limit=400") or []
+            chunks = repository.chunks_for_consolidation(sid)
             waiting = [c for c in chunks if c["status"] in ("uploaded", "transcribing") or (c["status"] == "failed" and int(c.get("attempts") or 0) < lt.MAX_ATTEMPTS)]
             if waiting:
                 return {"ok": True, "state": "pending", "pending": len(waiting), "transcribed": sum(1 for c in chunks if c["status"] == "transcribed"), "total": len(chunks)}
@@ -131,15 +119,14 @@ def consolidate(session_id: str, payload: ConsolidateRequest | None = None, user
     sec.enforce_usage_limit(user)
     try:
         if session["status"] in ("failed", "abandoned"):
-            sec.service_rest("PATCH", f"live_sessions?id=eq.{sid}&status=eq.{session['status']}", {"status": "processing", "error": None})
-        claimed = sec.service_rest("PATCH", f"live_sessions?id=eq.{sid}&status=eq.processing&error=is.null", {"error": "consolidating"}) or []
-        if not claimed:
-            current = live._get_session(user, sid)
+            repository.revive_session(sid, f"eq.{session['status']}")
+        if not repository.claim_consolidation(sid):
+            current = service.get_session(user, sid)
             if _busy(current, now):
                 return {"ok": True, "state": "busy"}
-            sec.service_rest("PATCH", f"live_sessions?id=eq.{sid}&status=eq.processing", {"error": "consolidating"})  # reserva antiga (>10 min): retoma
+            repository.reclaim_consolidation(sid)  # reserva antiga (>10 min): retoma
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=live.GENERIC) from exc
+        raise AppError(502, service.GENERIC) from exc
 
     # 3) análise completa (a mesma das demais reuniões: cliente, evidências, decisões, ações)
     meta = {"chunks": len(chunks), "gaps": info["gaps"], "model": lt.LIVE_MODEL, "speaker_labels": False, "live": True,
@@ -153,35 +140,13 @@ def consolidate(session_id: str, payload: ConsolidateRequest | None = None, user
     except Exception as exc:
         log.warning("consolidação da gravação %s falhou: %s", sid, type(exc).__name__)
         try:
-            sec.service_rest("PATCH", f"live_sessions?id=eq.{sid}&status=eq.processing", {"status": "failed", "error": "consolidation_failed"})
+            repository.mark_consolidation_failed(sid)
         except RuntimeError:
             pass
-        raise HTTPException(status_code=502, detail="Não foi possível analisar a reunião agora. A gravação e a transcrição estão guardadas; tente de novo.") from exc
+        raise AppError(502, "Não foi possível analisar a reunião agora. A gravação e a transcrição estão guardadas; tente de novo.") from exc
     linked = _finish(sid, meeting_id)
     sec.audit(user, "analysis.live", session.get("org_id"), "meeting", meeting_id)  # conta no limite de análises por hora
     sec.audit(user, "live.consolidate", session.get("org_id"), "live_session", sid, {"chunks": len(chunks), "gaps": info["gaps"], "linked": linked})
     emit_safe(session.get("org_id"), user.id, "live.consolidated", "meeting", meeting_id,
               {"meeting_id": meeting_id, "session_id": sid, "title": str(result.get("meeting_title") or "")[:120]}, f"live.consolidated:{sid}")
     return _done({"id": meeting_id, "meeting_title": result.get("meeting_title"), "summary": result.get("summary")}, {"gaps": info["gaps"], "linked": linked})
-
-
-@router.delete("/api/live/{session_id}/audio")
-def delete_audio(session_id: str, user=Depends(sec.current_user)):
-    """Apaga só o áudio: a transcrição, a sessão e a reunião ficam. Só depois de o texto estar pronto (reunião gerada ou tudo transcrito)."""
-    user = live._need_user(user)
-    sid = live._uuid(session_id, "Gravação")
-    session = live._get_session(user, sid)
-    if session.get("audio_deleted_at"):
-        return {"ok": True, "deleted": 0, "already": True}
-    if session["status"] in ("recording", "paused"):
-        raise HTTPException(status_code=409, detail="Encerre a gravação antes de apagar o áudio.")
-    if session["status"] != "ended":
-        rows = live._db(lambda: sec.user_rest(user, "GET", f"live_chunks?select=status&session_id=eq.{sid}&limit=400")) or []
-        if any(r["status"] != "transcribed" for r in rows):
-            raise HTTPException(status_code=409, detail="Ainda há trechos sem transcrição. Gere a reunião antes de apagar o áudio, ou apague a gravação inteira.")
-    try:
-        n = live.delete_audio_of(user, session, "user")
-    except Exception as exc:
-        log.warning("áudio da gravação não apagado: %s", type(exc).__name__)
-        raise HTTPException(status_code=502, detail="Não foi possível apagar o áudio agora. Nada foi apagado; tente novamente.") from exc
-    return {"ok": True, "deleted": n}

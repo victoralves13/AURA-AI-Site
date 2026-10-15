@@ -11,7 +11,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from aura.features.live import router as live  # noqa: E402
+from aura.features.live import repository  # noqa: E402
+from aura.features.live import service as live  # noqa: E402
 from aura.core import storage as storage_io  # noqa: E402
 from test_orgs import OrgBase, ORG1, ORG2, UA, UB, UC, UD, UE  # noqa: E402
 
@@ -260,7 +261,7 @@ class Pedacos(Base):
 
     def test_corrida_na_gravacao_do_mesmo_pedaco_vira_duplicado(self):
         self.upload(self.sid, 0)
-        original = live._db
+        original = repository._db
         calls = {"n": 0}
 
         def racing(call):  # na primeira vez, "outra chamada" grava o pedaço antes
@@ -268,7 +269,7 @@ class Pedacos(Base):
             if calls["n"] == 3:
                 self.rows("live_chunks").append({"id": "x", "session_id": self.sid, "seq": 0, "owner_id": UA, "status": "uploaded", "duration_ms": 30000, "size_bytes": 5})
             return original(call)
-        with mock.patch.object(live, "_db", racing):
+        with mock.patch.object(repository, "_db", racing):
             r = self.register(self.sid, 0)
         self.assertEqual((r.status_code, r.json()["duplicate"]), (200, True))
 
