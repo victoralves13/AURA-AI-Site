@@ -632,3 +632,13 @@ queda de rede não perdeu áudio · apagar o áudio preservou a reunião · aval
 - **Sem a migração aplicada**, `GET /api/onboarding` responde 502 e a interface simplesmente não mostra o botão "Primeiros passos" (o resto do app não é afetado).
 - **Arquivos novos:** `api/onboarding.py`, `onboarding-ui.js`, `onboarding-ui.css` (o smoke confere os dois arquivos e as rotas `/api/onboarding*` respondendo 401 sem login).
 - **Verificar no preview (conta nova):** botão "Primeiros passos 0/5" no topo; analisar uma reunião faz o passo 1 virar "Concluído" sozinho; "Pular" e "Dispensar" persistem ao recarregar e em outro aparelho; Perfil → "Rever o tutorial" reabre; uma segunda conta não herda nada.
+
+---
+
+## Fase 7.4 — arquitetura de integrações (migração 14, AINDA NÃO APLICADA)
+- **O que é:** a base para integrações (cadastro, segredo cifrado, registro de eventos, entregas com tentativas). **Ainda não envia nada a ninguém:** o provedor real (webhook assinado) chega na 7.5. Por isso a API responde 501 ao criar uma integração e a interface ainda não tem tela.
+- **Migração:** `supabase/migrations/20261014240000_etapa7_integracoes.sql` (3 tabelas, aditiva). Só aplicar com aprovação. Rollback: `supabase/rollbacks/20261014240000_etapa7_integracoes.down.sql` (roda antes do rollback da 13; perde integrações, eventos e entregas).
+- **Variáveis novas (só quando a 7.5 entrar no ar):** `AURA_INTEGRATIONS_KEY` (32 bytes em base64 url-safe; gere com `python -c "import os,base64;print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`; guarde só na Vercel e no seu cofre: sem ela não dá para ler os segredos), `AURA_INTEGRATIONS_KEY_VERSION` (padrão 1), `AURA_INTEGRATIONS_KEY_PREV` (só durante troca de chave) e `AURA_CRON_SECRET` (protege `POST /api/integrations/dispatch`, chamado pelo agendador).
+- **Dependência nova:** `cryptography` em `requirements.txt` (o deploy precisa reconstruir).
+- **Eventos já ligados:** `meeting.analyzed`, `action.completed`, `live.consolidated`. Com a migração aplicada e nenhuma integração cadastrada eles apenas ficam registrados; sem a migração, o registro falha em silêncio e nada muda para quem usa o app (testado).
+- **Atenção:** o registro de eventos já cresce a cada reunião analisada; uma política de retenção (apagar eventos antigos) entra junto com a 7.5.

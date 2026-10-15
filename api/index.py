@@ -30,6 +30,7 @@ from actions import router as actions_router
 from clients import router as clients_router
 from conversations import router as conversations_router
 from onboarding import router as onboarding_router
+from integrations import emit_safe as emit_integration_event, router as integrations_router
 from live import router as live_router
 from live_alerts import router as live_alerts_router
 from live_consolidate import router as live_consolidate_router
@@ -44,6 +45,7 @@ app.include_router(clients_router)
 app.include_router(actions_router)
 app.include_router(conversations_router)
 app.include_router(onboarding_router)
+app.include_router(integrations_router)
 app.include_router(live_router)
 app.include_router(live_transcribe_router)
 app.include_router(live_alerts_router)
@@ -184,7 +186,13 @@ def _save_meeting(data: dict, user=None):
 
     if result is None:
         return {"persisted": False, "storage": "local-only"}
-    return {"persisted": True, "storage": "supabase", "meeting": result[0] if result else None}
+    meeting = result[0] if result else None
+    if user is not None and isinstance(meeting, dict) and meeting.get("id") and not payload.get("is_demo"):
+        # Avisa as integrações do espaço (só ids e rótulos curtos; nunca a transcrição). Falha aqui nunca afeta a análise.
+        emit_integration_event(payload.get("org_id"), user.id, "meeting.analyzed", "meeting", meeting["id"],
+                               {"meeting_id": meeting["id"], "title": str(payload.get("meeting_title") or "")[:120], "risk": payload.get("risk"),
+                                "sentiment": payload.get("sentiment")}, f"meeting.analyzed:{meeting['id']}")
+    return {"persisted": True, "storage": "supabase", "meeting": meeting}
 
 def _create_upload_url(path: str):
     response = _supabase().storage.from_(AUDIO_BUCKET).create_signed_upload_url(path)

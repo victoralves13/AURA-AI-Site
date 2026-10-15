@@ -22,6 +22,7 @@ import live
 import live_alerts
 import live_transcribe as lt
 import security as sec
+from integrations import emit_safe
 
 log = logging.getLogger("aura.live.consolidate")
 router = APIRouter()
@@ -159,6 +160,8 @@ def consolidate(session_id: str, payload: ConsolidateRequest | None = None, user
     linked = _finish(sid, meeting_id)
     sec.audit(user, "analysis.live", session.get("org_id"), "meeting", meeting_id)  # conta no limite de análises por hora
     sec.audit(user, "live.consolidate", session.get("org_id"), "live_session", sid, {"chunks": len(chunks), "gaps": info["gaps"], "linked": linked})
+    emit_safe(session.get("org_id"), user.id, "live.consolidated", "meeting", meeting_id,
+              {"meeting_id": meeting_id, "session_id": sid, "title": str(result.get("meeting_title") or "")[:120]}, f"live.consolidated:{sid}")
     return _done({"id": meeting_id, "meeting_title": result.get("meeting_title"), "summary": result.get("summary")}, {"gaps": info["gaps"], "linked": linked})
 
 

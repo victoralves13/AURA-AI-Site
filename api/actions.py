@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 import security as sec
+from integrations import emit_safe
 import verification
 
 log = logging.getLogger("aura.actions")
@@ -388,6 +389,10 @@ def update_action(action_id: str, payload: ActionUpdate, user=Depends(sec.curren
     if not rows:  # a ação é visível, mas a pessoa não pode editá-la
         raise HTTPException(status_code=403, detail="Você não tem permissão para alterar esta ação.")
     sec.audit(user, "action.update", current.get("org_id"), "action", aid, {"fields": sorted(changes)})
+    if changes.get("status") == "done" and current.get("status") != "done":
+        emit_safe(current.get("org_id"), user.id, "action.completed", "action", aid,
+                  {"action_id": aid, "meeting_id": current.get("meeting_id"), "text": str(rows[0].get("text") or "")[:120]},
+                  f"action.completed:{aid}:{rows[0].get('completed_at') or ''}")
     return {"ok": True, "action": rows[0]}
 
 

@@ -19,7 +19,7 @@ class FakeSupabase:
         self.users = {}  # token -> {id, email, confirmed}
         self.tables = {name: [] for name in ("organizations", "memberships", "membership_permissions",
                                               "invitations", "audit_log", "teams", "team_members", "meetings", "clients",
-                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages", "live_sessions", "live_chunks", "onboarding_progress")}
+                                              "actions", "action_events", "action_outcomes", "action_feedback", "conversations", "messages", "live_sessions", "live_chunks", "onboarding_progress", "integrations", "integration_events", "integration_deliveries")}
         self.calls = []  # (method, url, payload)
         self.fail = set()  # {("POST", "memberships")}: força erro 500
         self.clock = None  # ISO do "agora" das sessões ao vivo (os testes fixam)
@@ -299,6 +299,53 @@ class FakeSupabase:
             return 201, [dict(row)]
         return 405, {}
 
+    def _can_manage_integrations(self, row, uid):  # espelha aura_private.can_manage_integrations (permissão só do papel admin)
+        if row.get("org_id") is None:
+            return row.get("owner_id") == uid
+        return self._role(uid, row["org_id"]) == "admin"
+
+    INTEGRATION_EVENTS = ("integration.test", "meeting.analyzed", "action.completed", "live.consolidated")
+
+    def _integration_insert(self, table, row):  # espelha tabelas, gatilhos e únicos da migração 14
+        import re
+        import time
+        rows = self.tables[table]
+        row.setdefault("id", str(uuid.uuid4()))
+        row.setdefault("created_at", self._ts())
+        if table == "integrations":
+            row.setdefault("status", "active")
+            row.setdefault("consecutive_failures", 0)
+            row.setdefault("events", [])
+            row.setdefault("config", {})
+            for k in ("last_success_at", "last_failure_at", "disabled_reason", "secret_ct", "secret_hint"):
+                row.setdefault(k, None)
+            if len([i for i in rows if i["owner_id"] == row["owner_id"] and i.get("org_id") == row.get("org_id")]) >= 20:
+                return 400, {"code": "23514", "message": "too_many_integrations"}
+            if row.get("provider") != "webhook":
+                return 400, {"code": "23514", "message": "integration_invalid_provider"}
+            if any(e not in self.INTEGRATION_EVENTS or e == "integration.test" for e in row["events"]):
+                return 400, {"code": "23514", "message": "integration_invalid_event"}
+            if not re.match(r"^https://[^/\s:@]+(:[0-9]{1,5})?(/\S*)?$", str((row["config"] or {}).get("url") or "")):
+                return 400, {"code": "23514", "message": "integration_invalid_url"}
+        elif table == "integration_events":
+            if row.get("type") not in self.INTEGRATION_EVENTS:
+                return 400, {"code": "23514", "message": "integration_invalid_event"}
+            row.setdefault("data", {})
+            row.setdefault("dedupe_key", None)
+            if row["dedupe_key"] and any(e["dedupe_key"] == row["dedupe_key"] and e.get("org_id") == row.get("org_id")
+                                          and (row.get("org_id") is not None or e["owner_id"] == row["owner_id"]) for e in rows):
+                return 409, {"code": "23505", "message": "duplicate key value violates unique constraint"}
+        else:
+            if any(d["integration_id"] == row["integration_id"] and d["event_id"] == row["event_id"] for d in rows):
+                return 409, {"code": "23505", "message": "duplicate key value violates unique constraint"}
+            row.setdefault("status", "pending")
+            row.setdefault("attempts", 0)
+            row.setdefault("next_attempt_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 1)))
+            for k in ("last_status", "last_error", "delivered_at"):
+                row.setdefault(k, None)
+        rows.append(row)
+        return 201, [dict(row)]
+
     ONBOARDING_STEPS = ("first_meeting", "client", "action", "chat", "live")
 
     def _onboarding_write(self, method, payload, uid, match):  # espelha onboarding_progress (RLS + gatilho)
@@ -409,6 +456,9 @@ class FakeSupabase:
                 elif value.startswith("in.("):
                     if str(row.get(key)) not in value[4:-1].split(","):
                         return False
+                elif value.startswith("lte."):
+                    if not (row.get(key) is not None and str(row.get(key)) <= value[4:]):
+                        return False
                 elif value.startswith("lt."):
                     if not (row.get(key) is not None and str(row.get(key)) < value[3:]):
                         return False
@@ -454,6 +504,11 @@ class FakeSupabase:
                 return bool(s) and self._live_visible(s, uid)
             if table == "onboarding_progress":
                 return row["user_id"] == uid
+            if table in ("integrations", "integration_events"):
+                return self._can_manage_integrations(row, uid)
+            if table == "integration_deliveries":
+                integ = next((i for i in self.tables["integrations"] if i["id"] == row["integration_id"]), None)
+                return bool(integ) and self._can_manage_integrations(integ, uid)
             if table == "conversations":
                 return self._conv_visible(row, uid)
             if table == "messages":
@@ -464,6 +519,10 @@ class FakeSupabase:
                 return bool(act) and self._action_meeting_visible(act, uid)
             return False
 
+        if method == "GET" and table == "integrations" and not is_service:  # sem GRANT em secret_ct: pedir a coluna (ou *) é erro
+            cols = dict(query).get("select", "*").split(",")
+            if "*" in cols or "secret_ct" in cols:
+                return 403, {"code": "42501", "message": "permission denied for table integrations"}
         if method == "GET":
             out = [dict(r) for r in self.tables[table] if visible(r) and match(r)]
             select = dict(query).get("select", "")
@@ -551,6 +610,11 @@ class FakeSupabase:
         if not is_service:  # escritas de usuário nas tabelas de organização não são permitidas
             return 403, {"message": "denied"}
 
+        if table in ("integrations", "integration_events", "integration_deliveries") and method == "POST":
+            return self._integration_insert(table, dict(payload))
+        if table == "integrations" and method == "DELETE":
+            ids = [r["id"] for r in self.tables[table] if match(r)]
+            self.tables["integration_deliveries"] = [d for d in self.tables["integration_deliveries"] if d["integration_id"] not in ids]
         if method == "POST":
             row = dict(payload)
             row.setdefault("created_at", self._ts())

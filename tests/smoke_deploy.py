@@ -119,6 +119,8 @@ def main(argv):
                  ("POST", "/api/orgs", b'{"name":"x"}'), ("POST", "/api/invitations/accept", b'{"token":"x"}'),
                  ("GET", "/api/actions", None), ("GET", "/api/actions/stats", None), ("POST", "/api/actions/sync", None),
                  ("GET", "/api/conversations", None), ("POST", "/api/conversations", b'{}'),
+                 ("GET", "/api/integrations", None), ("POST", "/api/integrations", b'{}'),
+                 ("POST", f"/api/integrations/{FAKE_ID}/test", b'{}'), ("GET", f"/api/integrations/{FAKE_ID}/deliveries", None),
                  ("GET", "/api/onboarding", None), ("POST", "/api/onboarding/dismiss", b'{}'), ("POST", "/api/onboarding/reset", b'{}'),
                  ("POST", "/api/onboarding/steps/chat/skip", b'{}'),
                  ("GET", "/api/live", None), ("POST", "/api/live", b'{"consent":true}'),
