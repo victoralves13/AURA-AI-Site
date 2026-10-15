@@ -29,3 +29,6 @@ html.aura-auth-pending body>*:not(.aura-auth){visibility:hidden;animation:aura-r
 .aura-user-out:hover{border-color:#62e9fa}
 @media (max-width:620px){.aura-user-chip span{display:none}}
 @media (prefers-reduced-motion:reduce){html.aura-auth-pending body>*:not(.aura-auth){animation-duration:0s}}
+.aura-auth-hint{margin:-8px 0 0;font-size:11.5px;color:#7895a4}
+.aura-auth-alt{flex-basis:100%;color:#a9c1c6}
+.aura-auth-alt .aura-auth-link{margin-left:4px}

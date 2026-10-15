@@ -21,6 +21,7 @@
   let client = null;
   let gateShown = false;
   let currentView = null;
+  let busy = false;       // há um envio em andamento na tela de login/cadastro
   let recovering = false;  // link de recuperação de senha em andamento: mantém a tela de nova senha
   let readyDone = false;
   let resolveReady;
@@ -117,7 +118,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const VIEWS = {
     login: { title: 'Entrar no AURA', sub: 'Use seu e-mail e senha para acessar suas reuniões.', submit: 'Entrar', fields: ['email', 'password'] },
-    signup: { title: 'Criar conta', sub: 'Sua conta começa com um espaço pessoal. Você poderá participar de organizações depois.', submit: 'Criar conta', fields: ['email', 'password'] },
+    signup: { title: 'Criar conta', sub: 'Sua conta começa com um espaço pessoal. Você poderá participar de organizações depois, por convite.', submit: 'Criar conta', fields: ['name', 'email', 'newpass', 'newpass2'] },
     forgot: { title: 'Recuperar senha', sub: 'Informe o e-mail da conta. Se ele existir, enviaremos as instruções.', submit: 'Enviar instruções', fields: ['email'] },
     recovery: { title: 'Definir nova senha', sub: 'Escolha uma nova senha com ao menos 8 caracteres.', submit: 'Salvar senha', fields: ['newpass', 'newpass2'] }
   };
@@ -138,12 +139,17 @@
 
   function fieldHtml(name) {
     const f = {
+      name: ['Nome', 'text', 'name', 'name'],
       email: ['E-mail', 'email', 'email', 'username'],
       password: ['Senha', 'password', 'password', 'current-password'],
       newpass: ['Nova senha', 'password', 'newpass', 'new-password'],
       newpass2: ['Repita a nova senha', 'password', 'newpass2', 'new-password']
     }[name];
-    return '<label>' + f[0] + '<input name="' + f[2] + '" type="' + f[1] + '" autocomplete="' + f[3] + '" required></label>';
+    const hint = name === 'newpass' && currentView === 'signup' ? ' aria-describedby="auraPassHint"' : '';
+    const extra = name === 'name' ? ' maxlength="80"' : name === 'newpass' || name === 'newpass2' ? ' maxlength="72"' : '';
+    const label = currentView === 'signup' ? ({ newpass: 'Senha', newpass2: 'Confirmar senha' }[name] || f[0]) : f[0];
+    return '<label>' + label + '<input name="' + f[2] + '" type="' + f[1] + '" autocomplete="' + f[3] + '"' + hint + extra + ' required></label>' +
+      (hint ? '<p class="aura-auth-hint" id="auraPassHint">Mínimo de 8 caracteres.</p>' : '');
   }
 
   function showGate(view, notice) {
@@ -154,7 +160,7 @@
     el.hidden = false;
     document.documentElement.classList.remove('aura-auth-pending');
     const links = view === 'login'
-      ? '<button type="button" class="aura-auth-link" data-go="signup">Criar conta</button><button type="button" class="aura-auth-link" data-go="forgot">Esqueci minha senha</button>'
+      ? '<span class="aura-auth-alt">Não tem uma conta? <button type="button" class="aura-auth-link" data-go="signup">Criar conta</button></span><button type="button" class="aura-auth-link" data-go="forgot">Esqueci minha senha</button>'
       : view === 'recovery' ? '' : '<button type="button" class="aura-auth-link" data-go="login">Voltar para entrar</button>';
     el.innerHTML = '<div class="aura-auth-card"><div class="aura-auth-brand"><img src="/assets/img/aura-logo-real.jpeg" alt="" width="34" height="34"><span>AURA AI</span></div>' +
       '<h1 id="auraAuthTitle">' + v.title + '</h1><p class="aura-auth-sub">' + v.sub + '</p>' +
@@ -173,24 +179,37 @@
       const val = n => (form.elements[n] ? form.elements[n].value : '');
       const email = val('email').trim();
       const fail = text => { msg.className = 'aura-auth-msg error'; msg.textContent = text; };
-      if (v.fields.includes('email') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Informe um e-mail válido.');
+      if (view !== 'signup' && v.fields.includes('email') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Informe um e-mail válido.');
       // Ao entrar, não se impõe tamanho (contas antigas podem ter senhas menores); só ao criar/trocar.
-      if (view === 'signup' && val('password').length < 8) return fail('A senha precisa ter ao menos 8 caracteres.');
+      if (view === 'signup') {
+        const problem = window.AURA_AUTH_SIGNUP.validate({ name: val('name'), email, password: val('newpass'), confirm: val('newpass2') });
+        if (problem) return fail(problem);
+      }
       if (view === 'recovery') {
         if (val('newpass').length < 8) return fail('A senha precisa ter ao menos 8 caracteres.');
         if (val('newpass') !== val('newpass2')) return fail('As senhas não são iguais.');
       }
+      if (busy) return;  // impede envio duplicado (Enter repetido, duplo clique)
+      busy = true;
       submit.disabled = true;
+      form.setAttribute('aria-busy', 'true');
       msg.className = 'aura-auth-msg';
-      msg.textContent = 'Aguarde…';
+      msg.textContent = view === 'signup' ? 'Criando sua conta…' : 'Aguarde…';
       try {
         if (view === 'login') {
           const { error } = await client.auth.signInWithPassword({ email, password: val('password') });
           if (error) throw error;
         } else if (view === 'signup') {
-          const { data, error } = await client.auth.signUp({ email, password: val('password'), options: { emailRedirectTo: location.origin + location.pathname } });
-          if (error) throw error;
-          if (!data.session) return showGate('login', 'Conta criada. Se for pedido, confirme o e-mail enviado e depois entre.');
+          const S = window.AURA_AUTH_SIGNUP;
+          // Só a chave pública vai ao navegador. O link de confirmação volta para ESTA origem (precisa estar nas URLs permitidas do Supabase).
+          const { data, error } = await client.auth.signUp({ email, password: val('newpass'), options: { emailRedirectTo: location.origin + location.pathname, data: { full_name: S.clean(val('name')) } } });
+          if (error) {
+            const r = S.friendly(error);
+            if (r.kind === 'check_email') return showGate('login', S.CHECK_EMAIL);
+            throw Object.assign(new Error(r.text), { shown: true });
+          }
+          // Sem sessão = confirmação de e-mail exigida (ou e-mail já cadastrado: o Supabase responde igual, de propósito).
+          if (!data.session) return showGate('login', S.CHECK_EMAIL);
         } else if (view === 'forgot') {
           await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
           return showGate('login', 'Se o e-mail existir, as instruções foram enviadas.');
@@ -201,8 +220,11 @@
           safe(() => history.replaceState(null, '', location.pathname + location.search));
         }
       } catch (err) {
-        fail(friendly(err));
+        fail(err && err.shown ? err.message : view === 'signup' ? window.AURA_AUTH_SIGNUP.friendly(err).text : friendly(err));
         submit.disabled = false;
+      } finally {
+        busy = false;
+        form.removeAttribute('aria-busy');
       }
     });
   }
@@ -218,7 +240,8 @@
     const u = window.AURA_USER;
     if (!u) return;
     const base = (u.email || 'usuário').split('@')[0].replace(/[._-]+/g, ' ');
-    const name = base.replace(/\b\w/g, c => c.toUpperCase());
+    const typed = String((u.user_metadata && u.user_metadata.full_name) || '').trim();
+    const name = typed || base.replace(/\b\w/g, c => c.toUpperCase());
     const initials = name.slice(0, 2).toUpperCase();
     document.querySelectorAll('.aura-v2-profile-avatar').forEach(el => { el.textContent = initials; });
     const chipName = document.querySelector('.aura-v2-profile span');

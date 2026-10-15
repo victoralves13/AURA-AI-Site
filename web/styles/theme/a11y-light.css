@@ -11,6 +11,8 @@ body.aura-light .aura-auth-link{color:#047482!important}
 body.aura-light .aura-user-chip{color:#4d6e74!important;background:#fff!important;border:1px solid rgba(8,45,57,0.12)!important}
 body.aura-light .aura-user-out{color:#1e737f!important;border:1px solid rgba(8,45,57,0.16)!important}
 body.aura-light .aura-user-out:hover{border-color:rgba(8,45,57,0.30)!important}
+body.aura-light .aura-auth-hint{color:#516b79!important}
+body.aura-light .aura-auth-alt{color:#4d6e74!important}
 body.aura-light .aura-space-select{color:#1e737f!important;background:#fff!important;border:1px solid rgba(8,45,57,0.16)!important}
 body.aura-light .aura-space-manage{color:#1e737f!important;border:1px solid rgba(8,45,57,0.16)!important}
 body.aura-light .aura-space-manage:hover{border-color:rgba(8,45,57,0.30)!important}
