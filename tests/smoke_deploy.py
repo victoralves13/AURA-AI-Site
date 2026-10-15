@@ -25,6 +25,7 @@ ASSETS = ["/", "/index.html", "/auth.js", "/orgs.js", "/clients-ui.js", "/action
           "/evidence.css", "/clients-ui.css", "/actions-ui.css", "/chat-ui.css", "/live-ui.css", "/supabase-js-2.117.2.umd.js"]
 
 results = []
+FAKE_ID = "00000000-0000-4000-8000-000000000000"
 
 
 def check(name, ok, detail=""):
@@ -117,7 +118,11 @@ def main(argv):
                  ("POST", "/api/analyze-transcript", b'{"transcript":"x"}'), ("POST", "/api/audio-upload-url", b'{"file_name":"a.mp3","size_bytes":10}'),
                  ("POST", "/api/orgs", b'{"name":"x"}'), ("POST", "/api/invitations/accept", b'{"token":"x"}'),
                  ("GET", "/api/actions", None), ("GET", "/api/actions/stats", None), ("POST", "/api/actions/sync", None),
-                 ("GET", "/api/conversations", None), ("POST", "/api/conversations", b'{}')]
+                 ("GET", "/api/conversations", None), ("POST", "/api/conversations", b'{}'),
+                 ("GET", "/api/live", None), ("POST", "/api/live", b'{"consent":true}'),
+                 ("POST", f"/api/live/{FAKE_ID}/chunks/upload-url", b'{"seq":0}'), ("POST", f"/api/live/{FAKE_ID}/transcribe", b'{}'),
+                 ("GET", f"/api/live/{FAKE_ID}/transcript", None), ("POST", f"/api/live/{FAKE_ID}/alerts/scan", b'{}'),
+                 ("POST", f"/api/live/{FAKE_ID}/consolidate", b'{}'), ("DELETE", f"/api/live/{FAKE_ID}/audio", None)]
     for method, path, body in protected:
         hdr = {"Content-Type": "application/json"} if body else {}
         status, _, _ = call(base, method, path, hdr, body)

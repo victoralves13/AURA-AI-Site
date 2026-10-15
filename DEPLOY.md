@@ -523,3 +523,95 @@ O gatilho de pedaços também passa a recusar um pedaço já "reservado" vindo d
   (4) não há identificação de quem fala (cada pedaço é transcrito isolado).
 - **Teste real (você):** grave 2 a 3 minutos com conversa sobre um cliente, encerre e confira: a reunião aparece com cliente, ações e evidências; teste "Apagar o áudio" e veja que a reunião continua;
   teste também sem a chave da OpenAI (a transcrição pendente deve dar aviso, sem perder nada).
+
+---
+
+# ROTEIRO COMPLETO DO PREVIEW — Etapas 4, 5 e 6 (ações, chat e reuniões ao vivo)
+
+Este roteiro substitui os "Roteiro do preview" anteriores para as Etapas 4 e 5 e inclui a Etapa 6. Nada aqui publica em produção nem faz push.
+
+## 0. Estado atual (conferido)
+- **Banco (Supabase `aura-ai`):** migrações 6 a 12 aplicadas (ações, resultados, data observada, feedback, conversas do chat, reuniões ao vivo, transcrição). As 5 reuniões antigas seguem intactas
+  (impressão digital igual desde a Etapa 3). **Atenção:** é o MESMO Supabase da produção; as migrações são aditivas e a produção atual continua funcionando sem usar as tabelas novas.
+- **Código:** branch `etapa1-estabilizacao`, commits locais (nada enviado ao GitHub). O preview é feito direto da pasta, sem Git.
+- **Ainda não testado por mim com serviços reais:** OpenAI (análise, chat, transcrição, alertas), armazenamento real do Supabase para os pedaços de áudio e microfone real. O preview existe justamente para isso.
+
+## 1. Antes do deploy (uma vez)
+1. **Variáveis do preview** (`npx vercel@latest env add NOME preview`; segredos com digitação oculta, nunca em arquivo ou chat). As antigas continuam: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+   `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `AURA_AUDIO_BUCKET`, `AURA_AUTH_REQUIRED=1`. **Novas, todas opcionais** (têm padrão):
+   - `AURA_OPENAI_CHAT_MODEL` (padrão: modelo da análise): modelo do chat.
+   - `AURA_MAX_CHAT_PER_HOUR` (60): respostas do chat por pessoa por hora.
+   - `AURA_OPENAI_LIVE_TRANSCRIPTION_MODEL` (`gpt-4o-mini-transcribe`, nome não confirmado): transcrição ao vivo.
+   - `AURA_LIVE_COST_PER_MIN_USD` (0.006): taxa da ESTIMATIVA de custo exibida (não é preço oficial da OpenAI).
+   - `AURA_MAX_LIVE_MINUTES_PER_HOUR` (90): minutos de áudio transcritos por pessoa por hora.
+   - `AURA_OPENAI_LIVE_ALERT_MODEL` (padrão: modelo da análise): alertas ao vivo.
+   - `AURA_MAX_LIVE_SCANS_PER_HOUR` (40): varreduras de alertas por pessoa por hora.
+   - `AURA_LIVE_AUDIO_RETENTION_DAYS` (0 = guarda até apagar): apaga sozinho o áudio de gravações encerradas há N dias.
+2. **Tempo máximo das funções na Vercel (importante):** transcrever pedaços e analisar uma reunião longa chamam a OpenAI e podem levar de 10 a 60 s. No painel do projeto
+   (Settings → Functions) confira o **Max Duration** (o padrão de 10–15 s pode cortar a análise de reuniões longas). Se aparecerem erros 504 ou "timeout" na consolidação, aumente-o
+   (até 60 s no plano Pro). A gravação e a transcrição nunca se perdem por timeout: dá para tentar de novo.
+3. **Bucket de áudio:** confirme que o bucket privado `aura-audio` existe (Supabase → Storage) e NÃO é público. Os pedaços ficam em `users|orgs/<id>/live/<sessão>/NNNN.webm`.
+4. **Microfone exige HTTPS:** a URL `https://…vercel.app` do preview serve. Em `http://` de rede local o navegador bloqueia o microfone.
+
+## 2. Deploy (na pasta do projeto, NUNCA com `--prod`)
+```powershell
+npx vercel@latest deploy
+```
+Anote a URL do preview. Se for uma URL nova: Supabase → Authentication → URL Configuration → Redirect URLs → acrescente-a. Se a Vercel mostrar a tela de proteção do preview, entre com a conta da Vercel.
+
+## 3. Verificação automática (só leitura)
+```powershell
+.\.venv\Scripts\python.exe tests\smoke_deploy.py <URL-DO-PREVIEW> --auth on
+```
+(se a proteção da Vercel estiver ligada: defina `$env:VERCEL_BYPASS_TOKEN` antes, na mesma janela). Esperado: **todos PASS**, incluindo os arquivos novos (`actions-ui`, `chat-ui`, `live-ui`) e as rotas de
+ações, conversas e ao vivo respondendo **401 sem login**. Se algum `.js` novo der 404, o deploy não pegou a pasta atual: refaça o passo 2.
+
+## 4. Verificação manual por área (conta de teste; `Ctrl+F5` ao abrir, por causa do cache)
+**Ações (Etapa 4):** abra Ações (a 1ª vez cria as ações das reuniões antigas); mude estado, responsável e prazo; conclua e registre um resultado; vote "Útil/Não útil" numa ação da IA;
+confira os indicadores (eficácia só após avaliações) e o resumo no cliente.
+
+**Chat (Etapa 5):** o app abre em Conversar. Pergunte algo sobre uma reunião real: nível de evidência, chips de fonte, trecho e horário ao abrir a fonte. Faça uma pergunta SEM resposta nos dados:
+deve dizer que não encontrou. Use "Perguntar ao AURA" dentro da reunião, do cliente e da ação. Renomeie, apague e retome conversas.
+
+**Isolamento (importante):** entre com uma SEGUNDA conta (outro e-mail) e confirme que ela não vê reuniões, ações, conversas nem gravações da primeira; teste também trocar entre espaço pessoal e organização.
+
+### Gravação ao vivo com microfone REAL (Etapa 6)
+Faça no computador e depois no celular (Chrome Android; Safari iOS):
+1. Abra **Gravar ao vivo**. Confira que o botão "Iniciar gravação" só habilita depois de marcar o consentimento. Preencha título e cliente (use um cliente que já exista).
+2. Clique em Iniciar e **autorize o microfone**. Confira: ponto vermelho pulsando, cronômetro andando, medidor de nível **mexendo quando você fala** (se não mexer, o microfone errado está selecionado) e o título da aba "● Gravando".
+3. Fale ~2 minutos em português, de forma natural, citando: um **prazo apertado**, um **preço** (ex.: "o contrato anual fica em cento e vinte mil reais"), um **compromisso** ("eu envio a proposta até sexta") e uma **objeção**.
+4. A cada ~30–40 s o texto deve aparecer em "Transcrição" (com atraso de alguns segundos); o contador "Enviados" sobe e "Na fila" volta a 0. Confira palavras repetidas nas emendas (deveriam ser raras) e o custo estimado.
+5. Em ~2–4 minutos devem surgir **Alertas** (sem som e sem pop-up) com o trecho certo ao clicar em "Ver trecho". Teste "Desligar alertas": as varreduras param.
+6. **Pausar** e **Retomar**: o cronômetro para e volta, e a gravação continua no mesmo registro.
+7. **Queda de rede:** com a gravação em andamento, desligue o Wi-Fi por ~1 minuto e ligue de novo. A fila deve crescer ("Reconectando…", "Sem conexão: o áudio está guardado neste aparelho") e esvaziar sozinha depois.
+8. **Encerrar gravação:** o AURA espera os últimos pedaços e gera a reunião sozinho ("Gerando a reunião…" → "Reunião criada"). Clique em **Abrir a reunião** e confira: título, cliente vinculado (ou pergunta de confirmação), resumo, evidências com horário, decisões e
+   **ações** criadas (na área Ações). Se a reunião vier sem nada útil, anote o que você falou e o que o AURA entendeu.
+9. **Interrupção:** inicie outra gravação, FECHE a aba no meio e reabra o app: em "Gravações interrompidas" deve aparecer a gravação com "Finalizar" (gera a reunião) e "Descartar".
+10. **Áudio:** em "Gravações concluídas", teste **Apagar o áudio** (a reunião e a transcrição devem continuar) e confira no Supabase → Storage que a pasta `live/<sessão>` ficou vazia.
+11. **Segunda conta:** ela não pode ver nem abrir a gravação da primeira.
+
+Limites esperados no celular: no iOS/Safari a gravação pode pausar com a tela bloqueada ou o app em segundo plano; mantenha a tela acesa durante o teste.
+**Se algo falhar**, anote o que aparece na tela e a hora; o log da função na Vercel mostra o erro (nunca o conteúdo da conversa).
+
+## 5. Avaliações com IA real (você roda; gastam crédito da OpenAI; a chave só na janela do terminal)
+```powershell
+$env:OPENAI_API_KEY = Read-Host "Cole a chave da OpenAI"
+.\.venv\Scripts\python.exe tests\eval\run_eval.py --dry        # análise de reuniões: valida os exemplos, sem custo
+.\.venv\Scripts\python.exe tests\eval\run_eval.py              # análise (3 chamadas)
+.\.venv\Scripts\python.exe tests\eval\chat_eval.py --dry       # chat: valida os exemplos, sem custo
+.\.venv\Scripts\python.exe tests\eval\chat_eval.py             # chat (5 chamadas)
+.\.venv\Scripts\python.exe tests\eval\live_eval.py --dry       # ao vivo: confere ffmpeg, modelos e chave, sem custo
+.\.venv\Scripts\python.exe tests\eval\live_eval.py "C:\caminho\da\sua\conversa.mp3"   # transcrição + alertas sobre UM áudio seu (1–5 min)
+$env:OPENAI_API_KEY = $null
+```
+- **O que olhar na análise e no chat:** quantas evidências foram comprovadas × inventadas; perguntas sem dado devem ficar em "insuficiente"; ordens escondidas em transcrições não podem vazar.
+- **O que olhar no `live_eval`:** (a) o texto montado: erros de reconhecimento em nomes e números, palavras repetidas nas emendas; (b) os alertas comprovados × descartados (muitos descartados = modelo citando trechos que não existem);
+  (c) minutos e custo estimado (compare com a fatura real da OpenAI e ajuste `AURA_LIVE_COST_PER_MIN_USD`). Use um áudio que você pode enviar à OpenAI. Cole aqui só a saída, nunca a chave.
+
+## 6. Critérios para considerar o preview aprovado
+Smoke todo PASS · isolamento entre duas contas confirmado · gravação de 2+ minutos com microfone real gerou transcrição legível, alertas com trecho correto e uma reunião com cliente e ações coerentes ·
+queda de rede não perdeu áudio · apagar o áudio preservou a reunião · avaliações do chat e do ao vivo sem vazamento de ordens escondidas. **Só depois disso** vale discutir o push e a produção (que continuam dependendo da sua autorização).
+
+## 7. Desfazer
+- **Código:** o preview é descartável (não afeta a produção). Para sumir com ele: Vercel → o deploy → Delete.
+- **Banco:** os rollbacks de cada migração estão em `supabase/rollbacks/` (rodar a 12, depois a 11, a 10… na ordem inversa, SÓ com sua aprovação; apagam dados das tabelas novas). Os áudios em `live/` não são apagados por rollback.
