@@ -13,9 +13,11 @@ from pydantic import ValidationError  # noqa: E402
 
 from aura import app as index
 
-from aura.features.meetings import router as meetings_mod
+from aura.features.meetings import repository as meetings_repo
+from aura.features.meetings import service as meetings_mod
 
-from aura.features.analysis import router as analysis_mod  # noqa: E402
+from aura.features.analysis import repository as analysis_repo
+from aura.features.analysis import service as analysis_mod  # noqa: E402
 from aura.features.analysis import engine as eng  # noqa: E402
 from aura.core import verification as v  # noqa: E402
 from aura.features.analysis.engine import (ActionItem, AURAAnalysis, AURAAnalysisV1, DecisionItem, EvidenceItem, FinancialItem,  # noqa: E402
@@ -225,8 +227,8 @@ class Salvamento(unittest.TestCase):
             return [{**requests[-1], "id": "m-1", "created_at": "2026-10-14T00:00:00Z"}]
 
         with mock.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": analysis), \
-             mock.patch.object(meetings_mod, "_supabase_request", fake_request):
-            return analysis_mod._build_result(T, "", "reuniao.mp3", "audio", "Comercial", analysis_transcript=T)
+             mock.patch.object(meetings_repo, "request", fake_request):
+            return analysis_mod.build_result(T, "", "reuniao.mp3", "audio", "Comercial", analysis_transcript=T)
 
     def test_grava_contrato_v2_completo_e_sem_confianca_falsa(self):
         self.script, reqs = [], []
@@ -266,8 +268,8 @@ class Salvamento(unittest.TestCase):
 
     def test_post_direto_so_envia_colunas_presentes(self):
         sent = []
-        with mock.patch.object(meetings_mod, "_supabase_request", lambda m, p, payload=None, user=None: sent.append(payload) or [dict(payload, id="x")]):
-            meetings_mod._save_meeting({"transcript": "abcd", "insights": []})
+        with mock.patch.object(meetings_repo, "request", lambda m, p, payload=None, user=None: sent.append(payload) or [dict(payload, id="x")]):
+            meetings_mod.save_meeting({"transcript": "abcd", "insights": []})
         self.assertTrue(all(k not in sent[0] for k in meetings_mod.V2_COLUMNS))  # null violaria o NOT NULL
 
 

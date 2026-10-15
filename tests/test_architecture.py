@@ -13,7 +13,7 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parents[1] / "backend" / "aura"
 FEATURES = BACKEND / "features"
 # Funcionalidades ainda não separadas em camadas (a lista só diminui; ao terminar a migração fica vazia).
-PENDING = {"analysis", "meetings"}
+PENDING: set[str] = set()
 DATA_CALLS = ("user_rest", "service_rest", "http_json")
 
 

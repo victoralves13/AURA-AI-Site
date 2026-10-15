@@ -467,28 +467,32 @@ class LigadoAosFluxos(Base):
 
     def test_reuniao_salva_emite_sem_transcricao(self):
         from aura import app as index
-        from aura.features.meetings import router as meetings_mod
-        from aura.features.analysis import router as analysis_mod
+        from aura.features.meetings import repository as meetings_repo
+        from aura.features.meetings import service as meetings_mod
+        from aura.features.analysis import repository as analysis_repo
+        from aura.features.analysis import service as analysis_mod
         user = integ.sec.AuthUser(id=UA, email="a@x.com", token="tok-a")
         saved = {"id": str(uuid.uuid4())}
-        with mock.patch.object(meetings_mod, "_supabase_request", return_value=[saved]):
-            meetings_mod._save_meeting({"meeting_title": "Plano 2027", "transcript": "TEXTO SECRETO DA REUNIAO", "org_id": ORG1, "risk": "Alto"}, user=user)
+        with mock.patch.object(meetings_repo, "request", return_value=[saved]):
+            meetings_mod.save_meeting({"meeting_title": "Plano 2027", "transcript": "TEXTO SECRETO DA REUNIAO", "org_id": ORG1, "risk": "Alto"}, user=user)
         events = self.rows("integration_events")
         self.assertEqual([e["type"] for e in events], ["meeting.analyzed"])
         self.assertEqual(events[0]["data"]["title"], "Plano 2027")
         self.assertNotIn("SECRETO", str(events))
-        with mock.patch.object(meetings_mod, "_supabase_request", return_value=[saved]):  # salvar de novo a mesma reunião não duplica
-            meetings_mod._save_meeting({"meeting_title": "Plano 2027", "org_id": ORG1}, user=user)
+        with mock.patch.object(meetings_repo, "request", return_value=[saved]):  # salvar de novo a mesma reunião não duplica
+            meetings_mod.save_meeting({"meeting_title": "Plano 2027", "org_id": ORG1}, user=user)
         self.assertEqual(len(self.rows("integration_events")), 1)
 
     def test_demonstracao_e_sem_login_nao_emitem(self):
         from aura import app as index
-        from aura.features.meetings import router as meetings_mod
-        from aura.features.analysis import router as analysis_mod
+        from aura.features.meetings import repository as meetings_repo
+        from aura.features.meetings import service as meetings_mod
+        from aura.features.analysis import repository as analysis_repo
+        from aura.features.analysis import service as analysis_mod
         user = integ.sec.AuthUser(id=UA, email="a@x.com", token="tok-a")
-        with mock.patch.object(meetings_mod, "_supabase_request", return_value=[{"id": str(uuid.uuid4())}]):
-            meetings_mod._save_meeting({"meeting_title": "Demo", "is_demo": True, "org_id": ORG1}, user=user)
-            meetings_mod._save_meeting({"meeting_title": "Anônima"}, user=None)
+        with mock.patch.object(meetings_repo, "request", return_value=[{"id": str(uuid.uuid4())}]):
+            meetings_mod.save_meeting({"meeting_title": "Demo", "is_demo": True, "org_id": ORG1}, user=user)
+            meetings_mod.save_meeting({"meeting_title": "Anônima"}, user=None)
         self.assertEqual(self.rows("integration_events"), [])
 
 

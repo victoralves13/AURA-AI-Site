@@ -13,9 +13,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from aura import app as index
 
-from aura.features.meetings import router as meetings_mod
+from aura.features.meetings import repository as meetings_repo
+from aura.features.meetings import service as meetings_mod
 
-from aura.features.analysis import router as analysis_mod  # noqa: E402
+from aura.features.analysis import repository as analysis_repo
+from aura.features.analysis import service as analysis_mod  # noqa: E402
 from aura.features.live import service as live  # noqa: E402
 from aura.features.live import consolidation as lc  # noqa: E402
 from aura.features.live import transcription as lt  # noqa: E402
@@ -541,12 +543,12 @@ class Retencao(Base65):
 
 
 class PipelineReal(Base65):
-    """Usa a análise de verdade (analysis_mod._build_result), com a IA substituída: a reunião sai marcada como 'live' e com os horários da transcrição."""
+    """Usa a análise de verdade (analysis_mod.build_result), com a IA substituída: a reunião sai marcada como 'live' e com os horários da transcrição."""
 
     def test_reuniao_salva_como_live_com_arquivo_e_espaco_certos(self):
         from unittest import mock as m
         analysis = minimal_analysis()
-        with m.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": analysis), m.patch.object(lc, "PIPELINE", analysis_mod._build_result):
+        with m.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": analysis), m.patch.object(lc, "PIPELINE", analysis_mod.build_result):
             self.feed("Vamos revisar a proposta do Atlas.", "Combinado, envio o contrato até sexta.")
             self.finish()
             r = self.go().json()

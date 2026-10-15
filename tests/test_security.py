@@ -17,9 +17,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from aura import app as index
 
-from aura.features.meetings import router as meetings_mod
+from aura.features.meetings import repository as meetings_repo
+from aura.features.meetings import service as meetings_mod
 
-from aura.features.analysis import router as analysis_mod  # noqa: E402
+from aura.features.analysis import repository as analysis_repo
+from aura.features.analysis import service as analysis_mod  # noqa: E402
 from aura.core import security as sec  # noqa: E402
 from fake_supabase import FakeSupabase  # noqa: E402
 
@@ -66,7 +68,7 @@ class Base(unittest.TestCase):
                 self.saved.append((payload, user))
                 return [{**payload, "id": "m-1", "created_at": "2026-10-14T00:00:00Z"}]
             return self.meetings_rows
-        p2 = mock.patch.object(meetings_mod, "_supabase_request", fake_request)
+        p2 = mock.patch.object(meetings_repo, "request", fake_request)
         p2.start()
         self.addCleanup(p2.stop)
         p3 = mock.patch("aura.features.analysis.engine.analyze_transcript", lambda text, context="Outro": minimal_analysis())
@@ -160,7 +162,7 @@ class AuthRequired(Base):
         self.assertEqual(self.saved, [])
 
     def test_caminho_de_audio_pertence_ao_usuario(self):
-        with mock.patch.object(analysis_mod, "_create_upload_url", return_value=("https://signed", "t")):
+        with mock.patch.object(analysis_repo, "create_upload_url", return_value=("https://signed", "t")):
             pessoal = self.client.post("/api/audio-upload-url", headers=self.h(), json={"file_name": "a.mp3", "size_bytes": 10}).json()
             org = self.client.post("/api/audio-upload-url", headers=self.h(), json={"file_name": "a.MP3", "size_bytes": 10, "org_id": ORG1}).json()
             negada = self.client.post("/api/audio-upload-url", headers=self.h(), json={"file_name": "a.mp3", "size_bytes": 10, "org_id": ORG2})
@@ -177,7 +179,7 @@ class AuthRequired(Base):
             self.assertEqual(r.status_code, status, path)
 
     def test_analisar_audio_proprio(self):
-        with mock.patch.object(analysis_mod, "_download_stored_audio"), \
+        with mock.patch.object(analysis_repo, "download_stored_audio"), \
              mock.patch("aura.features.analysis.engine.transcribe_audio", return_value=("Ana: oi", {"segments": []})):
             r = self.client.post("/api/analyze-stored-audio", headers=self.h(), json={"path": f"users/{UA}/{HEX}.mp3", "file_name": "r.mp3"})
         self.assertEqual(r.status_code, 200, r.text)
@@ -195,7 +197,7 @@ class AuthRequired(Base):
     def test_filtro_de_espaco_na_listagem(self):
         for query, expected in [("org_id=personal", "org_id=is.null"), (f"org_id={ORG1}", f"org_id=eq.{ORG1}")]:
             paths = []
-            with mock.patch.object(meetings_mod, "_supabase_request", lambda m, p, payload=None, user=None: paths.append(p) or []):
+            with mock.patch.object(meetings_repo, "request", lambda m, p, payload=None, user=None: paths.append(p) or []):
                 self.assertEqual(self.client.get("/api/meetings?" + query, headers=self.h()).status_code, 200)
             self.assertIn(expected, paths[0])
         self.assertEqual(self.client.get("/api/meetings?org_id=abc", headers=self.h()).status_code, 400)
@@ -285,8 +287,10 @@ class TipoDeChave(unittest.TestCase):
 
     def test_saude_mostra_so_o_tipo_nunca_o_valor(self):
         from aura import app as index
-        from aura.features.meetings import router as meetings_mod
-        from aura.features.analysis import router as analysis_mod
+        from aura.features.meetings import repository as meetings_repo
+        from aura.features.meetings import service as meetings_mod
+        from aura.features.analysis import repository as analysis_repo
+        from aura.features.analysis import service as analysis_mod
         from fastapi.testclient import TestClient
         with mock.patch.dict(os.environ, {"SUPABASE_PUBLISHABLE_KEY": "sb_secret_TROCADA", "SUPABASE_SECRET_KEY": "sb_publishable_TROCADA"}):
             body = TestClient(index.app).get("/api/health").json()

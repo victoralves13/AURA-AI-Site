@@ -401,8 +401,10 @@ class AgendadorERetencao(Base):
 
     def test_provedor_padrao_e_registrado_no_app(self):
         from aura import app as index
-        from aura.features.meetings import router as meetings_mod
-        from aura.features.analysis import router as analysis_mod
+        from aura.features.meetings import repository as meetings_repo
+        from aura.features.meetings import service as meetings_mod
+        from aura.features.analysis import repository as analysis_repo
+        from aura.features.analysis import service as analysis_mod
         providers.unregister_provider("webhook")
         index.register_default_providers()
         self.assertIsInstance(providers._PROVIDERS["webhook"], wp.WebhookProvider)

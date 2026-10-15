@@ -7,8 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from aura.core import security as sec
 from aura.features.actions.router import router as actions_router
-from aura.features.analysis import router as analysis_mod
-from aura.features.analysis.router import AUDIO_BUCKET, router as analysis_router
+from aura.features.analysis import service as analysis_service
+from aura.features.analysis.repository import AUDIO_BUCKET
+from aura.features.analysis.router import router as analysis_router
 from aura.features.chat.router import router as conversations_router
 from aura.features.clients.router import router as clients_router
 from aura.features.integrations import providers
@@ -45,7 +46,7 @@ app.include_router(analysis_router)
 if sec.allowed_origins():
     app.add_middleware(CORSMiddleware, allow_origins=sec.allowed_origins(), allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
 
-live_consolidation.set_pipeline(analysis_mod._build_result)  # reuniões ao vivo usam a mesma análise
+live_consolidation.set_pipeline(analysis_service.build_result)  # reuniões ao vivo usam a mesma análise
 
 @app.get("/api/health")
 def health():
