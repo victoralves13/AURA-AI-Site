@@ -306,6 +306,18 @@
     if (!mountSwitcher()) [600, 1500, 3000].forEach(ms => setTimeout(() => { if (!document.getElementById('auraSpaceWrap')) mountSwitcher(); }, ms));
   }
 
+  // Utilitários compartilhados com as telas de clientes (clients-ui.js).
+  window.AURA_UI = {
+    el, api, toast, openPanel, closePanel, msgBox, say, fmtDate, space,
+    // Permissão no espaço atual: a conta pessoal é sempre do próprio dono; organização usa as permissões do /api/me.
+    can: permission => {
+      const s = space();
+      if (s === 'personal') return true;
+      const org = me.organizations.find(o => o.id === s);
+      return !!org && (org.permissions || []).includes(permission);
+    }
+  };
+
   window.addEventListener('aura:user-ready', init);
   init();
 })();

@@ -125,6 +125,7 @@ function detail(m){
  const tab=d.dataset.tab||'summary';
  d.innerHTML='<div class="meeting-detail-backbar"><button type="button" class="meeting-back-button" aria-label="Voltar para reuniões" title="Voltar para reuniões"><span aria-hidden="true"></span></button></div><div class="meeting-detail-head"><div><span class="eyebrow">ANÁLISE APROFUNDADA</span><h2>'+esc(m.client_name||'Cliente não identificado')+'</h2><p>'+esc(m.meeting_title||meetingType(m))+' · '+fmt(m.created_at)+' · '+esc(m.context||'Outro')+'</p></div><span class="detail-badge '+(low(m.risk).includes('alto')?'danger':'')+'">'+esc(m.priority||'—')+'</span></div><div class="detail-metrics"><div><span>SENTIMENTO</span><b>'+esc(m.sentiment||'—')+'</b></div><div><span>RISCO</span><b>'+esc(m.risk||'—')+'</b></div><div><span>OPORTUNIDADE</span><b>'+esc(m.opportunity||'—')+'</b></div><div><span>TIPO</span><b>'+esc(meetingType(m))+'</b></div></div>'+localTabs(tab,[['summary','Resumo'],['evidence','Insights & evidências'],['actions','Decisões & ações'],['timeline','Linha do tempo']])+'<div class="meeting-local-content">'+renderMeetingPanel(m,tab)+'</div>';
  d.querySelectorAll('[data-local-tab]').forEach(b=>b.onclick=()=>{d.dataset.tab=b.dataset.localTab;detail(m)});
+ d.dispatchEvent(new CustomEvent('aura:meeting-detail-rendered',{bubbles:true,detail:{meeting:m}}));
  const back=d.querySelector('.meeting-back-button');
  if(back)back.onclick=()=>d.dispatchEvent(new CustomEvent('aura:meeting-detail-back',{bubbles:true}));
  const insightFilter=d.querySelector('.insight-filter');
@@ -266,9 +267,9 @@ const CLIENT_DEMO={
 const CLIENT_DEMO_ORDER=['Grupo Atlas','Órbita Saúde','Logi Sul','Nova Tech','Seguro Mais','Viva Corp','Projetou Horizonte'];
 
 function clientDemo(name){return CLIENT_DEMO[name]||null}
-function clientDetail(name,sourceRows){
+function clientDetail(name,sourceRows,opts){
  const h=document.getElementById('clientWorkspaceDetail');
- const memoryRows=window.AURA_CLIENT_MEMORY?.get(name)||[];
+ const memoryRows=opts&&opts.entity?[]:(window.AURA_CLIENT_MEMORY?.get(name)||[]);
  const liveRows=Array.isArray(sourceRows)?sourceRows:items().filter(m=>{
   const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');
   return n===name;
@@ -401,6 +402,7 @@ function clientDetail(name,sourceRows){
 }
 function clients(){
  const h=document.getElementById('shellClients');if(!h)return;
+ if(window.AURA_CLIENTS_UI&&window.AURA_CLIENTS_UI.enabled()){window.AURA_CLIENTS_UI.render(h);return}
  const g=new Map();items().forEach(m=>{const n=m.client_name&&m.client_name!=='Cliente não identificado'?m.client_name:(m.file_name||'Cliente não identificado');if(!g.has(n))g.set(n,[]);g.get(n).push(m)});
  const names=[...new Set([...CLIENT_DEMO_ORDER,...g.keys()])].filter((n,i,a)=>a.indexOf(n)===i).filter((n,i,a)=>{const base=low(n).replace(/[^a-z0-9]/g,'');return !a.slice(0,i).some(x=>low(x).replace(/[^a-z0-9]/g,'')===base)});
  if(!names.length){h.innerHTML='<div class="shell-empty"><strong>Nenhum cliente na memória</strong><span>Clientes serão organizados conforme novas reuniões forem analisadas.</span></div>';return}
@@ -820,6 +822,7 @@ function profile(){
  h.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
 }
 window.__AURAActivateView=activate;
+window.__auraClientDetail=clientDetail;
 window.__auraOpenMeeting=(m)=>{activate('history',false);setTimeout(()=>{const a=items();const i=a.findIndex(x=>x&&x.id===m?.id);const b=document.querySelector('.meeting-memory-card[data-mi="'+i+'"]');if(b)b.click()},80)};
 function bind(){
  document.querySelectorAll('[data-shell-view]').forEach(b=>{if(b.dataset.shellBound)return;b.dataset.shellBound='1';b.onclick=e=>{e.preventDefault();activate(b.dataset.shellView)}});
