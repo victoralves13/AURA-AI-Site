@@ -173,6 +173,12 @@ class Escopo(Base):
         self.assertNotIn("Primeira Atlas", data)
         self.assertNotIn("Outra Beta", data)
 
+    def test_escopo_de_reuniao_sem_coincidencia_ainda_traz_trechos_da_transcricao(self):
+        self.ask(self.new(org_id=ORG1, scope={"meeting_id": self.m2}), "De onde vem isto?")
+        self.assertIn("> [00:12] Carlos", self.prompts[0])
+        self.ask(self.new(org_id=ORG1), "De onde vem isto?")  # sem escopo e sem coincidência: nada de trechos soltos
+        self.assertNotIn("Trechos da transcrição", self.prompts[1])
+
     def test_escopo_de_cliente(self):
         for cid, name in (("c1c1c1c1-0000-0000-0000-000000000001", "Grupo Atlas"), ("c2c2c2c2-0000-0000-0000-000000000002", "Beta")):
             self.fake.tables["clients"].append({"id": cid, "org_id": ORG1, "owner_id": UA, "name": name, "normalized_name": name.lower(), "aliases": [], "merged_into": None})

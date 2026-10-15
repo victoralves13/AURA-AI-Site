@@ -75,3 +75,4 @@
   .chat-composer{grid-template-columns:1fr}
 }
 .chat-list .aura-note{margin:0;color:#7895a4;font-size:12px;line-height:1.55}
+.meeting-detail-head .chat-ask{align-self:flex-start;margin-left:auto}

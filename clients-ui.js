@@ -269,6 +269,7 @@
       const bar = el('div', { class: 'client-manage-bar' },
         el('div', { class: 'client-manage-info' }, el('b', { text: c.name }), el('span', { text: (c.aliases || []).length ? 'Apelidos: ' + c.aliases.join(', ') : 'Sem apelidos' })),
         el('div', { class: 'client-manage-actions' },
+          window.AURA_CHAT_UI && window.AURA_CHAT_UI.canAsk && window.AURA_CHAT_UI.canAsk() ? window.AURA_CHAT_UI.askButton({ client_id: c.id }, c.name) : null,
           can('clients.write') ? el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Renomear e apelidos', onclick: () => openEdit(c, h) }) : null,
           can('clients.manage') && others.length ? el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Fundir com outro cliente', onclick: () => openMerge(c, others, h) }) : null));
       detailHost.prepend(bar);

@@ -77,7 +77,9 @@
     const status = msgBox();
     const refresh = async () => { try { await api('GET', '/api/actions?meeting_id=' + a.meeting_id).then(r => { const n = r.actions.find(x => x.id === a.id); if (n) Object.assign(a, n); }); } catch { /* mantém */ } if (after) after(); };
 
-    const head = el('div', { class: 'aura-section' }, el('p', { class: 'act-full-text', text: a.text }), el('div', { class: 'act-badges' }, badges(a)));
+    const ask = window.AURA_CHAT_UI && window.AURA_CHAT_UI.canAsk && window.AURA_CHAT_UI.canAsk()
+      ? el('button', { type: 'button', class: 'aura-btn ghost small', text: 'Perguntar ao AURA sobre esta ação', onclick: () => { closePanel(); window.AURA_CHAT_UI.askAbout({ action_id: a.id }, a.text); } }) : null;
+    const head = el('div', { class: 'aura-section' }, el('p', { class: 'act-full-text', text: a.text }), el('div', { class: 'act-badges' }, badges(a)), ask);
     body.append(head);
 
     const ev = a.evidence || {};

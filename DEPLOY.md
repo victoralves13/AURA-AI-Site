@@ -373,3 +373,11 @@ Só atuam com login ativo; sem login, o item some do menu e o app abre na Visão
   Se a IA falhar, aparece "Tentar de novo" (a pergunta continua gravada). Tudo entra no DOM com textContent.
 - **Mobile:** a lista de conversas vira um botão "Conversas (n)"; sem rolagem horizontal.
 Atenção ao publicar: `index.html` referencia `chat-ui.js`/`chat-ui.css` versão v2 (os arquivos são cacheados por versão).
+
+## Etapa 5.4 — "Perguntar ao AURA" dentro das áreas (sem migração nova)
+
+Botão **Perguntar ao AURA** no detalhe da reunião (não aparece em reuniões de demonstração), no cliente (barra do Customer 360) e no painel da ação.
+Abre o chat já limitado ao item (`scope`: `meeting_id`, `client_id` ou `action_id`) e, se já houver uma conversa para o mesmo item, retoma essa em vez de criar outra.
+A conversa só é criada ao enviar a primeira pergunta; o cabeçalho mostra "Conversa sobre a reunião/o cliente/a ação …" e as sugestões mudam conforme o item.
+Só aparece para quem tem a permissão `chat.use` no espaço. Nas conversas limitadas, se a pergunta não coincidir com a transcrição, o contexto
+ainda inclui o começo da transcrição do item (para a IA ter o que citar). `index.html` referencia `chat-ui` v4, `clients-ui` v3 e `actions-ui` v4 (cache por versão).

@@ -20,7 +20,7 @@
     insuficiente: ['Sem evidência suficiente', 'Nenhuma afirmação pôde ser comprovada com um trecho dos seus dados.']
   };
   const SUGGESTIONS = ['Quais clientes têm risco alto e por quê?', 'O que ficou pendente nas últimas reuniões?', 'Quais ações estão atrasadas?', 'Resuma a reunião mais recente.'];
-  let state = { list: [], current: null, messages: [], busy: false, space: null };
+  let state = { list: [], current: null, messages: [], busy: false, space: null, pendingScope: null, intent: null };
   let host = null;
   let landed = false;
 
@@ -47,8 +47,25 @@
   function newConversation() {
     state.current = null;
     state.messages = [];
+    state.pendingScope = null;
     safe(() => sessionStorage.removeItem(lastKey()));
   }
+
+  /* ---------- escopo (conversa limitada a um item) ---------- */
+  const meetingsList = () => (Array.isArray(window.AURA_SERVER_MEETINGS) ? window.AURA_SERVER_MEETINGS : []);
+  const scopeKey = s => Object.keys(s || {}).sort().map(k => k + ':' + s[k]).join('|');
+  function describeScope(scope) {
+    const parts = [];
+    if (scope.meeting_id) { const m = meetingsList().find(x => x.id === scope.meeting_id); parts.push(m && m.meeting_title ? 'a reunião “' + m.meeting_title + '”' : 'uma reunião'); }
+    if (scope.client_id) { const m = meetingsList().find(x => x.client_id === scope.client_id); parts.push(m && m.client_name ? 'o cliente “' + m.client_name + '”' : 'um cliente'); }
+    if (scope.action_id) parts.push(state.scopeLabel && state.current === null ? 'a ação “' + state.scopeLabel + '”' : 'uma ação');
+    return parts.join(' e ');
+  }
+  const SCOPED_SUGGESTIONS = {
+    meeting_id: ['Resuma esta reunião.', 'O que foi decidido e quem ficou responsável?', 'Quais riscos e oportunidades aparecem aqui?'],
+    client_id: ['Como está o relacionamento com este cliente?', 'Quais riscos aparecem nas últimas reuniões?', 'Quais ações deste cliente estão pendentes?'],
+    action_id: ['De onde vem esta ação?', 'O que falta para concluí-la?']
+  };
 
   /* ---------- peças ---------- */
   const evidenceBadge = level => {
@@ -126,8 +143,9 @@
     draw();
     try {
       if (!state.current) {
-        const c = await api('POST', '/api/conversations', { org_id: state.space });
+        const c = await api('POST', '/api/conversations', { org_id: state.space, scope: state.pendingScope || undefined });
         state.current = c.conversation;
+        state.pendingScope = null;
         safe(() => sessionStorage.setItem(lastKey(), c.conversation.id));
       }
       state.messages.push({ id: 'tmp', role: 'user', content: text });
@@ -199,8 +217,8 @@
   function header() {
     const { el, api, toast } = ui();
     const c = state.current;
-    const scope = c && c.scope ? Object.keys(c.scope) : [];
-    const scopeText = scope.length ? 'Limitada a ' + scope.map(k => ({ meeting_id: 'uma reunião', client_id: 'um cliente', action_id: 'uma ação' }[k] || 'um item')).join(' e ') : null;
+    const activeScope = (c && c.scope && Object.keys(c.scope).length) ? c.scope : state.pendingScope;
+    const scopeText = activeScope && Object.keys(activeScope).length ? 'Conversa sobre ' + describeScope(activeScope) : null;
     const title = el('h3', { text: c ? c.title : 'Nova conversa' });
     const kids = [el('div', {}, title, scopeText ? el('small', { text: scopeText }) : el('small', { text: state.space === 'personal' ? 'Espaço pessoal' : 'Espaço da organização' }))];
     if (c) {
@@ -228,11 +246,17 @@
   }
 
   /* ---------- tela ---------- */
+  function suggestionsFor() {
+    const sc = (state.current && state.current.scope) || state.pendingScope || {};
+    const key = Object.keys(sc).find(k => SCOPED_SUGGESTIONS[k]);
+    return key ? SCOPED_SUGGESTIONS[key] : SUGGESTIONS;
+  }
+
   function emptyThread() {
     const { el } = ui();
     return el('div', { class: 'chat-empty' }, el('h3', { text: 'Pergunte aos seus dados' }),
       el('p', { text: 'O AURA responde só com o que está nas suas reuniões, clientes e ações, e mostra o trecho que prova cada afirmação. Quando não houver evidência, ele diz que não encontrou.' }),
-      el('div', { class: 'chat-suggestions' }, SUGGESTIONS.map(s => el('button', { type: 'button', class: 'chat-suggest', text: s, onclick: () => send(s) }))));
+      el('div', { class: 'chat-suggestions' }, suggestionsFor().map(s => el('button', { type: 'button', class: 'chat-suggest', text: s, onclick: () => send(s) }))));
   }
 
   function composer() {
@@ -279,12 +303,18 @@
     const space = ui().space();
     const spaceChanged = state.space !== space;
     state.space = space;
-    if (state.busy) return;
+    if (state.busy) { if (state.intent) setTimeout(() => render(h), 500); return; }
     if (!h.firstChild) h.replaceChildren(ui().el('div', { class: 'aura-empty', text: 'Carregando conversas…' }));
     try {
       await loadList();
       if (spaceChanged) { state.current = null; state.messages = []; }  // só a memória: a conversa guardada do espaço novo continua valendo
-      if (!state.current) {
+      if (state.intent) {  // veio de "Perguntar ao AURA": retoma a conversa do mesmo item ou prepara uma nova, já limitada a ele
+        const { scope } = state.intent;
+        state.intent = null;
+        const same = state.list.find(c => scopeKey(c.scope) === scopeKey(scope));
+        if (same) await openConversation(same.id);
+        else { newConversation(); state.pendingScope = scope; }
+      } else if (!state.current) {
         const last = safe(() => sessionStorage.getItem(lastKey()));
         if (last && state.list.some(c => c.id === last)) await openConversation(last);
       }
@@ -311,5 +341,25 @@
   });
 
   // Ponto de entrada para as outras áreas ("Perguntar ao AURA" dentro da reunião, do cliente e da ação).
-  window.AURA_CHAT_UI = { enabled, render };
+  /* ---------- "Perguntar ao AURA" dentro das áreas ---------- */
+  const canAsk = () => enabled() && ui().can('chat.use');
+  function askAbout(scope, label) {
+    if (!canAsk() || !scope || !window.__AURAActivateView) return;
+    state.intent = { scope };
+    state.scopeLabel = label || null;
+    state.pendingError = null;
+    window.__AURAActivateView('chat');
+  }
+  function askButton(scope, label, text) {
+    return ui().el('button', { type: 'button', class: 'aura-btn ghost small chat-ask', text: text || 'Perguntar ao AURA', title: 'Abre o chat já limitado a este item', onclick: () => askAbout(scope, label) });
+  }
+  document.addEventListener('aura:meeting-detail-rendered', e => {
+    const m = e.detail && e.detail.meeting;
+    const head = e.target && e.target.querySelector && e.target.querySelector('.meeting-detail-head');
+    if (!canAsk() || !m || !m.id || m.is_demo || String(m.id).startsWith('demo') || !head) return;
+    head.querySelectorAll('.chat-ask').forEach(x => x.remove());
+    head.append(askButton({ meeting_id: m.id }, m.meeting_title));
+  });
+
+  window.AURA_CHAT_UI = { enabled, render, askAbout, canAsk, askButton };
 })();

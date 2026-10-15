@@ -120,14 +120,19 @@ def rank_meetings(question: str, meetings: list[dict], limit: int = TOP_MEETINGS
     return meetings[: min(3, limit)]
 
 
-def best_lines(transcript: str, question: str, count: int = 5) -> list[str]:
-    """Trechos da transcrição com mais palavras em comum com a pergunta (mais a linha vizinha)."""
+def best_lines(transcript: str, question: str, count: int = 5, fallback: bool = False) -> list[str]:
+    """Trechos da transcrição com mais palavras em comum com a pergunta (mais a linha vizinha).
+    Com `fallback` (conversa limitada a um item) e sem coincidência, devolve o começo da transcrição para a IA ter o que citar."""
     wanted = tokens(question)
     lines = [l for l in (transcript or "").splitlines() if l.strip()]
-    if not lines or not wanted:
+    if not lines:
         return []
-    scored = sorted(((len(wanted & tokens(l)), -i) for i, l in enumerate(lines)), reverse=True)
-    keep = sorted({i for s, ni in scored[:count] if s > 0 for i in (-ni, -ni + 1) if 0 <= i < len(lines)})
+    keep: list[int] = []
+    if wanted:
+        scored = sorted(((len(wanted & tokens(l)), -i) for i, l in enumerate(lines)), reverse=True)
+        keep = sorted({i for s, ni in scored[:count] if s > 0 for i in (-ni, -ni + 1) if 0 <= i < len(lines)})
+    if not keep and fallback:
+        keep = list(range(min(6, len(lines))))
     return [_clip(lines[i], 500) for i in keep]
 
 
@@ -232,7 +237,7 @@ def retrieve(user: sec.AuthUser, org_id: str | None, scope: dict | None, questio
     for i, m in enumerate(chosen, 1):
         key = f"S{i}"
         tr = transcripts.get(m["id"], "")
-        block, analysis = _meeting_block(key, m, by_meeting.get(m["id"], []), best_lines(tr, question))
+        block, analysis = _meeting_block(key, m, by_meeting.get(m["id"], []), best_lines(tr, question, fallback=bool(scope.get("meeting_id") or scope.get("action_id") or scope.get("client_id"))))
         sources.append(Source(key, "meeting", m["id"], _clip(m.get("meeting_title") or m.get("client_name") or "Reunião", 120), block,
                               transcript=tr, analysis=analysis, meta={"client_name": m.get("client_name"), "date": str(m.get("created_at") or "")[:10]}))
     in_meetings = {s.item_id for s in sources}

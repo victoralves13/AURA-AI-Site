@@ -71,6 +71,13 @@ class Ranqueamento(unittest.TestCase):
         self.assertEqual(ce.best_lines(TRANSCRIPT, "zzz"), [])
         self.assertEqual(ce.best_lines("", "prazo"), [])
 
+    def test_conversa_limitada_traz_o_comeco_da_transcricao_quando_nada_coincide(self):
+        self.assertEqual(ce.best_lines(TRANSCRIPT, "De onde vem isto?"), [])
+        lines = ce.best_lines(TRANSCRIPT, "De onde vem isto?", fallback=True)
+        self.assertEqual(len(lines), 3)
+        self.assertIn("Atlas", lines[0])
+        self.assertEqual(ce.best_lines(TRANSCRIPT, "zzz", fallback=False), [])
+
 
 class Conferencia(unittest.TestCase):
     def test_trecho_literal_e_comprovado_com_horario_e_interlocutor(self):
