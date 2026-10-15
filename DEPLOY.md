@@ -659,3 +659,10 @@ queda de rede não perdeu áudio · apagar o áudio preservou a reunião · aval
 - **Verificar no preview:** (1) defina `AURA_INTEGRATIONS_KEY`; (2) Perfil → Integrações → crie um webhook apontando para um receptor seu (ex.: um endereço do webhook.site); (3) "Testar": deve aparecer lá um POST JSON com os cabeçalhos `X-Aura-Event`, `X-Aura-Delivery`, `X-Aura-Timestamp`, `X-Aura-Signature`; (4) confira a assinatura (HMAC-SHA256 de `"<timestamp>.<corpo>"`, hex, prefixo `v1=`); (5) analise uma reunião e rode o dispatch; (6) gire o segredo e confirme que o antigo deixa de validar; (7) tente cadastrar `https://127.0.0.1/x` e `https://169.254.169.254/x`: devem ser recusados.
 - **Segurança embutida:** só https; nome resolvido no envio e recusado se algum endereço não for público; conexão direta ao IP validado; sem redirecionamentos; resposta do destino descartada; segredo cifrado (AES-256-GCM) e mostrado uma vez. Limites: 20 integrações por pessoa/espaço, 6 tentativas com espera crescente, desligamento após 10 falhas seguidas.
 - **Desfazer:** pausar ou apagar a integração na tela; rollback do banco em `supabase/rollbacks/20261014240000_etapa7_integracoes.down.sql` (antes do da 13).
+
+---
+
+## Correção — permissões do backend (migração 15, AGUARDA APROVAÇÃO)
+- **Sintoma:** "Não foi possível verificar o limite de uso" (503) e "Você não tem permissão para usar o chat", com o log `HTTP 403 42501 permission denied for table ...`.
+- **Causa 1 (configuração):** `SUPABASE_SECRET_KEY` com uma chave que não é secret (por exemplo a publishable) ou `SUPABASE_PUBLISHABLE_KEY` trocada. Confira `/api/health`: `publishable_key_kind` deve ser `publishable` e `service_key_kind` `secret`.
+- **Causa 2 (banco):** neste projeto as tabelas novas não recebem permissões automáticas para o `service_role`; sem GRANT o backend falha mesmo com a chave certa. `supabase/migrations/20261014250000_etapa7_grants_service_role.sql` concede o mínimo por tabela. Rollback: `supabase/rollbacks/20261014250000_etapa7_grants_service_role.down.sql`. Teste: `node tests/db/service_role.test.mjs` (usa o padrão restritivo do projeto).

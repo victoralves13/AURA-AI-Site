@@ -11,9 +11,9 @@ o preview é descartável e sai direto da pasta, sem Git. Produção e push **s�
 |---|---|
 | Branch | `etapa1-estabilizacao`, 31 commits à frente de `main`, **nada enviado ao GitHub** |
 | Testes de backend | 611 passam (`python -m unittest discover -s tests`) |
-| Testes de banco (PGlite, sem tocar no Supabase) | 411 passam: rls 89 · actions 108 · chat 44 · live 81 · onboarding 22 · integrations 67 |
+| Testes de banco (PGlite, sem tocar no Supabase) | 439 passam: rls 89 · actions 108 · chat 44 · live 81 · onboarding 22 · integrations 67 · service_role 28 |
 | Navegador (Supabase simulado) | Etapas 4 a 7 verificadas; axe sem violações nas 11 telas no tema escuro |
-| Migrações no Supabase `aura-ai` | **As 14 estão aplicadas** (conferido com `list_migrations`); reuniões antigas intactas (5) |
+| Migrações no Supabase `aura-ai` | 14 aplicadas (conferido com `list_migrations`); reuniões antigas intactas (5). **A 15 (`etapa7_grants_service_role`, permissões do backend) está escrita e AGUARDA a sua aprovação**: sem ela o backend falha com "permission denied" ao usar a chave de serviço |
 | `get_advisors` de segurança | só o aviso antigo "proteção contra senhas vazadas desligada" (ver passo 1.5) |
 | Testado com serviços REAIS por mim | **nada**: OpenAI, Storage do Supabase, microfone e destino de webhook reais só no preview |
 
@@ -72,7 +72,7 @@ Supabase → Authentication → Sign In / Providers → Password: ligar **Leaked
 select version, name from supabase_migrations.schema_migrations order by version;
 -- esperado: ... etapa2_identidade_organizacoes, etapa2_reunioes_isolamento, etapa2_acesso_exige_membro, etapa3_analise_v2, etapa3_clientes,
 --           etapa4_acoes, etapa4_resultados, etapa4_data_observada, etapa4_feedback, etapa5_conversas, etapa6_ao_vivo, etapa6_transcricao,
---           etapa7_onboarding, etapa7_integracoes
+--           etapa7_onboarding, etapa7_integracoes, etapa7_grants_service_role (a 15, depois de aprovada)
 select count(*) as reunioes from public.meetings;   -- esperado: 5 (as reuniões antigas)
 select relname, relrowsecurity from pg_class
  where relname in ('actions','conversations','messages','live_sessions','live_chunks','onboarding_progress','integrations','integration_events','integration_deliveries');
@@ -177,7 +177,7 @@ O que olhar: evidências comprovadas × inventadas; perguntas sem dado em "insuf
 ## 7. Desfazer
 - **Preview:** descartável (Vercel → o deploy → Delete); não afeta a produção.
 - **Webhooks:** pausar/apagar na tela. **Onboarding:** "Dispensar".
-- **Banco (só com sua aprovação; apaga dados das tabelas novas):** rollbacks em `supabase/rollbacks/`, **na ordem inversa**: 14 → 13 → 12 → 11 → 10 → 9 → 8 → 7 → 6. Os áudios em `live/` não são apagados por rollback.
+- **Banco (só com sua aprovação; apaga dados das tabelas novas):** rollbacks em `supabase/rollbacks/`, **na ordem inversa**: 15 → 14 → 13 → 12 → 11 → 10 → 9 → 8 → 7 → 6. Os áudios em `live/` não são apagados por rollback.
 - **Chave de cifra:** perder `AURA_INTEGRATIONS_KEY` não derruba o app, mas as integrações existentes ficam sem segredo legível (gire o segredo de cada uma depois de definir a nova chave).
 
 ## 8. Limitações conhecidas (não são regressões)

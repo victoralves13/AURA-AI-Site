@@ -5,7 +5,7 @@
 
 ## Resumo
 Evolui o AURA de um app de reunião única para uma plataforma multiusuário com dados isolados por pessoa/organização, em 7 etapas incrementais e reversíveis
-(31 commits, 14 migrações aditivas, 611 testes de backend + 411 de banco). Cada afirmação gerada pela IA continua ligada ao trecho que a comprova.
+(31 commits, 15 migrações aditivas, 613 testes de backend + 439 de banco). Cada afirmação gerada pela IA continua ligada ao trecho que a comprova.
 
 ## O que muda, por etapa
 1. **Estabilização:** sincronização e carregamento de scripts corrigidos.
@@ -21,10 +21,10 @@ Evolui o AURA de um app de reunião única para uma plataforma multiusuário com
 7. **Produto e plataforma:** acessibilidade (Lighthouse 100, axe sem violações no tema escuro), identidade real no perfil, fim dos exemplos para quem está logado,
    telas por cliente cadastrado, **onboarding com progresso no servidor** e **integrações com webhooks de saída assinados** (HMAC-SHA256, proteção SSRF, entrega idempotente com tentativas).
 
-## Banco de dados (já aplicado no Supabase `aura-ai`; é o MESMO projeto da produção)
-Migrações `20261014120000` a `20261014240000` (14 arquivos em `supabase/migrations/`, cada uma com rollback em `supabase/rollbacks/`).
+## Banco de dados (14 aplicadas no Supabase `aura-ai`; a 15, de permissões do backend, aguarda aprovação; é o MESMO projeto da produção)
+Migrações `20261014120000` a `20261014250000` (15 arquivos em `supabase/migrations/`, cada uma com rollback em `supabase/rollbacks/`).
 **Todas são aditivas** (tabelas, colunas, funções e políticas novas): reuniões existentes intactas (5, conferido) e a produção atual segue funcionando sem usar o que é novo.
-Rollback sempre em ordem inversa (14 → 6…); apaga os dados das tabelas novas.
+A 15 corrige a falta de permissões de tabela do `service_role` (o padrão do projeto não as concede a tabelas novas). Rollback sempre em ordem inversa (15 → 6…); apaga os dados das tabelas novas.
 
 ## Segurança (pontos para revisar com atenção)
 - RLS em todas as tabelas novas; `aura_private` (SECURITY DEFINER) para as regras; backend usa o JWT da pessoa para dados e a chave de serviço só para auditoria, Storage e escritas internas.
