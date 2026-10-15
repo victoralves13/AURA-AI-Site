@@ -13,7 +13,7 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parents[1] / "backend" / "aura"
 FEATURES = BACKEND / "features"
 # Funcionalidades ainda não separadas em camadas (a lista só diminui; ao terminar a migração fica vazia).
-PENDING = {"actions", "chat", "live", "analysis", "meetings"}
+PENDING = {"actions", "live", "analysis", "meetings"}
 DATA_CALLS = ("user_rest", "service_rest", "http_json")
 
 
@@ -48,17 +48,22 @@ class Camadas(unittest.TestCase):
             for call in DATA_CALLS:
                 self.assertNotIn(call, text, f"{d.name}/router.py usa {call}: mova para o repository")
 
-    def test_service_e_repository_nao_conhecem_fastapi(self):
+    def test_so_router_e_repository_conhecem_fastapi_e_o_banco(self):
+        """Qualquer outro módulo da funcionalidade (service, engine, matching...) é regra: sem FastAPI e sem PostgREST."""
         for d in layered():
-            for name in ("service.py", "repository.py"):
-                for mod, line in imports(d / name):
-                    self.assertFalse(mod == "fastapi" or mod.startswith("fastapi."), f"{d.name}/{name}:{line} importa {mod}; use aura.core.errors")
+            for path in d.glob("*.py"):
+                if path.name in ("router.py", "repository.py", "__init__.py"):
+                    continue
+                for mod, line in imports(path):
+                    self.assertFalse(mod == "fastapi" or mod.startswith("fastapi."), f"{d.name}/{path.name}:{line} importa {mod}; use aura.core.errors")
+                text = path.read_text(encoding="utf8")
+                for call in DATA_CALLS:
+                    self.assertNotIn(call, text, f"{d.name}/{path.name} usa {call}: mova para o repository")
 
-    def test_service_nao_fala_com_o_banco(self):
+    def test_repository_nao_conhece_fastapi(self):
         for d in layered():
-            text = (d / "service.py").read_text(encoding="utf8")
-            for call in DATA_CALLS:
-                self.assertNotIn(call, text, f"{d.name}/service.py usa {call}: mova para o repository")
+            for mod, line in imports(d / "repository.py"):
+                self.assertFalse(mod == "fastapi" or mod.startswith("fastapi."), f"{d.name}/repository.py:{line} importa {mod}")
 
     def test_sentido_das_dependencias(self):
         for d in layered():

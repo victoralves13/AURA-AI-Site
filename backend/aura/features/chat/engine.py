@@ -11,7 +11,7 @@ Como funciona (cada etapa é código determinístico, exceto a redação da IA):
                   só com o que foi comprovado. Sem nada comprovado, a resposta é "não encontrei evidência".
   4. NÍVEL        forte = tudo comprovado na transcrição; parcial = parte comprovada, ou só na análise, ou algo descartado;
                   insuficiente = nada comprovado.
-Nada aqui grava dados de reuniões; a resposta é gravada por conversations.append_assistant.
+Este módulo é só a lógica do motor (sem banco e sem HTTP): a recuperação dos dados e a orquestração estão em service.py.
 """
 from __future__ import annotations
 
@@ -22,7 +22,6 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from aura.core import security as sec
 from aura.core import verification
 
 log = logging.getLogger("aura.chat")
@@ -96,9 +95,6 @@ def neutralize(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Recuperação
 # ---------------------------------------------------------------------------
-MEETING_COLUMNS = ("id,org_id,owner_id,meeting_title,client_name,client_id,created_at,summary,risk,opportunity,sentiment,topics,"
-                   "decisions,decisions_detail,pending_actions,actions_detail,important_signals,risk_signals,opportunity_signals,insights,financial_data")
-
 
 def meeting_text(m: dict) -> str:
     return " ".join(_flat(m.get(k)) for k in ("meeting_title", "client_name", "summary", "topics", "decisions", "pending_actions",
@@ -194,59 +190,6 @@ def _action_source(key: str, a: dict) -> Source:
                        + (f' · evidência: "{_clip(ev.get("evidence"), 300)}"' if ev.get("evidence") else ""))
     return Source(key, "action", a["id"], _clip(a.get("text"), 120), block, transcript="", analysis=neutralize(block),
                   meta={"meeting_id": a.get("meeting_id"), "status": a.get("status")})
-
-
-def retrieve(user: sec.AuthUser, org_id: str | None, scope: dict | None, question: str) -> list[Source]:
-    """Reúne as fontes que a pessoa pode ler, no espaço e no escopo da conversa."""
-    scope = scope or {}
-    space = f"org_id=eq.{org_id}" if org_id else "org_id=is.null"
-    action_cols = "id,meeting_id,text,status,assignee_text,due_text,due_date,evidence,meetings(meeting_title,client_name,client_id)"
-    meetings: list[dict]
-    actions: list[dict] = []
-    if scope.get("action_id"):
-        actions = sec.user_rest(user, "GET", f"actions?select={action_cols}&id=eq.{scope['action_id']}&{space}&limit=1") or []
-        ids = ",".join(sorted({a["meeting_id"] for a in actions}))
-        meetings = sec.user_rest(user, "GET", f"meetings?select={MEETING_COLUMNS}&id=in.({ids})&limit=1") or [] if ids else []
-    elif scope.get("meeting_id"):
-        meetings = sec.user_rest(user, "GET", f"meetings?select={MEETING_COLUMNS}&id=eq.{scope['meeting_id']}&{space}&limit=1") or []
-    elif scope.get("client_id"):
-        meetings = sec.user_rest(user, "GET", f"meetings?select={MEETING_COLUMNS}&client_id=eq.{scope['client_id']}&{space}&order=created_at.desc&limit={CANDIDATE_MEETINGS}") or []
-    else:
-        meetings = sec.user_rest(user, "GET", f"meetings?select={MEETING_COLUMNS}&{space}&is_demo=is.false&order=created_at.desc&limit={CANDIDATE_MEETINGS}") or []
-    meetings = sec.redact_meetings(meetings, user)  # sem finance.read, sem valores financeiros de terceiros
-    chosen = rank_meetings(question, meetings)
-    ids = [m["id"] for m in chosen]
-    transcripts: dict[str, str] = {}
-    if ids:
-        for row in sec.user_rest(user, "GET", f"meetings?select=id,transcript&id=in.({','.join(ids)})&limit={len(ids)}") or []:
-            transcripts[row["id"]] = (row.get("transcript") or "")[:MAX_TRANSCRIPT_CHARS]
-    if not actions and not scope.get("meeting_id") and not scope.get("action_id"):
-        wants_actions = any(w in verification.normalize(question) for w in ACTION_WORDS)
-        wanted = tokens(question)
-        pool = sec.user_rest(user, "GET", f"actions?select={action_cols}&{space}&order=created_at.desc&limit=80") or []
-        if scope.get("client_id"):
-            pool = [a for a in pool if (a.get("meetings") or {}).get("client_id") == scope["client_id"]]
-        ranked = sorted(pool, key=lambda a: (len(wanted & tokens(a.get("text") or "")) + (1 if a.get("status") in ("open", "in_progress") and wants_actions else 0)), reverse=True)
-        actions = [a for a in ranked if (len(wanted & tokens(a.get("text") or "")) > 0) or (wants_actions and a.get("status") in ("open", "in_progress"))][:TOP_ACTIONS]
-    elif scope.get("meeting_id") and ids:
-        actions = sec.user_rest(user, "GET", f"actions?select={action_cols}&meeting_id=eq.{ids[0]}&limit=20") or []
-    by_meeting: dict[str, list[dict]] = {}
-    for a in actions:
-        by_meeting.setdefault(a["meeting_id"], []).append(a)
-    sources: list[Source] = []
-    for i, m in enumerate(chosen, 1):
-        key = f"S{i}"
-        tr = transcripts.get(m["id"], "")
-        block, analysis = _meeting_block(key, m, by_meeting.get(m["id"], []), best_lines(tr, question, fallback=bool(scope.get("meeting_id") or scope.get("action_id") or scope.get("client_id"))))
-        sources.append(Source(key, "meeting", m["id"], _clip(m.get("meeting_title") or m.get("client_name") or "Reunião", 120), block,
-                              transcript=tr, analysis=analysis, meta={"client_name": m.get("client_name"), "date": str(m.get("created_at") or "")[:10]}))
-    in_meetings = {s.item_id for s in sources}
-    n = len(sources)
-    for a in actions:
-        if scope.get("action_id") or a["meeting_id"] not in in_meetings:  # ação cuja reunião já está no contexto aparece dentro dela
-            n += 1
-            sources.append(_action_source(f"S{n}", a))
-    return sources
 
 
 # ---------------------------------------------------------------------------
@@ -357,30 +300,3 @@ def assemble(kept: list[dict], not_found: str | None, searched: list[Source], dr
     if dropped:
         lines.append(f"({dropped} afirmação(ões) da IA foram descartadas por não terem trecho comprovado.)")
     return "\n".join(lines), sources_out
-
-
-# ---------------------------------------------------------------------------
-# Limite de uso e orquestração
-# ---------------------------------------------------------------------------
-def enforce_chat_limit(user: sec.AuthUser) -> None:
-    """Limita respostas do chat por pessoa e hora (custo de IA). Falha de verificação bloqueia (fail closed)."""
-    from datetime import datetime, timedelta, timezone
-    from fastapi import HTTPException
-    limit = int(os.getenv("AURA_MAX_CHAT_PER_HOUR", "60") or "60")
-    since = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    try:
-        rows = sec.service_rest("GET", f"audit_log?select=id&actor_id=eq.{user.id}&action=eq.chat.answer&at=gte.{since}&limit={limit + 1}") or []
-    except RuntimeError as exc:
-        raise sec.limit_check_failed(exc) from exc
-    if len(rows) >= limit:
-        raise HTTPException(status_code=429, detail="Limite de perguntas por hora atingido. Tente novamente mais tarde.")
-
-
-def answer(user: sec.AuthUser, org_id: str | None, scope: dict | None, question: str, history: list[dict]) -> dict:
-    """Responde a uma pergunta: recupera, redige, confere e monta. Retorna {content, sources, evidence_level, stats}."""
-    sources = retrieve(user, org_id, scope, question)
-    draft = ask_model(SYSTEM_PROMPT, build_prompt(question, history, sources))
-    kept, dropped = verify_claims(draft.claims, sources)
-    content, out_sources = assemble(kept, draft.not_found, sources, dropped)
-    return {"content": content, "sources": out_sources, "evidence_level": evidence_level(kept, dropped),
-            "stats": {"searched": len(sources), "kept": len(kept), "dropped": dropped}}
